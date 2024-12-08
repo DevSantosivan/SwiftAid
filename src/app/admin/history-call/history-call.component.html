@@ -1,0 +1,34 @@
+<!-- @if(isloader){
+    <div class="loaders">
+       <app-loader></app-loader>
+    </div>
+ } -->
+ 
+ <div class="container-admin">
+    <div class="right-side-navbar">
+     <div class="header">
+        <h3><i class='bx bxs-phone-call' ></i> 911</h3>
+        <P>Emergency</P>
+     </div>
+      <div class="navlinks">
+         <ul>
+             <li (click)="navigateToDashboard()"><i class='bx bxs-dashboard' ></i> Dashboard</li>
+             <li (click)="navigateToMap()" ><i class='bx bxs-map' ></i> Map</li>
+             <li class="active" (click)="navigateToHistoryCall()"><i class='bx bx-history' ></i> History Call</li>
+             <li (click)="navigateToUserList()"><i class='bx bxs-user-detail'></i>Resident</li>
+             
+         </ul>
+      </div>
+    </div>
+   
+   <div class="left-side-container">
+   <app-admin-navbar></app-admin-navbar>
+   
+   <div class="left-side-container_content">
+      <h3>History Call</h3>
+      <p>recent call</p>
+
+      
+   </div>
+   </div>
+   </div>

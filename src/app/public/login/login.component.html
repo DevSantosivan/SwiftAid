@@ -1,0 +1,51 @@
+
+<div class="login-container">
+    <form [formGroup]="loginForm">
+      @if(valid){
+         <div class="validation">
+            <strong>Wrong Credentials</strong>
+          
+            <p>Please input field</p>
+         </div>
+       }@else if(email_pass) {
+        <div class="validation">
+          <strong>Wrong Credentials</strong>
+          <p>Invalid username or password.</p>
+       </div>
+       }@else if(success){
+        <div class="validation success">
+          <strong>Success</strong>
+          <p>Successfully log in.</p>
+       </div>
+       }
+       @else {
+        <div class="validation">
+          <p>You must log in to continue.</p>
+       </div>
+       }
+       
+
+        <div class="login-description">
+            <h3><span>911 </span>Admin</h3>
+        <p>Please enter your credentials to proceed </p>
+        </div>
+        <div class="input-container">
+             <input type="text" id="input" formControlName = "email">
+             <label for="input" class="label">Email</label>
+            <div class="underline"></div>
+          </div>
+          <div class="input-container">
+            <input type="password"
+             id="input" 
+             formControlName="password">
+            <label for="input" class="label">Password</label>
+            <div class="underline"></div>
+          </div>
+          <button (click)="logins()" type="button">Login</button>
+
+          <span class="divider"><hr>or Login with<hr></span>
+
+          <button class="google-login" (click)="loginWithGoogle()"> Sign In With <img src="./../../../assets/google-icon-logo-svgrepo-com.svg" alt=""></button>
+          
+    </form>          
+</div>

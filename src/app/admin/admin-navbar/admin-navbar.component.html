@@ -1,0 +1,28 @@
+
+<div class="navbar">
+    <!-- <divs class="search-bar-container">
+         <div class="search-bar">
+            <i class='bx bx-search'></i>
+            <input type="text" placeholder="Search ">
+         </div>
+    </divs> -->
+    <div class="users" (click)="showSide()">
+         <div class="user-name">
+        
+         </div>
+         
+    </div>
+    </div>
+   @if(showSideBar){
+     <div class="user-details-hover">
+          <div class="exit" ><i class='bx bx-left-arrow-alt' (click)="exit()"></i></div>
+          <div class="user-pic">
+             
+          </div>
+          <ul>
+               <li></li>
+               <li>Setting</li>
+               <li (click)="logout()">Logout</li>
+          </ul>
+      </div>
+   }
