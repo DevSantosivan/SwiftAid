@@ -17,10 +17,22 @@ export class NavbarComponent{
    ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
-
-    
     
    }
+   navigateToServices(){
+    this.isloader = true;
+    setTimeout(() => {
+      this.route.navigate(['/services']);
+      this.isloader = false;
+    }, 1000); // Simulating a delay for the loader
+   }
+   navigateToAboutus() {
+    this.isloader = true;
+    setTimeout(() => {
+      this.route.navigate(['/AboutUs']);
+      this.isloader = false;
+    }, 1000); // Simulating a delay for the loader
+  }
    isloader:boolean = false;
 
    loader(){

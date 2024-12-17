@@ -1,0 +1,46 @@
+<div class="login-container">
+    <form [formGroup]="registerForm">
+        <div class="validation">
+            <strong>Note</strong>
+            <p>Please fill in all fields to create your account.</p>
+        </div>
+        
+        <div class="login-description">
+            <h3><span>Register</span></h3>
+            <p>Fill in your details to create an account</p>
+        </div>
+
+        <div class="input-container">
+            <input type="text" id="name-input" formControlName="name">
+            <label for="name-input" class="label">Head in Charge</label>
+            <div class="underline"></div>
+        </div>
+        <div class="input-container">
+            <input type="text" id="name-input" formControlName="name">
+            <label for="name-input" class="label">Office ID number</label>
+            <div class="underline"></div>
+        </div>
+        <div class="input-container">
+            <input type="text" id="email-input" formControlName="email">
+            <label for="email-input" class="label">Contact number</label>
+            <div class="underline"></div>
+        </div>
+        <div class="input-container">
+            <input type="text" id="email-input" formControlName="email">
+            <label for="email-input" class="label">Email</label>
+            <div class="underline"></div>
+        </div>
+
+        <div class="input-container">
+            <input type="password" id="password-input" formControlName="password">
+            <label for="password-input" class="label">Password</label>
+            <div class="underline"></div>
+        </div>
+
+    
+        <button (click)="register()" type="button">Register</button>
+
+
+       
+    </form>
+</div>

@@ -75,6 +75,9 @@ logins(): void {
          }
          
 } 
+regiter(){
+   this.router.navigate(['/register']);
+}
 loginWithGoogle():void {
    this.authService.loginWithGoogle();     
 }   

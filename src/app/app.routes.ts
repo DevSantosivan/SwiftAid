@@ -13,5 +13,10 @@ export const routes: Routes = [
       loadChildren: () =>
           import('./admin/admin.routes').then((m) => m.AdminRoutes)
     },
+    {
+    path: 'mmdro',
+    loadChildren: () =>
+          import('./mmdro/mmdro.routes').then((m) => m.Mmdro)
+      },
     
 ];
