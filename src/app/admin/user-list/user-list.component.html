@@ -26,14 +26,14 @@
       <div class="resident-container">
           <div class="resident-header">
               <div class="btn-container">
-                   <button><i class='bx bxs-file-import' ></i> Import</button>
+                   
               </div>
               <div class="add-user-container">
                   <div class="search">
                       <i class='bx bx-search' ></i>
                       <input type="text" placeholder="search">
                   </div>
-                  <button (click)="addPopup()"><i class='bx bx-plus' ></i> Add New</button>
+                
               </div>
           </div>
           <div class="table">
@@ -48,22 +48,17 @@
                            <td>Action</td>
                        </tr>
                     </thead>
-                     <tbody>
+                     <tbody *ngFor="let user of users">
+                     
                        <tr>
                            <td><input type="checkbox" name="" id=""></td>
-                           <td>Ivan Francisco Santos</td>
-                           <td>ivansantos.bsitgmail.com</td>
-                           <td>San Jose Occidental Mindoro Barrangay 5</td>
-                           <td>09307499199</td>
+                           <td>{{user.fullName}}</td>
+                           <td>{{user.email}}</td>
+                           <td>{{user.address}}</td>
+                           <td>{{user.contactNumber}}</td>
                            <td><i class='bx bxs-trash'></i></td>
                        </tr>
-                       <tr>
-                          <td><input type="checkbox" name="" id=""></td>
-                          <td>Ivan Francisco Santos</td>
-                          <td>ivansantos.bsitgmail.com</td>
-                          <td>San Jose Occidental Mindoro Barrangay 5</td>
-                          <td>09307499199</td>
-                      </tr>
+                    
                      </tbody>
                </table>
                <div class="pagination-controls">
