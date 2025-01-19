@@ -35,11 +35,13 @@
                 "glob": "**/*",
                 "input": "public",
                 "output": "/"
-              }
+              },
+              "src/assets/"
       
             ],
             "styles": [
               "src/styles.scss"
+             
             ],
             "scripts": []
           },
@@ -98,12 +100,16 @@
               }
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/leaflet/dist/leaflet.css"
             ],
             "scripts": []
           }
         }
       }
     }
+  },
+  "cli": {
+    "analytics": "68f861e9-08ea-453d-b767-54a9e0491e62"
   }
 }

@@ -24,6 +24,11 @@ export class LoginComponent implements OnInit{
    isLoggedIn: boolean = false;
    isProgressIn : boolean = false;
    errorMessage: string = '';
+   phoneNumber: string = '';
+  otp: string = '';
+  showOtpForm: boolean = false;
+  showOtpInput: boolean = false;
+  verificationCode: any;
    
 
 
@@ -81,6 +86,9 @@ regiter(){
 loginWithGoogle():void {
    this.authService.loginWithGoogle();     
 }   
+
+
+
 }
  
 
