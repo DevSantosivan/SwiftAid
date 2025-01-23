@@ -4,6 +4,7 @@ import { collection, getDocs, getFirestore } from 'firebase/firestore'; // Fireb
 import { User } from '../model/users';
 import { environment } from '../model/environment';
 import { initializeApp } from 'firebase/app';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +17,21 @@ export class UserService {
     const firebaseApp = initializeApp(environment.firebaseConfig); // Initialize Firebase
     this.db = getFirestore(firebaseApp); // Get Firestore instance
   }
-
+  async getUserCount(): Promise<number> {
+    try {
+      // Get reference to the 'users' collection
+      const usersCollection = collection(this.db, 'users');
+      
+      // Fetch the documents
+      const snapshot = await getDocs(usersCollection);
+      
+      // Return the count of documents in the collection
+      return snapshot.size; // size property gives the count of documents
+    } catch (error) {
+      console.error('Error fetching user count:', error);
+      throw error;
+    }
+  }
   // Fetch users from Firestore
   async getUsers(): Promise<User[]> {
     try {

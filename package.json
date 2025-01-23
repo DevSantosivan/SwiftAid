@@ -24,6 +24,7 @@
     "chart.js": "^4.4.7",
     "firebase": "^10.14.1",
     "leaflet": "^1.9.4",
+    "leaflet.locatecontrol": "^0.83.1",
     "ng2-charts": "^7.0.0",
     "ngx-infinite-scroll": "^19.0.0",
     "rxjs": "~7.8.0",

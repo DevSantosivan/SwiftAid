@@ -2,7 +2,23 @@ import { AdminNavbarComponent } from '../admin-navbar/admin-navbar.component';
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { initializeApp } from 'firebase/app';
+import { environment } from '../../model/environment';
 import * as L from 'leaflet';
+
+interface EmergencyRequest {
+  id?: string;
+  name: string;
+  address: string;
+  contactNumber: string;
+  email: string;
+  latitude: number;
+  longitude: number;
+  needs: string;
+  timestamp: any;
+  currentLocation?: string;
+}
 
 @Component({
   selector: 'app-map',
@@ -12,48 +28,19 @@ import * as L from 'leaflet';
 })
 export class MapComponent implements OnInit {
   private map: L.Map | undefined;
-  private linesLayer: L.LayerGroup = L.layerGroup(); // Layer to hold the lines
-
-  // Store users data globally within the component
-  private users = [
-    { 
-      id: 1, 
-      name: 'Thaddeus Binasag', 
-      lat: 13.4094,  // Calapan
-      lng: 121.1803, 
-      need: 'Police', 
-      contact: '0917-111-2233'
-    },
-    { 
-      id: 2, 
-      name: 'Carlos Salvador', 
-      lat: 12.9704,  // San Jose
-      lng: 121.0305, 
-      need: 'Ambulance', 
-      contact: '0917-222-3344'
-    },
-    { 
-      id: 3, 
-      name: 'Ivan Santos', 
-      lat: 12.9349,  // Magsaysay
-      lng: 121.0827, 
-      need: 'Fire', 
-      contact: '0917-333-4455'
-    }
-  ];
+  private linesLayer: L.LayerGroup = L.layerGroup();
+  private users: EmergencyRequest[] = [];
 
   constructor(private route: Router) {}
 
   ngOnInit(): void {
     this.initializeMap();
-    this.addUsersToMap();
+    this.fetchUsersFromFirestore();
     this.addLocationButton();
   }
 
-  // Initialize the map with a default view
   private initializeMap(): void {
-    const midoroCoordinates: [number, number] = [13.232, 122.58]; // Coordinates for Occidental Mindoro
-
+    const midoroCoordinates: [number, number] = [13.258066063423568, 119.43216839243894];
     this.map = L.map('map').setView(midoroCoordinates, 13);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -63,67 +50,86 @@ export class MapComponent implements OnInit {
     }).addTo(this.map);
   }
 
-  // Add users to map
-  private addUsersToMap(): void {
-    if (!this.map) return;
+  private async fetchUsersFromFirestore(): Promise<void> {
+    try {
+      const firebaseApp = initializeApp(environment.firebaseConfig);
+      const db = getFirestore(firebaseApp);
+      const usersCollection = collection(db, 'EmergencyRequest');
+      const snapshot = await getDocs(usersCollection);
+      this.users = snapshot.docs.map(doc => {
+        const data = doc.data() as EmergencyRequest;
+        return {
+          id: doc.id,
+          name: data.name,
+          address: data.address,
+          contactNumber: data.contactNumber,
+          email: data.email,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          needs: data.needs,
+          timestamp: data.timestamp
+        };
+      });
 
-    this.users.forEach(user => {
-      const customIcon = this.getUserIcon(user.need);
+      this.addUsersToMap();
+    } catch (error) {
+      console.error('Error fetching users from Firestore:', error);
+    }
+  }
 
-      const marker = L.marker([user.lat, user.lng], { icon: customIcon }).addTo(this.map!);
-
-      // Add a red circle around the marker
-      L.circle([user.lat, user.lng], {
+  private async addUsersToMap(): Promise<void> {
+    if (!this.map || this.users.length === 0) return;
+  
+    this.users.forEach(async (user) => {
+      const customIcon = this.getUserIcon(user.needs);
+  
+      const marker = L.marker([user.latitude, user.longitude], { icon: customIcon }).addTo(this.map!);
+  
+      L.circle([user.latitude, user.longitude], {
         color: 'red',
         fillColor: 'red',
         fillOpacity: 0.2,
         radius: 500
       }).addTo(this.map!);
-
-      // Fetch the address from the coordinates using OpenStreetMap's Nominatim API
-      this.getAddressFromCoordinates(user.lat, user.lng).then(address => {
-        // Popup content with the user's name, need, and contact info
-        const popupContent = `  
-          <div>
-            <p><strong>Name:</strong> ${user.name}</p>
-            <p><strong>Need:</strong> ${user.need}</p>
-            <p><strong>Contact:</strong> ${user.contact}</p>
-            <p><strong>Location:</strong> ${address}</p> <!-- Display the fetched address -->
-            <button id="receive-${user.id}" style="background-color: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
-              Receive Request
-            </button>
-          </div>
-        `;
-
-        // Bind the popup content to the marker
-        marker.bindPopup(popupContent);
-
-        marker.on('popupopen', () => {
-          const button = document.getElementById(`receive-${user.id}`);
-          if (button) {
-            button.addEventListener('click', () => {
-              alert(`Received request from ${user.name}`);
-              this.showNearestMDRRO([user.lat, user.lng], user);
-            });
-          }
-        });
+  
+      const currentLocation = await this.getAddressFromCoordinates(user.latitude, user.longitude);
+      user.currentLocation = currentLocation;
+  
+      const popupContent = `
+        <div>
+          <p><strong>Name:</strong> ${user.name}</p>
+          <p><strong>Need:</strong> ${user.needs || 'Not specified'}</p>
+          <p><strong>Contact:</strong> ${user.contactNumber}</p>
+          <p><strong>Email:</strong> ${user.email}</p>
+          <p><strong>Location:</strong> ${user.currentLocation || user.address}</p>
+          <p><strong>Timestamp:</strong> ${user.timestamp?.toDate().toLocaleString()}</p>
+          <button id="requestRescueBtn-${user.latitude}-${user.longitude}">Request Rescue</button>
+        </div>
+      `;
+  
+      marker.bindPopup(popupContent);
+  
+      // Add event listener for "Request Rescue" button
+      marker.on('popupopen', () => {
+        const rescueButton = document.getElementById(`requestRescueBtn-${user.latitude}-${user.longitude}`);
+        if (rescueButton) {
+          rescueButton.addEventListener('click', () => {
+            this.requestRescue(user.latitude, user.longitude);
+          });
+        }
       });
-
-      // Show notification for new user
-      this.showNotification(`New User Added: ${user.name}`);
     });
-
-    // Focus on the first user on map load
-    const firstUser = this.users[0];
-    this.map.setView([firstUser.lat, firstUser.lng], 13);
+  
+    if (this.users.length > 0) {
+      const firstUser = this.users[0];
+      this.map.setView([firstUser.latitude, firstUser.longitude], 9);
+    }
   }
+  
 
-  // Function to get the appropriate icon based on user need
-  private getUserIcon(need: string): L.Icon {
+  private getUserIcon(service: string): L.Icon {
     let iconUrl = '';
-
-    // Set the icon URL based on the user's need
-    switch (need) {
+    switch (service) {
       case 'Ambulance':
         iconUrl = 'https://purepng.com/public/uploads/large/purepng.com-ambulanceambulanceinjured-peoplefor-an-illness-or-injuryhospital-medicalambulances-17015274053493pgy3.png';
         break;
@@ -134,7 +140,7 @@ export class MapComponent implements OnInit {
         iconUrl = 'https://kvsh.com/wp-content/uploads/2017/01/fire_truck.png';
         break;
       default:
-        iconUrl = 'https://example.com/default-icon.png';
+        iconUrl = 'https://wallpapers.com/images/high/red-cross-ambulance-icon-mibnenxu2pklyply.png';
     }
 
     return L.icon({
@@ -145,140 +151,88 @@ export class MapComponent implements OnInit {
     });
   }
 
-  // Function to fetch the address from coordinates using OpenStreetMap's Nominatim API
-  private async getAddressFromCoordinates(lat: number, lng: number): Promise<string> {
+  private async getAddressFromCoordinates(lat: number, lon: number): Promise<string> {
+    const apiUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+      const response = await fetch(apiUrl);
       const data = await response.json();
-      return data.display_name || 'Address not available';
+      return data?.address?.road || data?.address?.municipality || 'Address not found';
     } catch (error) {
       console.error('Error fetching address:', error);
-      return 'Address not available';
+      return 'Address not found';
     }
   }
 
-  // Function to show notification
-  private showNotification(message: string): void {
-    const notificationContainer = document.getElementById('notification-container');
-    if (!notificationContainer) return;
-
-    const notification = document.createElement('div');
-    notification.classList.add('notification');
-    notification.innerText = message;
-
-    notificationContainer.appendChild(notification);
-
-    setTimeout(() => {
-      notification.classList.add('show');
-    }, 100);
-
-    setTimeout(() => {
-      notification.classList.remove('show');
-      setTimeout(() => notification.remove(), 500);
-    }, 5000); // Notification disappears after 5 seconds
+  requestRescue(latitude: number, longitude: number): void {
+    console.log('Requesting rescue for user at', latitude, longitude);
+  
+    const nearestMDRRMO = this.getNearestMDRRMO(latitude, longitude);
+  
+    // Show alert with nearest MDRRMO details
+    alert(`Nearest MDRRMO: ${nearestMDRRMO.name}\nLocation: ${nearestMDRRMO.location}\nContact: ${nearestMDRRMO.contact}`);
+  
+    if (this.map) {
+      // Create marker for the nearest MDRRMO and add it to the map
+      const mdrRmoMarker = L.marker([nearestMDRRMO.latitude, nearestMDRRMO.longitude]).addTo(this.map);
+  
+      // Bind popup content to the marker with MDRRMO details
+      mdrRmoMarker.bindPopup(`
+        <div>
+          <p><strong>Name:</strong> ${nearestMDRRMO.name}</p>
+          <p><strong>Location:</strong> ${nearestMDRRMO.location}</p>
+          <p><strong>Contact:</strong> ${nearestMDRRMO.contact}</p>
+        </div>
+      `);
+  
+      // Center the map on the MDRRMO location and zoom in
+      this.map.setView([nearestMDRRMO.latitude, nearestMDRRMO.longitude], 15);
+    }
   }
 
-  // Function to calculate distance between two lat/lng points
+  private getNearestMDRRMO(latitude: number, longitude: number): any {
+    const mdrRmos = [
+      { name: 'Calapan', latitude: 13.4100, longitude: 121.0400, location: 'Calapan City Hall', contact: '09210000001' },
+      { name: 'San Jose', latitude: 12.347984417738619, longitude: 121.07006396605, location: 'San Jose Municipal Hall', contact: '09210000002' },
+      { name: 'Rizal', latitude: 12.495241994028344, longitude: 121.01067571624499, location: 'Rizal Municipal Hall', contact: '09210000003' },
+      { name: 'Calintaan', latitude:  12.606363170716476, longitude: 121.09197362749534, location: 'Calintaan Municipal Hall', contact: '09210000004' },
+      { name: 'Abra', latitude: 17.0732, longitude: 120.6035, location: 'Abra Provincial Hall', contact: '09210000005' },
+      { name: 'Sablayan', latitude: 12.9532, longitude: 120.6236, location: 'Sablayan Municipal Hall', contact: '09210000006' },
+      { name: 'Mamburao', latitude: 13.1423, longitude: 120.6342, location: 'Mamburao Municipal Hall', contact: '09210000007' },
+      { name: 'Santa Cruz', latitude: 13.2212, longitude: 120.8699, location: 'Santa Cruz Municipal Hall', contact: '09210000008' }
+    ];
+  
+    let nearestMDRRMO = mdrRmos[0];
+    let shortestDistance = this.calculateDistance(latitude, longitude, nearestMDRRMO.latitude, nearestMDRRMO.longitude);
+  
+    mdrRmos.forEach(mdrRmo => {
+      const distance = this.calculateDistance(latitude, longitude, mdrRmo.latitude, mdrRmo.longitude);
+      console.log(`Distance to ${mdrRmo.name}: ${distance} km`);  // Log the distance to see if it’s being calculated correctly
+  
+      if (distance < shortestDistance) {
+        nearestMDRRMO = mdrRmo;
+        shortestDistance = distance;
+      }
+    });
+  
+    return nearestMDRRMO;
+  }
+  
+
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371; // Radius of Earth in kilometers
+    const R = 6371;
     const dLat = this.degreesToRadians(lat2 - lat1);
     const dLon = this.degreesToRadians(lon2 - lon1);
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(this.degreesToRadians(lat1)) * Math.cos(this.degreesToRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(this.degreesToRadians(lat1)) * Math.cos(this.degreesToRadians(lat2)) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c; // Distance in kilometers
+    return R * c;
   }
 
-  // Convert degrees to radians
   private degreesToRadians(degrees: number): number {
     return degrees * Math.PI / 180;
   }
 
-  // Find nearest 2 MDRRO locations
-  private findNearestMDRRO(userLocation: [number, number]): Array<[number, number, string, string, string]> {
-    const mdrroLocations = [
-      {
-        name: 'MDRRMO Calapan',
-        lat: 13.4094,
-        lng: 121.1803,
-        contact: '0917-123-4567',
-        address: 'Calapan City, Occidental Mindoro'
-      },
-      {
-        name: 'MDRRMO San Jose',
-        lat: 12.9704,
-        lng: 121.0305,
-        contact: '0917-234-5678',
-        address: 'San Jose, Occidental Mindoro'
-      },
-      {
-        name: 'MDRRMO Magsaysay',
-        lat: 12.9349,
-        lng: 121.0827,
-        contact: '0917-345-6789',
-        address: 'Magsaysay, Occidental Mindoro'
-      }
-    ];
-
-    // Sort MDRRMO locations by distance to userLocation
-    const sortedLocations = mdrroLocations.map(location => {
-      const distance = this.calculateDistance(userLocation[0], userLocation[1], location.lat, location.lng);
-      return { ...location, distance };
-    }).sort((a, b) => a.distance - b.distance);
-
-    return sortedLocations.slice(0, 2).map(location => [location.lat, location.lng, location.name, location.contact, location.address]);
-  }
-
-  // Show the nearest MDRROs to the user on the map
-  private showNearestMDRRO(userLocation: [number, number], user: any): void {
-    const nearestMDRROs = this.findNearestMDRRO(userLocation);
-
-    nearestMDRROs.forEach(([lat, lng, name, contact, address]) => {
-      const mdrroIcon = L.icon({
-        iconUrl: 'https://montalbanrizalph.com/wp-content/uploads/2022/08/Picture1.png',
-        iconSize: [100, 60],
-        iconAnchor: [15, 30],
-        popupAnchor: [0, -30]
-      });
-
-      const mdrroMarker = L.marker([lat, lng], { icon: mdrroIcon }).addTo(this.map!);
-
-      // Calculate the distance to each nearest MDRRO
-      const distance = this.calculateDistance(userLocation[0], userLocation[1], lat, lng);
-
-      const popupContent = ` 
-       <p>Nearest rescue</p>
-        <div class="mdrro-popup">
-          <h3 class="mdrro-name">${name}</h3>
-          <p class="mdrro-contact">Contact: <strong>${contact}</strong></p>
-          <p class="mdrro-address">Address: <strong>${address}</strong></p>
-          <p class="mdrro-distance">Distance from user: <strong>${distance.toFixed(2)} km</strong></p>
-        </div>
-      `;
-
-      mdrroMarker.bindPopup(popupContent).openPopup();
-
-      // Draw a line from the user to the nearest MDRRO
-      const line = L.polyline([userLocation, [lat, lng]], {
-        color: 'blue',
-        weight: 1,
-        opacity: 0.7,
-        dashArray: '5,10'
-      }).addTo(this.linesLayer);
-
-      this.linesLayer.addTo(this.map!);
-
-      let bounds = new L.LatLngBounds([userLocation, [lat, lng]]);
-      this.linesLayer.eachLayer((layer) => {
-        if (layer instanceof L.Polyline) {
-          bounds.extend(layer.getBounds());
-        }
-      });
-      this.map?.fitBounds(bounds);
-    });
-  }
-
-  // Add location button to show user's current position
   private addLocationButton(): void {
     if (!this.map) return;
 
@@ -294,13 +248,11 @@ export class MapComponent implements OnInit {
         L.DomEvent.on(button, 'click', () => {
           navigator.geolocation.getCurrentPosition(
             (position) => {
-              const { latitude, longitude } = position.coords;
-              map.setView([latitude, longitude], 15);
+              const lat = position.coords.latitude;
+              const lon = position.coords.longitude;
+              this.map!.setView([lat, lon], 13);
             },
-            (error) => {
-              console.error('Error fetching location:', error);
-              alert('Unable to fetch your current location.');
-            }
+            (err) => alert('Could not retrieve location')
           );
         });
 
@@ -311,7 +263,7 @@ export class MapComponent implements OnInit {
     this.map.addControl(new locateControl());
   }
 
-  // Navigation methods (keep or update based on requirements)
+  // Navigation methods to go to different routes
   navigateToDashboard() {
     this.route.navigate(['/admin']);
   }

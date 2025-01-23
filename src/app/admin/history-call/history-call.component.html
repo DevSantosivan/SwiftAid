@@ -25,12 +25,61 @@
    <app-admin-navbar></app-admin-navbar>
    
    <div class="left-side-container_content">
-      <h3>History Call</h3>
-      <p>recent call</p>
+      <h3>History Request</h3>
+      <p>recent request</p>
 
-      <div class="history-call-container">
-          
-      </div>
+      <div class="resident-container">
+         <div class="resident-header">
+             <div class="btn-container">
+                  
+             </div>
+             <div class="add-user-container">
+                 <div class="search">
+                     <i class='bx bx-search' ></i>
+                     <input type="text" placeholder="search">
+                 </div>
+               
+             </div>
+         </div>
+         <div class="table">
+              <table>
+                   <thead>
+                      <tr>
+                          <td><input type="checkbox" name="" id=""></td>
+                          <td>Full name</td>
+                          <td>Rescue Need</td>
+                          <td>Email</td>
+                          <td>Contact</td>  
+                          <td>Address</td>
+                          <td>Location</td>
+                          <td>Time</td> 
+                          <td>Action</td>
+                      </tr>
+                   </thead>
+                    <tbody *ngFor="let requests of request">
+                    
+                      <tr>
+                          <td><input type="checkbox" name="" id=""></td>
+                          <td>{{requests.name}}</td>
+                          <td>{{requests.needs}}</td>
+                          <td>{{requests.email}}</td>
+                          <td>{{requests.contactNumber}}</td>
+                          <td>{{requests.address}}</td>
+                          <td>{{requests.currentLocation}}</td>
+                          <td>{{requests.timestamp?.toDate().toLocaleString()}}</td>
+                          <td><i class='bx bxs-trash'></i></td>
+                      </tr>
+                   
+                    </tbody>
+              </table>
+              <div class="pagination-controls">
+               <button >Previous</button>
+               <span>Page  of </span>
+               <button>Next</button>
+             </div>
+         </div>
+     </div>
+ 
    </div>
    </div>
    </div>

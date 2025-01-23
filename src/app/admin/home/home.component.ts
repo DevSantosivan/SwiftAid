@@ -6,6 +6,8 @@ import { NavbarComponent } from "../../public/navbar/navbar.component";
 import { AdminNavbarComponent } from '../admin-navbar/admin-navbar.component';
 import { Chart,registerables } from 'chart.js';
 import { Util } from 'leaflet';
+import { UserService } from '../../core/user.service';
+import { EmergencyRequestService } from '../../core/rescue_request.service';
 
 
 Chart.register(...registerables);
@@ -75,12 +77,33 @@ export class HomeComponent implements OnInit{
   }
   
   
-constructor(private authentication : Auth, private route: Router){
+constructor(private authentication : Auth, private route: Router,private userService: UserService,private EmergencyRequestService :EmergencyRequestService){
   
 }
-ngOnInit(): void {
+userCount: number = 0;
+EmergencyRequest: number = 0;
+async ngOnInit() {
+  console.log('ngOnInit called');
+  
   this.chart = new Chart('Mychart', this.config);
+
+  try {
+    // Fetch user count
+    const userCount = await this.userService.getUserCount(); 
+    console.log('Total users fetched:', userCount);
+    this.userCount = userCount;  // Update the component's userCount state
+
+    // Fetch emergency request count (call the method correctly)
+    const registeredAccount = await this.EmergencyRequestService.getRequestCount(); 
+    console.log('Total emergency requests fetched:', registeredAccount);
+    this.EmergencyRequest = registeredAccount;  // Update the component's emergencyRequest state
+
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
 }
+
+
 
 isloader : boolean = false;
 

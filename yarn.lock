@@ -5291,6 +5291,11 @@ launch-editor@^2.6.1:
     picocolors "^1.0.0"
     shell-quote "^1.8.1"
 
+leaflet.locatecontrol@^0.83.1:
+  version "0.83.1"
+  resolved "https://registry.npmjs.org/leaflet.locatecontrol/-/leaflet.locatecontrol-0.83.1.tgz"
+  integrity sha512-oF5uey4GOpnw/ly379fV8JQJuUQes9eECaWo8voTIWLQERYPCudOgfUzFggUbq+kpCMNz7BxP/MsLbyf77QorA==
+
 leaflet@^1.9.4:
   version "1.9.4"
   resolved "https://registry.npmjs.org/leaflet/-/leaflet-1.9.4.tgz"
