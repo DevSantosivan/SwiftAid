@@ -18,6 +18,7 @@ interface EmergencyRequest {
   needs: string;
   timestamp: any;
   currentLocation?: string;
+  description?: string;
 }
 
 @Component({
@@ -40,15 +41,16 @@ export class MapComponent implements OnInit {
   }
 
   private initializeMap(): void {
-    const midoroCoordinates: [number, number] = [13.258066063423568, 119.43216839243894];
+    const midoroCoordinates: [number, number] = [12.3474, 121.0659];
     this.map = L.map('map').setView(midoroCoordinates, 13);
-
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 19
+  
+    // OpenStreetMap tile layer for street view
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
     }).addTo(this.map);
   }
+  
 
   private async fetchUsersFromFirestore(): Promise<void> {
     try {
@@ -67,7 +69,8 @@ export class MapComponent implements OnInit {
           latitude: data.latitude,
           longitude: data.longitude,
           needs: data.needs,
-          timestamp: data.timestamp
+          timestamp: data.timestamp,
+          description: data.description
         };
       });
 
@@ -96,13 +99,14 @@ export class MapComponent implements OnInit {
       user.currentLocation = currentLocation;
   
       const popupContent = `
-        <div>
+        <div class = "popuContent">
           <p><strong>Name:</strong> ${user.name}</p>
           <p><strong>Need:</strong> ${user.needs || 'Not specified'}</p>
           <p><strong>Contact:</strong> ${user.contactNumber}</p>
           <p><strong>Email:</strong> ${user.email}</p>
           <p><strong>Location:</strong> ${user.currentLocation || user.address}</p>
           <p><strong>Timestamp:</strong> ${user.timestamp?.toDate().toLocaleString()}</p>
+          <p><strong>Happens:</strong> ${user.description}</p>
           <button id="requestRescueBtn-${user.latitude}-${user.longitude}">Request Rescue</button>
         </div>
       `;
@@ -145,7 +149,7 @@ export class MapComponent implements OnInit {
 
     return L.icon({
       iconUrl: iconUrl,
-      iconSize: [70, 48],
+      iconSize: [50, 38],
       iconAnchor: [39, 58],
       popupAnchor: [0, -58]
     });

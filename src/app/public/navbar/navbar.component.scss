@@ -11,20 +11,7 @@
     backdrop-filter: blur(10px);
     box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
 
-    .company-brand {
-        display: flex;
-        gap: 5px;
-        align-items: center;
-        i {
-            font-size: 35px;
-            color: rgb(238, 30, 30);
-        }
-        h3 {
-            font-size: 25px; 
-            font-weight: 700;
-            color: #2c2929;
-        }
-    }
+    
 
     ul {
         display: inline-flex;

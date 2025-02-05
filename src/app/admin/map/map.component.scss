@@ -16,6 +16,9 @@
     filter: hue-rotate(0deg);  /* Reset state */
   }
 }
+.popuContent{
+  background-color: red;
+}
 
 .leaflet-marker-icon.alert {
   animation: pulse 1.5s infinite;  /* Apply the pulse animation */
