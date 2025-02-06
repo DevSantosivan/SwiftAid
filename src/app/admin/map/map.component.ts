@@ -2,7 +2,7 @@ import { AdminNavbarComponent } from '../admin-navbar/admin-navbar.component';
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
 import { environment } from '../../model/environment';
 import * as L from 'leaflet';
@@ -10,6 +10,7 @@ import * as L from 'leaflet';
 interface EmergencyRequest {
   id?: string;
   name: string;
+  image: string;
   address: string;
   contactNumber: string;
   email: string;
@@ -36,32 +37,33 @@ export class MapComponent implements OnInit {
 
   ngOnInit(): void {
     this.initializeMap();
-    this.fetchUsersFromFirestore();
+    this.fetchUsersFromFirestore();  // Real-time data
     this.addLocationButton();
   }
 
   private initializeMap(): void {
     const midoroCoordinates: [number, number] = [12.3474, 121.0659];
     this.map = L.map('map').setView(midoroCoordinates, 13);
-  
+
     // OpenStreetMap tile layer for street view
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
     }).addTo(this.map);
   }
-  
 
-  private async fetchUsersFromFirestore(): Promise<void> {
-    try {
-      const firebaseApp = initializeApp(environment.firebaseConfig);
-      const db = getFirestore(firebaseApp);
-      const usersCollection = collection(db, 'EmergencyRequest');
-      const snapshot = await getDocs(usersCollection);
+  private fetchUsersFromFirestore(): void {
+    const firebaseApp = initializeApp(environment.firebaseConfig);
+    const db = getFirestore(firebaseApp);
+    const usersCollection = collection(db, 'EmergencyRequest');
+
+    // Listen for real-time updates in Firestore
+    onSnapshot(usersCollection, (snapshot) => {
       this.users = snapshot.docs.map(doc => {
         const data = doc.data() as EmergencyRequest;
         return {
           id: doc.id,
+          image: data.image,
           name: data.name,
           address: data.address,
           contactNumber: data.contactNumber,
@@ -75,31 +77,34 @@ export class MapComponent implements OnInit {
       });
 
       this.addUsersToMap();
-    } catch (error) {
-      console.error('Error fetching users from Firestore:', error);
-    }
+    });
   }
 
   private async addUsersToMap(): Promise<void> {
     if (!this.map || this.users.length === 0) return;
-  
+
+    // Clear existing markers before adding new ones
+    this.linesLayer.clearLayers();
+
     this.users.forEach(async (user) => {
       const customIcon = this.getUserIcon(user.needs);
-  
+
       const marker = L.marker([user.latitude, user.longitude], { icon: customIcon }).addTo(this.map!);
-  
+
       L.circle([user.latitude, user.longitude], {
         color: 'red',
         fillColor: 'red',
         fillOpacity: 0.2,
         radius: 500
       }).addTo(this.map!);
-  
+
       const currentLocation = await this.getAddressFromCoordinates(user.latitude, user.longitude);
       user.currentLocation = currentLocation;
-  
+
       const popupContent = `
-        <div class = "popuContent">
+        <div class="popupContent">
+          <p>Request Proof</p>
+           <img src="${user.image}" alt="${user.name}" style="width: 100%; height: 200px; object-fit: cover;" />
           <p><strong>Name:</strong> ${user.name}</p>
           <p><strong>Need:</strong> ${user.needs || 'Not specified'}</p>
           <p><strong>Contact:</strong> ${user.contactNumber}</p>
@@ -107,29 +112,57 @@ export class MapComponent implements OnInit {
           <p><strong>Location:</strong> ${user.currentLocation || user.address}</p>
           <p><strong>Timestamp:</strong> ${user.timestamp?.toDate().toLocaleString()}</p>
           <p><strong>Happens:</strong> ${user.description}</p>
-          <button id="requestRescueBtn-${user.latitude}-${user.longitude}">Request Rescue</button>
+          <button style="width: 100%; height: 50px; background-color:red; border:none; color:white;"  id="requestRescueBtn-${user.latitude}-${user.longitude}">Request Rescue</button>
         </div>
       `;
-  
+
       marker.bindPopup(popupContent);
-  
+
       // Add event listener for "Request Rescue" button
       marker.on('popupopen', () => {
         const rescueButton = document.getElementById(`requestRescueBtn-${user.latitude}-${user.longitude}`);
         if (rescueButton) {
-          rescueButton.addEventListener('click', () => {
-            this.requestRescue(user.latitude, user.longitude);
+          rescueButton.addEventListener('click', async () => {
+            await this.updateRescueStatus(user.id);  // Assuming the user.id is the document ID in Firestore
+            this.requestRescue(user.latitude, user.longitude);  // Perform any additional actions if needed
           });
         }
       });
+
+      // Store the marker in the layer group
+      this.linesLayer.addLayer(marker);
     });
-  
+
+    // Add the layer group to the map
+    this.linesLayer.addTo(this.map);
+
     if (this.users.length > 0) {
       const firstUser = this.users[0];
       this.map.setView([firstUser.latitude, firstUser.longitude], 9);
     }
   }
-  
+
+  private async updateRescueStatus(userId: string | undefined): Promise<void> {
+    if (!userId) {
+      console.error('User ID is missing.');
+      return;
+    }
+
+    try {
+      const firebaseApp = initializeApp(environment.firebaseConfig);
+      const db = getFirestore(firebaseApp);
+      const userRef = doc(db, 'EmergencyRequest', userId);
+
+      // Update the status field to "Accepted"
+      await updateDoc(userRef, {
+        status: 'Accepted'
+      });
+
+      console.log('Status updated to Accepted for user:', userId);
+    } catch (error) {
+      console.error('Error updating rescue status:', error);
+    }
+  }
 
   private getUserIcon(service: string): L.Icon {
     let iconUrl = '';
@@ -169,16 +202,16 @@ export class MapComponent implements OnInit {
 
   requestRescue(latitude: number, longitude: number): void {
     console.log('Requesting rescue for user at', latitude, longitude);
-  
+
     const nearestMDRRMO = this.getNearestMDRRMO(latitude, longitude);
-  
+
     // Show alert with nearest MDRRMO details
     alert(`Nearest MDRRMO: ${nearestMDRRMO.name}\nLocation: ${nearestMDRRMO.location}\nContact: ${nearestMDRRMO.contact}`);
-  
+
     if (this.map) {
       // Create marker for the nearest MDRRMO and add it to the map
       const mdrRmoMarker = L.marker([nearestMDRRMO.latitude, nearestMDRRMO.longitude]).addTo(this.map);
-  
+
       // Bind popup content to the marker with MDRRMO details
       mdrRmoMarker.bindPopup(`
         <div>
@@ -187,7 +220,7 @@ export class MapComponent implements OnInit {
           <p><strong>Contact:</strong> ${nearestMDRRMO.contact}</p>
         </div>
       `);
-  
+
       // Center the map on the MDRRMO location and zoom in
       this.map.setView([nearestMDRRMO.latitude, nearestMDRRMO.longitude], 15);
     }
@@ -204,23 +237,22 @@ export class MapComponent implements OnInit {
       { name: 'Mamburao', latitude: 13.1423, longitude: 120.6342, location: 'Mamburao Municipal Hall', contact: '09210000007' },
       { name: 'Santa Cruz', latitude: 13.2212, longitude: 120.8699, location: 'Santa Cruz Municipal Hall', contact: '09210000008' }
     ];
-  
+
     let nearestMDRRMO = mdrRmos[0];
     let shortestDistance = this.calculateDistance(latitude, longitude, nearestMDRRMO.latitude, nearestMDRRMO.longitude);
-  
+
     mdrRmos.forEach(mdrRmo => {
       const distance = this.calculateDistance(latitude, longitude, mdrRmo.latitude, mdrRmo.longitude);
       console.log(`Distance to ${mdrRmo.name}: ${distance} km`);  // Log the distance to see if it’s being calculated correctly
-  
+
       if (distance < shortestDistance) {
         nearestMDRRMO = mdrRmo;
         shortestDistance = distance;
       }
     });
-  
+
     return nearestMDRRMO;
   }
-  
 
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const R = 6371;
