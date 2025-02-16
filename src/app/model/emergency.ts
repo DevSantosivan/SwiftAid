@@ -9,5 +9,6 @@ export interface EmergencyRequest {
   needs: string;
   timestamp: any;
   currentLocation?: string;
+  event:string;
   }
   

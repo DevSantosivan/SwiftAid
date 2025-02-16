@@ -63,23 +63,30 @@ ngOnInit(): void {
  
       
 logins(): void {
-         if(this.loginForm.valid){
-            const { email, password} = this.loginForm.value;
-            this.authService.login(email!, password!).then((res)=>{
-               this.success = true;
-               this.router.navigate(['/admin']);
-            }).catch((err)=>{
-               this.errorMessage = err.message; 
-               this.email_pass = true;
-               this.success = false;
-            })
-         }
-            else{
-              this.valid = true;
-              this.email_pass = false     
-         }
-         
-} 
+   if (this.loginForm.valid) {
+      const { email, password } = this.loginForm.value;
+      
+      try {
+         this.authService.login(email!, password!).then((res) => {
+            this.success = true;
+            this.router.navigate(['/admin']);
+         }).catch((err) => {
+            this.errorMessage = err.message;
+            this.email_pass = true;
+            this.success = false;
+         });
+      } catch (err) {
+         // Handle any synchronous errors here
+         console.error("Login failed:", err);
+         this.errorMessage = "An unexpected error occurred. Please try again later.";
+         this.success = false;
+      }
+   } else {
+      this.valid = true;
+      this.email_pass = false;
+   }
+}
+ 
 regiter(){
    this.router.navigate(['/register']);
 }

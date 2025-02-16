@@ -32,6 +32,8 @@ export class MapComponent implements OnInit {
   private map: L.Map | undefined;
   private linesLayer: L.LayerGroup = L.layerGroup();
   private users: EmergencyRequest[] = [];
+  slideOpen: boolean = false;
+  selectedRequest: EmergencyRequest | null = null;
 
   constructor(private route: Router) {}
 
@@ -42,15 +44,24 @@ export class MapComponent implements OnInit {
   }
 
   private initializeMap(): void {
-    const midoroCoordinates: [number, number] = [12.3474, 121.0659];
-    this.map = L.map('map').setView(midoroCoordinates, 13);
+    // Coordinates for San Jose, Occidental Mindoro
+    const sanJoseCoordinates: [number, number] = [12.3493, 121.0179];
+    
+    // Initialize the map with a view centered on San Jose
+    this.map = L.map('map').setView(sanJoseCoordinates, 13);  // Zoom level of 13 for closer focus
+  
+    // Define the bounds to restrict the panning and zooming around San Jose
+   
 
+  
     // OpenStreetMap tile layer for street view
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19,
+      maxZoom: 19,  // Maximum zoom level
     }).addTo(this.map);
   }
+  
+  
 
   private fetchUsersFromFirestore(): void {
     const firebaseApp = initializeApp(environment.firebaseConfig);
@@ -91,18 +102,11 @@ export class MapComponent implements OnInit {
 
       const marker = L.marker([user.latitude, user.longitude], { icon: customIcon }).addTo(this.map!);
 
-      L.circle([user.latitude, user.longitude], {
-        color: 'red',
-        fillColor: 'red',
-        fillOpacity: 0.2,
-        radius: 500
-      }).addTo(this.map!);
-
       const currentLocation = await this.getAddressFromCoordinates(user.latitude, user.longitude);
       user.currentLocation = currentLocation;
 
       const popupContent = `
-        <div class="popupContent">
+        <div class="popupContent" style= "overflow: hidden;" >
           <p>Request Proof</p>
            <img src="${user.image}" alt="${user.name}" style="width: 100%; height: 200px; object-fit: cover;" />
           <p><strong>Name:</strong> ${user.name}</p>
@@ -112,7 +116,7 @@ export class MapComponent implements OnInit {
           <p><strong>Location:</strong> ${user.currentLocation || user.address}</p>
           <p><strong>Timestamp:</strong> ${user.timestamp?.toDate().toLocaleString()}</p>
           <p><strong>Happens:</strong> ${user.description}</p>
-          <button style="width: 100%; height: 50px; background-color:red; border:none; color:white;"  id="requestRescueBtn-${user.latitude}-${user.longitude}">Request Rescue</button>
+          <button style="width: 100%; height: 50px; background-color:red; border:none; color:white;" id="requestRescueBtn-${user.latitude}-${user.longitude}">Request Rescue</button>
         </div>
       `;
 
@@ -193,10 +197,36 @@ export class MapComponent implements OnInit {
     try {
       const response = await fetch(apiUrl);
       const data = await response.json();
-      return data?.address?.road || data?.address?.municipality || 'Address not found';
+      
+      if (data && data.address) {
+        const road = data.address.road || '';
+        const suburb = data.address.suburb || '';
+        const city = data.address.city || data.address.town || data.address.village || '';
+        const state = data.address.state || '';
+        const postcode = data.address.postcode || '';
+        const country = data.address.country || '';
+        
+        const neighborhood = data.address.neighbourhood || '';
+
+        let address = road ? `${road}` : 'Near ';
+        if (!road && suburb) address += `${suburb}`;
+        else if (!road && city) address += `${city}`;
+        else if (!road && neighborhood) address += `near ${neighborhood}`;
+
+        if (suburb && road) address += `, ${suburb}`;
+        if (city) address += `, ${city}`;
+        if (state) address += `, ${state}`;
+        if (postcode) address += `, ${postcode}`;
+        if (country) address += `, ${country}`;
+        if (neighborhood) address += ` (Near ${neighborhood})`;
+
+        return address.trim() || 'Address not found';
+      }
+
+      return 'Address not found';
     } catch (error) {
       console.error('Error fetching address:', error);
-      return 'Address not found';
+      return 'Unable to fetch address at this time.';
     }
   }
 
@@ -228,14 +258,21 @@ export class MapComponent implements OnInit {
 
   private getNearestMDRRMO(latitude: number, longitude: number): any {
     const mdrRmos = [
-      { name: 'Calapan', latitude: 13.4100, longitude: 121.0400, location: 'Calapan City Hall', contact: '09210000001' },
-      { name: 'San Jose', latitude: 12.347984417738619, longitude: 121.07006396605, location: 'San Jose Municipal Hall', contact: '09210000002' },
-      { name: 'Rizal', latitude: 12.495241994028344, longitude: 121.01067571624499, location: 'Rizal Municipal Hall', contact: '09210000003' },
-      { name: 'Calintaan', latitude:  12.606363170716476, longitude: 121.09197362749534, location: 'Calintaan Municipal Hall', contact: '09210000004' },
-      { name: 'Abra', latitude: 17.0732, longitude: 120.6035, location: 'Abra Provincial Hall', contact: '09210000005' },
-      { name: 'Sablayan', latitude: 12.9532, longitude: 120.6236, location: 'Sablayan Municipal Hall', contact: '09210000006' },
-      { name: 'Mamburao', latitude: 13.1423, longitude: 120.6342, location: 'Mamburao Municipal Hall', contact: '09210000007' },
-      { name: 'Santa Cruz', latitude: 13.2212, longitude: 120.8699, location: 'Santa Cruz Municipal Hall', contact: '09210000008' }
+      { name: 'Barangay 1', latitude: 12.347984417738619, longitude: 121.07006396605, location: 'San Jose Municipal Hall', contact: '09210000001' },
+      { name: 'Barangay 2', latitude: 12.3475, longitude: 121.0712, location: 'San Jose Municipal Hall', contact: '09210000002' },
+      { name: 'Barangay 3', latitude: 12.3480, longitude: 121.0718, location: 'San Jose Municipal Hall', contact: '09210000003' },
+      { name: 'Barangay 4', latitude: 12.3485, longitude: 121.0724, location: 'San Jose Municipal Hall', contact: '09210000004' },
+      { name: 'Barangay 5', latitude: 12.3490, longitude: 121.0730, location: 'San Jose Municipal Hall', contact: '09210000005' },
+      { name: 'Barangay 6', latitude: 12.3495, longitude: 121.0736, location: 'San Jose Municipal Hall', contact: '09210000006' },
+      { name: 'Barangay 7', latitude: 12.3500, longitude: 121.0742, location: 'San Jose Municipal Hall', contact: '09210000007' },
+      { name: 'Barangay 8', latitude: 12.3505, longitude: 121.0748, location: 'San Jose Municipal Hall', contact: '09210000008' },
+      { name: 'Barangay 9', latitude: 12.3510, longitude: 121.0754, location: 'San Jose Municipal Hall', contact: '09210000009' },
+      { name: 'Barangay 10', latitude: 12.3515, longitude: 121.0760, location: 'San Jose Municipal Hall', contact: '09210000010' },
+      { name: 'Barangay 11', latitude: 12.3520, longitude: 121.0766, location: 'San Jose Municipal Hall', contact: '09210000011' },
+      { name: 'Barangay 12', latitude: 12.3525, longitude: 121.0772, location: 'San Jose Municipal Hall', contact: '09210000012' },
+      { name: 'Barangay 13', latitude: 12.3530, longitude: 121.0778, location: 'San Jose Municipal Hall', contact: '09210000013' },
+      { name: 'Barangay 14', latitude: 12.3535, longitude: 121.0784, location: 'San Jose Municipal Hall', contact: '09210000014' },
+      { name: 'Barangay 15', latitude: 12.3540, longitude: 121.0790, location: 'San Jose Municipal Hall', contact: '09210000015' }
     ];
 
     let nearestMDRRMO = mdrRmos[0];
@@ -243,7 +280,7 @@ export class MapComponent implements OnInit {
 
     mdrRmos.forEach(mdrRmo => {
       const distance = this.calculateDistance(latitude, longitude, mdrRmo.latitude, mdrRmo.longitude);
-      console.log(`Distance to ${mdrRmo.name}: ${distance} km`);  // Log the distance to see if it’s being calculated correctly
+      console.log(`Distance to ${mdrRmo.name}: ${distance} km`);
 
       if (distance < shortestDistance) {
         nearestMDRRMO = mdrRmo;
@@ -276,19 +313,21 @@ export class MapComponent implements OnInit {
       options: { position: 'topright' },
 
       onAdd: (map: L.Map) => {
-        const button = L.DomUtil.create('button', 'leaflet-bar leaflet-control leaflet-control-custom');
-        button.innerHTML = '📍 My Location';
-        button.style.backgroundColor = 'white';
-        button.style.padding = '5px';
+        const button = L.DomUtil.create('button', 'leaflet-bar');
+        button.innerHTML = '🔍 Locate Me';
 
         L.DomEvent.on(button, 'click', () => {
           navigator.geolocation.getCurrentPosition(
             (position) => {
               const lat = position.coords.latitude;
               const lon = position.coords.longitude;
-              this.map!.setView([lat, lon], 13);
+              this.map?.setView([lat, lon], 15);
+              L.marker([lat, lon]).addTo(this.map!).bindPopup('Your Location').openPopup();
             },
-            (err) => alert('Could not retrieve location')
+            (err) => {
+              console.error('Geolocation error:', err);
+              alert('Could not get your location');
+            }
           );
         });
 
@@ -299,7 +338,7 @@ export class MapComponent implements OnInit {
     this.map.addControl(new locateControl());
   }
 
-  // Navigation methods to go to different routes
+
   navigateToDashboard() {
     this.route.navigate(['/admin']);
   }

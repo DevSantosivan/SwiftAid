@@ -23,18 +23,19 @@
     .right-side-navbar{
     
     width:30% ;
-    max-width: 180px;
+    max-width: 150px;
     height: 100vh;
     background-color: #fff;
     padding: 20px 0px;
     display: flex;
     flex-direction: column;
     position: sticky;
+    z-index: 1000;
     top: 0;
     left: 0;
     .header{
         margin-bottom: 20px;
-        padding: 0px 30px;
+        padding: 0px 10px;
         
         i{
             color: red;
@@ -51,7 +52,7 @@
                 padding: 8px 30px;
                 width: 100%;
                 border-end-end-radius: 20px;
-                font-size: 12px;
+                font-size: 10px;
                 font-weight: 600;
                 color: #282727;
                 i{
@@ -60,8 +61,8 @@
             }
             li.active,
             li:hover{
-                background-color: red;
-                color: #fff;
+                background-color: #fff;
+                color: red;
                 cursor: pointer;
             }
         }
