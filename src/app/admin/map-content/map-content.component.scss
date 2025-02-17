@@ -1,0 +1,40 @@
+.map-container{
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    padding: 5px;
+    .map{
+        width: 100%;
+        height: 100%;
+        #map{
+          width: 100%; 
+          height: 100%;
+        }
+    }
+}
+.show-popup{
+    display: none;
+    width: 350px;
+    height: 100%;
+    z-index: 1000;
+    background-color: #fff;
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    padding: 10px;
+    position: absolute;
+    animation: forwardAnimate 0.3s ease forwards;
+}
+@keyframes forwardAnimate{
+
+     from{
+        width: 0px;
+     }
+     to{
+        width: 350px;
+     }
+}
+#popupContainer{
+    background-color: red;
+}
+
