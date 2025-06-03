@@ -1,146 +1,142 @@
-
 @if(isloader){
-    <div class="loaders">
-       <app-loader></app-loader>
-    </div>
- }
- 
- <div class="container-admin" style="background-color: #fff;">
+<div class="loaders">
+  <app-loader></app-loader>
+</div>
+}
+
+<div class="container-admin" style="background-color: #fff">
   <div class="right-side-navbar">
-   <div class="header">
-    <h3 class="flex-logo"><img src="assets/logo.jpg" alt="" class="logo">SwiftAid</h3>
-   </div>
+    <div class="header">
+      <h3 class="flex-logo">
+        <img src="assets/logo.jpg" alt="" class="logo" />SwiftAid
+      </h3>
+    </div>
     <div class="navlinks">
-        <ul>
-            <li class="active"><i class='bx bxs-dashboard' ></i> Dashboard</li>
-            <li (click)="navigateToMap()" ><i class='bx bxs-map' ></i> Map</li>
-            <li (click)="navigateToHistoryCall()"><i class='bx bx-history' ></i> History</li>
-            <li (click)="navigateToUserList()"><i class='bx bxs-user-detail'></i>Resident</li>
-            
-        </ul>
+      <ul>
+        <li class="active"><i class="bx bxs-dashboard"></i> Dashboard</li>
+        <li (click)="navigateToMap()"><i class="bx bxs-map"></i> Map</li>
+        <li (click)="navigateToHistoryCall()">
+          <i class="bx bx-history"></i> History
+        </li>
+        <li (click)="navigateToUserList()">
+          <i class="bx bxs-user-detail"></i>Resident
+        </li>
+      </ul>
     </div>
   </div>
- 
- <div class="left-side-container">
 
-  <div class="content-container">
-    <div class="separator">
+  <div class="left-side-container">
+    <div class="content-container">
+      <div class="separator">
         <app-admin-navbar></app-admin-navbar>
-    </div>
-    <div class="content-body">
-       
-         <div class="content_1">
-            <h4>Dashboard</h4>
-            <p>Main</p>
-            <!-- start -->
-             <div class="flex-box">
-                <div class="box">
-                    <i style="font-size: 50px; color:red" class='bx bxs-user-account'></i>
-                    <h4 style="color: red">Total Registered Account</h4>
-                    <p>{{userCount}}</p>
-                </div>
-                <div class="box">
-                    <i style="font-size: 50px; color:red" class='bx bxs-ambulance' ></i>
-                    <h4 style="color: red">Total Rescue</h4>
-                    <p>{{userCount}}</p>
-                </div>
-                <div class="box">
-                    <i style="font-size: 50px; color:red" class='bx bx-git-pull-request' ></i>
-                    <h4 style="color: red">Total Request Rescue</h4>
-                    <p>{{EmergencyRequest}}</p>
-                </div>
-             </div>
-                        <!-- end -->
-            
-             <div class="chart-flex">
-                <div class="chart">
-                    <h3>Monthly Request</h3>
-                     <p>Chart</p>
-                     <div class="pie-chart">
-                        <canvas id="MyLineChart">
-                            {{chart}}
-                        </canvas>
-
-
-                     </div>
-                </div>
-                <div class="chart">
-                    <h3>Event Category</h3>
-                    <p>Chart</p>
-                    <div class="pie-chart">
-                        <canvas id="MyPieChart">
-                            {{chart}}
-                        </canvas>
-                     </div>
-                </div>
-             </div> 
-             <h3>Yearly Event Accident</h3>
-                    <p>Chart</p>
-             <div class="history-content">
-                <canvas id="MyYearlyChart"></canvas>
-
+      </div>
+      <div class="content-body">
+        <div class="content_1">
+          <h4>Dashboard</h4>
+          <p>Main</p>
+          <!-- start -->
+          <div class="flex-box">
+            <div class="box">
+              <i
+                style="font-size: 50px; color: red"
+                class="bx bxs-user-account"
+              ></i>
+              <h4 style="color: red">Total Registered Account</h4>
+              <p>{{ userCount }}</p>
             </div>
-         </div>
-         <!-- end of content 1 -->
-         <div class="content_2">
-            <h4>Global</h4>
-            <div class="btn-flex">
-                <div class="btn">
-                    <i class='bx bxs-alarm-exclamation'></i>
-                     <h3>Global Alert</h3>
-                </div>
-                 <div class="post-details-alert">
-                    <i class='bx bxs-alarm-add'></i>
-                    <p>Create New Alert</p>
-                 </div>
-                <div class="pie-content">
-                    <h3>Recent Request</h3>
-                  <p>Recent</p>
-                  <div class="recent-list">
-                   
-                       <div class="list">
-                         <div class="profile">
-                            <div class="img">
-                                <i class='bx bxs-user-circle' ></i>
-                            </div>
-                             <span>Carlos Salvador</span> 
-                         </div>
+            <div class="box">
+              <i
+                style="font-size: 50px; color: red"
+                class="bx bxs-ambulance"
+              ></i>
+              <h4 style="color: red">Total Rescue</h4>
+              <p>{{ userCount }}</p>
+            </div>
+            <div class="box">
+              <i
+                style="font-size: 50px; color: red"
+                class="bx bx-git-pull-request"
+              ></i>
+              <h4 style="color: red">Total Request Rescue</h4>
+              <p>{{ EmergencyRequest }}</p>
+            </div>
+          </div>
+          <!-- end -->
 
-                          <div class="description">
-                             <h4>Event</h4>
-                              <p>Flood</p>
-                          </div>
-                       </div>
+          <div class="chart-flex">
+            <div class="chart">
+              <h3>Monthly Request</h3>
+              <p>Chart</p>
+              <div class="pie-chart">
+                <canvas id="MyLineChart">
+                  {{ chart }}
+                </canvas>
+              </div>
+            </div>
+            <div class="chart">
+              <h3>Event Category</h3>
+              <p>Chart</p>
+              <div class="pie-chart">
+                <canvas id="MyPieChart">
+                  {{ chart }}
+                </canvas>
+              </div>
+            </div>
+          </div>
+          <h3>Yearly Event Accident</h3>
+          <p>Chart</p>
+          <div class="history-content">
+            <canvas id="MyYearlyChart"></canvas>
+          </div>
+        </div>
+        <!-- end of content 1 -->
+        <div class="content_2">
+          <h4>Global</h4>
+          <div class="btn-flex">
+            <div class="btn">
+              <i class="bx bxs-alarm-exclamation"></i>
+              <h3>Global Alert</h3>
+            </div>
+            <div class="post-details-alert">
+              <i class="bx bxs-alarm-add"></i>
+              <p>Create New Alert</p>
+            </div>
+            <div class="pie-content">
+              <h3>Recent Request</h3>
+              <p>Recent</p>
+              <div class="recent-list">
+                <div class="list">
+                  <div class="profile">
+                    <div class="img">
+                      <i class="bx bxs-user-circle"></i>
+                    </div>
+                    <span>Carlos Salvador</span>
+                  </div>
 
-                    
-
-                       <div class="list">
-                        
-                         <div class="profile">
-                            <div class="img">
-                                <i class='bx bxs-user-circle' ></i>
-                            </div>
-                             <span>Ivan Santos</span> 
-                         </div>
-
-                          <div class="description">
-                             <h4>Event</h4>
-                              <p>Assult</p>
-                          </div>
-                       </div>
+                  <div class="description">
+                    <h4>Event</h4>
+                    <p>Flood</p>
                   </div>
                 </div>
+
+                <div class="list">
+                  <div class="profile">
+                    <div class="img">
+                      <i class="bx bxs-user-circle"></i>
+                    </div>
+                    <span>Ivan Santos</span>
+                  </div>
+
+                  <div class="description">
+                    <h4>Event</h4>
+                    <p>Assult</p>
+                  </div>
+                </div>
+              </div>
             </div>
-         </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-  
-
-
- 
- </div>
- </div>
-    
- 
- 
- 
+</div>

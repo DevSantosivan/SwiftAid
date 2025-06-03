@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AdminNavbarComponent } from '../admin-navbar/admin-navbar.component';
 import { UserService } from '../../core/user.service';
-import { User } from '../../model/users';
+import { account } from '../../model/users';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable } from 'rxjs';
 
@@ -16,7 +16,7 @@ import { FormsModule } from '@angular/forms';
     styleUrl: './user-list.component.scss'
 })
 export class UserListComponent {
-  users: User[] = [];
+  users: account[] = [];
  AddPopup : boolean = false;
    ResidentId = '';
 

@@ -1,0 +1,95 @@
+<div class="content-body">
+  <div class="content_1">
+    <h4>Emergency Tracking</h4>
+    <p>List of Request</p>
+    <div class="flex-filter">
+      <div class="flex-filter-request">
+        <span
+          class="filter-box"
+          [class.active]="activeFilter === 'All'"
+          (click)="applyFilter('All')"
+          >All</span
+        >
+        <span
+          class="filter-box"
+          [class.active]="activeFilter === 'Pending'"
+          (click)="applyFilter('Pending')"
+          >Pending</span
+        >
+        <span
+          class="filter-box"
+          [class.active]="activeFilter === 'In Progress'"
+          (click)="applyFilter('In Progress')"
+          >In Progress</span
+        >
+        <span
+          class="filter-box"
+          [class.active]="activeFilter === 'Resolved'"
+          (click)="applyFilter('Resolved')"
+          >Resolved</span
+        >
+      </div>
+      <div class="map-title">
+        <h3>Map View</h3>
+        <p>Click on a request to center the map</p>
+      </div>
+    </div>
+    <div class="flex-request">
+      <div class="list-request">
+        <div
+          *ngFor="let req of filteredRequests"
+          class="request-item"
+          (click)="centerMapOnRequest(req)"
+        >
+          <div class="request-details">
+            <p><i class="bx bx-street-view"></i> {{ req.address }}</p>
+            <div class="img">
+              <img [src]="req.image" alt="Incident Image" />
+            </div>
+
+            <div class="details">
+              <h5>{{ req.name }}</h5>
+              <p>
+                Emergency Type: <strong>{{ req.description }}</strong>
+              </p>
+              @if (req.status === 'Pending') {
+              <p>
+                <span class="pending">{{ req.status }}</span>
+              </p>
+              } @if (req.status === 'In-Progress') {
+              <p>
+                <span class="In-progress">{{ req.status }}</span>
+              </p>
+              } @if (req.status === 'resolved') {
+              <p>
+                <span class="resolved">{{ req.status }}</span>
+              </p>
+              }
+
+              <div class="staff-info">
+                <img [src]="req.image" alt="Staff Photo" />
+                <span
+                  >Assisted by: <strong>{{ req.name }}</strong></span
+                >
+              </div>
+
+              <div class="request-actions">
+                <button class="view">View Details</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="map-request">
+        <div class="map-header">
+          <div
+            class="map"
+            #mapContainer
+            style="width: 100%; height: 85vh"
+          ></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,21 @@
+<div class="content-body">
+  <div class="content_1">
+    <h4>Team/Team-details</h4>
+    <p>Manage Team Members</p>
+    <div *ngIf="loading">Loading member...</div>
+
+    <div class="grid" *ngIf="!loading && member; else notFound">
+      <p><strong>Email:</strong> {{ member.email }}</p>
+      <p><strong>Full Name:</strong> {{ member.fullName }}</p>
+      <p><strong>Role:</strong> {{ member.role }}</p>
+      <p><strong>Role:</strong> {{ member.contactNumber }}</p>
+
+      <p><strong>Role:</strong> {{ member.office_id }}</p>
+      <p><strong>Role:</strong> {{ member.charge }}</p>
+    </div>
+
+    <ng-template #notFound>
+      <p>Member not found.</p>
+    </ng-template>
+  </div>
+</div>

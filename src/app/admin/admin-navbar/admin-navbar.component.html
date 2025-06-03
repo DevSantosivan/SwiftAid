@@ -1,28 +1,43 @@
-
 <div class="navbar">
-    <!-- <divs class="search-bar-container">
-         <div class="search-bar">
-            <i class='bx bx-search'></i>
-            <input type="text" placeholder="Search ">
-         </div>
-    </divs> -->
-    <div class="users" (click)="showSide()">
-         <div class="user-name">
-        
-         </div>
-         
-    </div>
-    </div>
-   @if(showSideBar){
-     <div class="user-details-hover">
-          <div class="exit" ><i class='bx bx-left-arrow-alt' (click)="exit()"></i></div>
-          <div class="user-pic">
-             
-          </div>
-          <ul>
-               <li></li>
-               <li>Setting</li>
-               <li (click)="logout()">Logout</li>
-          </ul>
-      </div>
-   }
+  <div class="search-bar-container"></div>
+  <div
+    class="notification"
+    style="
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+    "
+  >
+    <i class="bx bx-bell" style="position: relative">
+      <span
+        style="
+          position: absolute;
+          top: -6px;
+          right: -6px;
+          width: 15px;
+          height: 15px;
+          background: red;
+          border-radius: 50%;
+          display: inline-block;
+          border: 2px solid white;
+        "
+      ></span>
+    </i>
+    <span class="notification-name" style="margin-left: 8px">Ivan Santos</span>
+  </div>
+  <div class="users" (click)="showSide()">
+    <div class="user-name"></div>
+  </div>
+</div>
+@if(showSideBar){
+<div class="user-details-hover">
+  <div class="exit"><i class="bx bx-left-arrow-alt" (click)="exit()"></i></div>
+  <div class="user-pic"></div>
+  <ul>
+    <li></li>
+    <li>Setting</li>
+    <li (click)="logout()">Logout</li>
+  </ul>
+</div>
+}

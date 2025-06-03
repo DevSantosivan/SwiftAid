@@ -1,48 +1,97 @@
 // user.service.ts
 import { Injectable } from '@angular/core';
-import { collection, getDocs, getFirestore } from 'firebase/firestore'; // Firebase Firestore methods
-import { User } from '../model/users';
+import {
+  collection,
+  getDocs,
+  getFirestore,
+  query,
+  where,
+  deleteDoc,
+  doc,
+  updateDoc,
+  getDoc,
+  setDoc,
+} from 'firebase/firestore';
+import { account } from '../model/users';
 import { environment } from '../model/environment';
 import { initializeApp } from 'firebase/app';
-import { Observable } from 'rxjs';
+import { uid } from 'chart.js/dist/helpers/helpers.core';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class UserService {
-  private db; // Declare db as a private member
+  private db;
 
   constructor() {
-    // Initialize Firebase and Firestore
-    const firebaseApp = initializeApp(environment.firebaseConfig); // Initialize Firebase
-    this.db = getFirestore(firebaseApp); // Get Firestore instance
+    const firebaseApp = initializeApp(environment.firebaseConfig);
+    this.db = getFirestore(firebaseApp);
   }
+
   async getUserCount(): Promise<number> {
     try {
-      // Get reference to the 'users' collection
       const usersCollection = collection(this.db, 'users');
-      
-      // Fetch the documents
       const snapshot = await getDocs(usersCollection);
-      
-      // Return the count of documents in the collection
-      return snapshot.size; // size property gives the count of documents
+      return snapshot.size;
     } catch (error) {
       console.error('Error fetching user count:', error);
       throw error;
     }
   }
-  // Fetch users from Firestore
-  async getUsers(): Promise<User[]> {
+
+  async getUsers(): Promise<account[]> {
     try {
-      // Get reference to the 'users' collection
       const usersCollection = collection(this.db, 'users');
-      const snapshot = await getDocs(usersCollection); // Fetch the documents
-      const usersList: User[] = snapshot.docs.map(doc => doc.data() as User); // Map Firestore data to User model
-      return usersList;
+      const snapshot = await getDocs(usersCollection);
+      return snapshot.docs.map((doc) => doc.data() as account);
     } catch (error) {
       console.error('Error fetching users:', error);
       throw error;
     }
+  }
+
+  async getAdmins(): Promise<account[]> {
+    try {
+      const usersCollection = collection(this.db, 'users');
+      const adminQuery = query(usersCollection, where('role', '==', 'admin'));
+      const snapshot = await getDocs(adminQuery);
+      return snapshot.docs.map((doc) => {
+        const data = doc.data() as Omit<account, 'uid'>;
+        return {
+          ...data,
+          uid: doc.id, // <-- assign doc.id to uid
+          id: data.id || '', // optionally fill id if needed
+        };
+      });
+    } catch (error) {
+      console.error('Error fetching admin users:', error);
+      throw error;
+    }
+  }
+
+  async getUserById(uid: string): Promise<account | null> {
+    try {
+      const userRef = doc(this.db, 'users', uid);
+      const snapshot = await getDoc(userRef);
+      if (snapshot.exists()) {
+        return {
+          ...(snapshot.data() as account),
+          uid: snapshot.id,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching user by ID:', error);
+      throw error;
+    }
+  }
+  updateUser(uid: string, data: any): Promise<void> {
+    const userDocRef = doc(this.db, 'users', uid);
+    return updateDoc(userDocRef, data);
+  }
+
+  deleteUser(uid: string): Promise<void> {
+    const userDocRef = doc(this.db, 'users', uid);
+    return deleteDoc(userDocRef);
   }
 }

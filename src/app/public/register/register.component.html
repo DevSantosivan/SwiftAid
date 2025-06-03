@@ -1,34 +1,33 @@
 <div class="login-container">
     <form [formGroup]="registerForm">
-        <div class="validation">
-            <strong>Note</strong>
-            <p>Please fill in all fields to create your account.</p>
-        </div>
-        
-        <div class="login-description">
-            <h3><span>Register</span></h3>
-            <p>Fill in your details to create an account</p>
-        </div>
+        @if(errorMessage){
+            <div class="validation">
+                <strong>Note</strong>
+                <p>{{errorMessage}}</p>
+            </div>
+        }
 
         <div class="input-container">
-            <input type="text" id="name-input" formControlName="name">
-            <label for="name-input" class="label">Head in Charge</label>
+            <input type="text" id="charge" formControlName="charge">
+            <label for="charge" class="label">Head in Charge</label>
             <div class="underline"></div>
         </div>
         <div class="input-container">
-            <input type="text" id="name-input" formControlName="name">
-            <label for="name-input" class="label">Office ID number</label>
+            <input type="text" id="office_id" formControlName="office_id">
+            <label for="office_id" class="label">Office ID number</label>
             <div class="underline"></div>
         </div>
         <div class="input-container">
-            <input type="text" id="email-input" formControlName="email">
-            <label for="email-input" class="label">Contact number</label>
+            <input type="text" id="contactNumber" formControlName="contactNumber">
+            <label for="contactNumber" class="label">Contact number</label>
             <div class="underline"></div>
         </div>
         <div class="input-container">
             <input type="text" id="email-input" formControlName="email">
             <label for="email-input" class="label">Email</label>
-            <div class="underline"></div>
+         
+                <div class="underline"></div>
+          
         </div>
 
         <div class="input-container">

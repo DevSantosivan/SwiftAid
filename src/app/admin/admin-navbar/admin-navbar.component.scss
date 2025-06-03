@@ -1,61 +1,79 @@
-.user-details-hover{
-    .exit{
-        position: absolute;
-        top: 0;
-        left: 0;
-        margin: 5px;
-        i{
-            font-size: 33px;
-            color: #fff;
-            transition: 0.2s ease-in;
-        }
-        i:hover{
-            transform: rotate(180deg);
-            font-size: 33px;
-            cursor: pointer;
-        }
-    }
-    width: 200px;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    z-index: 100000;
-    background-color: red;
-    position:fixed;
+.navbar {
+  border-bottom: 1px solid #e0e0e0;
+}
+.user-details-hover {
+  .exit {
+    position: absolute;
     top: 0;
-    right: 0;
-    padding-top: 50px;
-    animation: details_side 0.4s ease-in-out forwards;
-  
-    .user-pic{
-        width: 60px;
-        height: 60px;
-        background-color: #fff;
-        border-radius: 50%;
-        margin-bottom: 20px;
+    left: 0;
+    margin: 5px;
+    i {
+      font-size: 33px;
+      color: #fff;
+      transition: 0.2s ease-in;
     }
-    ul{
-        list-style: none;
-        li{
-            color: #fff;
-            margin: 8px 0px;
-        }
-        li:hover{
-            font-weight: 700;
-            cursor: pointer;
-        }
-       
+    i:hover {
+      transform: rotate(180deg);
+      font-size: 33px;
+      cursor: pointer;
     }
+  }
+  width: 200px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  z-index: 100000;
+  background-color: #121212;
+  position: fixed;
+  top: 0;
+  right: 0;
+  padding-top: 50px;
+  animation: details_side 0.4s ease-in-out forwards;
+
+  .user-pic {
+    width: 60px;
+    height: 60px;
+    background-color: #fff;
+    border-radius: 50%;
+    margin-bottom: 20px;
+  }
+  ul {
+    list-style: none;
+    li {
+      color: #fff;
+      margin: 8px 0px;
+    }
+    li:hover {
+      font-weight: 700;
+      cursor: pointer;
+    }
+  }
 }
 
-@keyframes details_side{
-       from{
-          width: 0px;
-          
-       }
-       to{
-        width: 200px;
-       }
+@keyframes details_side {
+  from {
+    width: 0px;
+  }
+  to {
+    width: 200px;
+  }
+}
+.notification i {
+  border: 1px solid #e0e0e0;
+  border-radius: 50%;
+  padding: 5px;
+  font-size: 20px;
+}
+.notification i:hover {
+  background-color: #e0e0e0;
+  cursor: pointer;
+}
+.notification-name {
+  margin: 0px 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  padding: 5px;
+  font-size: 14px;
 }

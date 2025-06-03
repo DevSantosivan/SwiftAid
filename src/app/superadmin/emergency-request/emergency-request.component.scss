@@ -1,0 +1,219 @@
+.content-body {
+  width: 100%;
+  height: 100%;
+}
+p {
+  font-size: 13px;
+  color: #666;
+}
+.pending {
+  color: #ff9800;
+  border: 1px solid #ff9800;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+.in-progress {
+  color: #2196f3;
+}
+.completed {
+  color: #4caf50;
+}
+.content_1 {
+  width: 100%;
+
+  padding: 0px 20px;
+  overflow: hidden;
+}
+.flex-filter {
+  width: 100%;
+  display: flex;
+
+  align-items: center;
+  position: relative;
+  top: 20px;
+}
+.flex-filter-request {
+  display: flex;
+}
+
+.filter-box {
+  display: flex;
+  align-items: center;
+  padding: 0.2rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0px 5px;
+}
+.map-title {
+  display: flex;
+  flex-direction: column;
+  margin: 0px 10px;
+  h3 {
+    font-size: 14px;
+  }
+}
+.filter-box.active {
+  background-color: rgba(255, 0, 0, 0.644);
+  color: white;
+  border-color: red;
+}
+
+.pulse-marker {
+  position: relative;
+  overflow: visible;
+}
+
+.flex-request {
+  width: 100%;
+  display: flex;
+  margin-top: 40px;
+  gap: 20px;
+}
+
+.list-request {
+  width: 100%;
+  height: 80vh;
+  max-width: 25%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 10px;
+  scroll-behavior: smooth;
+  padding: 8px;
+  /* Firefox Scrollbar Support */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+/* WebKit Browsers Scrollbar */
+.list-request::-webkit-scrollbar {
+  width: 8px;
+}
+
+.list-request::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.list-request::-webkit-scrollbar-thumb {
+  background: rgba(255, 0, 0, 0.438);
+  border-radius: 4px;
+}
+
+.list-request::-webkit-scrollbar-thumb:hover {
+  background: darkred;
+}
+
+.map-request {
+  width: 100%;
+  height: 80%;
+  overflow: hidden;
+}
+.map {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* Request Item Container */
+.request-item {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+}
+.request-item:hover {
+  background-color: #b6b4b44d;
+  transition: 0.3s ease-in;
+  cursor: pointer;
+}
+
+/* Details Layout */
+.request-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.request-details .img {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.request-details .img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Details Column */
+.flex-details {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Text Content */
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.details h5 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.details p {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+}
+
+/* Staff Info */
+.staff-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.staff-info img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.staff-info span {
+  font-size: 14px;
+  color: #444;
+}
+
+/* Buttons */
+.request-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.request-actions button {
+  border: 1px solid #ccc;
+  padding: 6px 12px;
+  border-radius: 5px;
+  background-color: #fff;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.request-actions button:hover {
+  background-color: #e0e0e0;
+}

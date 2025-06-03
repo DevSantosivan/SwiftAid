@@ -56,7 +56,7 @@
                   <td>{{ request.email }}</td>
                   <td>{{ request.contactNumber }}</td>
                   <td>{{ request.address }}</td>
-                  <td>{{ request.event }}</td>
+          
                   <td>{{ request.currentLocation }}</td>
                   <td>{{ request.timestamp?.toDate().toLocaleString() }}</td>
                   <i class='bx bxs-trash' (click)="deleteRequest(request.id || '')"></i>

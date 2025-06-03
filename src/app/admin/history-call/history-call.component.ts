@@ -48,7 +48,7 @@ export class HistoryCallComponent {
         // Update the currentLocation based on latitude/longitude for each request
         this.updateCurrentLocationForRequests();
       });
-  
+    
     } catch (error) {
       console.error('Error fetching requests:', error);
     }

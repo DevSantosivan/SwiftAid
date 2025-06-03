@@ -1,0 +1,129 @@
+<div class="content-body">
+  <div class="content_1">
+    <div class="header">
+      <div class="text">
+        <h4>Team</h4>
+        <p>Manage Team Members</p>
+      </div>
+      <div class="search-bar">
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (input)="onSearchChange()"
+          placeholder="Search team members..."
+        />
+        <button type="button">
+          <i class="bx bx-search"></i>
+        </button>
+      </div>
+    </div>
+    <!-- <div class="add-member">
+      <button (click)="openAddMemberModal()">
+        <i class="bx bx-plus"></i> Add Member
+      </button> -->
+
+    <div class="team-container">
+      <div
+        class="team-member"
+        *ngFor="let member of filteredMembers; let i = index"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="action" (click)="toggleDropdown(i)">
+          <i class="bx bx-dots-vertical-rounded"></i>
+          <div class="dropdown-menu" *ngIf="openDropdownIndex === i">
+            <ul>
+              <li (click)="editMember(member)"><i class='bx  bx-edit-alt'></i>  Edit</li>
+              <li (click)="viewMember(member.uid)"><i class='bx  bx-eye-alt'></i>  View</li>
+              <li (click)="confirmDeleteMember(member)"><i class='bx  bx-trash-alt'></i>  Delete</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="member-info">
+          @if(member.profilePicture) {
+          <img [src]="member.profilePicture" alt="Team Member" />
+          } @else {
+          <img
+            src="https://i.pinimg.com/736x/32/e4/61/32e46132a367eb48bb0c9e5d5b659c88.jpg"
+            alt=""
+          />
+
+          }
+          <h5>{{ member.email }}</h5>
+          <p>{{ member.fullName }}</p>
+        </div>
+        <p class="staff-label">{{ member.role }}</p>
+      </div>
+
+      <!-- Add more team members as needed -->
+    </div>
+
+    <div *ngIf="filteredMembers.length === 0" class="loading">
+      <svg width="64px" height="48px">
+        <polyline
+          points="0.157 23.954, 14 23.954, 21.843 48, 43 0, 50 24, 64 24"
+          id="back"
+        ></polyline>
+        <polyline
+          points="0.157 23.954, 14 23.954, 21.843 48, 43 0, 50 24, 64 24"
+          id="front"
+        ></polyline>
+      </svg>
+      <p>No team members found.</p>
+    </div>
+  </div>
+
+  <!-- Router outlet to load team-details inside this page -->
+</div>
+<!-- team.component.html -->
+
+<div class="modal" *ngIf="selectedMember">
+  <div class="modal-content">
+    <span class="close" (click)="closeModal()">&times;</span>
+    <h2>Edit Member</h2>
+    <form (ngSubmit)="updateMember()">
+      <label>Email</label>
+      <input [(ngModel)]="selectedMember.email" name="email" required />
+
+      <label>Full Name</label>
+      <input [(ngModel)]="selectedMember.fullName" name="fullName" required />
+
+      <label>Role</label>
+      <input [(ngModel)]="selectedMember.role" name="role" />
+
+      <button type="submit">Update</button>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal" *ngIf="deleteMemberToConfirm">
+  <div class="modal-content delete-modal">
+    <span class="close" (click)="cancelDelete()">
+      <i class="bx bx-x"></i>
+    </span>
+
+    <h2>
+      <i
+        class="bx bx-trash"
+        style="color: #e74c3c; vertical-align: middle; margin-right: 8px"
+      ></i>
+      Confirm Delete
+    </h2>
+
+    <p>
+      Are you sure you want to <strong>delete</strong>
+      <span class="member-name">{{ deleteMemberToConfirm.fullName }}</span
+      >? This action <span class="danger-text">cannot be undone</span>.
+    </p>
+
+    <div class="modal-buttons">
+      <button class="btn btn-cancel" (click)="cancelDelete()">
+        <i class="bx bx-x"></i> Cancel
+      </button>
+      <button class="btn btn-delete" (click)="confirmDelete()">
+        <i class="bx bx-trash"></i> Delete
+      </button>
+    </div>
+  </div>
+</div>

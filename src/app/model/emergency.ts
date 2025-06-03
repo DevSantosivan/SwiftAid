@@ -1,6 +1,7 @@
 export interface EmergencyRequest {
   id?: string;
   name: string;
+  image: string;
   address: string;
   contactNumber: string;
   email: string;
@@ -9,6 +10,7 @@ export interface EmergencyRequest {
   needs: string;
   timestamp: any;
   currentLocation?: string;
-  event:string;
-  }
-  
+  description?: string;
+  status: string; // e.g., 'pending', 'in-progress', 'resolved'
+  assignedTo?: string; // ID of the staff member assigned to this request
+}

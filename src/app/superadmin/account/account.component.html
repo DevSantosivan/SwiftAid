@@ -1,0 +1,166 @@
+<div class="content-body">
+  <div class="content_1">
+    <h4>Account Management</h4>
+    <p>List of account</p>
+
+    <!-- Search Bar Start -->
+    <div class="search-bar">
+      <input type="text" placeholder="Search team members..." />
+      <button type="button">
+        <i class="bx bx-search"></i>
+      </button>
+    </div>
+    <!-- Search Bar End -->
+
+    <!-- Tabs Start -->
+    <ul class="nav nav-tabs">
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          [class.active]="activeTab === 'all'"
+          (click)="setTab('all')"
+        >
+          <i class="bx bx-user"></i> All Accounts
+        </a>
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          [class.active]="activeTab === 'resident'"
+          (click)="setTab('resident')"
+        >
+          <i class="bx bx-group"></i> Resident
+        </a>
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          [class.active]="activeTab === 'staff'"
+          (click)="setTab('staff')"
+        >
+          <i class="bx bx-id-card"></i> Staff
+        </a>
+      </li>
+    </ul>
+    <!-- Tabs End -->
+
+    <!-- Tab Content -->
+    <!-- All Accounts -->
+    <!-- All Accounts -->
+    <div *ngIf="activeTab === 'all'">
+      <div class="account-header">
+        <span class="col-name">Name</span>
+        <span class="col-email">Email</span>
+        <span class="col-contact">Contact</span>
+        <span class="col-extra">Address / Office ID</span>
+        <span class="col-role">Role</span>
+        <span class="col-action">Actions</span>
+      </div>
+
+      <div class="account-list">
+        <div
+          class="account-row"
+          *ngFor="let acc of allAccounts; let i = index"
+          (click)="$event.stopPropagation()"
+        >
+          <span class="col-name">{{ acc.fullName }}</span>
+          <span class="col-email">{{ acc.email }}</span>
+          <span class="col-contact">{{ acc.contactNumber }}</span>
+          <span class="col-extra">
+            {{ acc.role === "resident" ? acc.address : acc.office_id }}
+          </span>
+          <span class="col-role">{{ acc.role | titlecase }}</span>
+          <span class="col-action">
+            <div
+              class="action-dropdown"
+              (click)="toggleDropdown(i); $event.stopPropagation()"
+            >
+              &#x22EE;
+              <div class="dropdown-menu" *ngIf="openDropdownIndex === i">
+                <button (click)="viewAccount(acc)">View</button>
+                <button (click)="editAccount(acc)">Edit</button>
+                <button (click)="deleteAccount(acc)">Delete</button>
+              </div>
+            </div>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resident Accounts -->
+    <div *ngIf="activeTab === 'resident'">
+      <div class="account-header">
+        <span class="col-name">Name</span>
+        <span class="col-email">Email</span>
+        <span class="col-contact">Contact</span>
+        <span class="col-extra">Address</span>
+        <span class="col-action">Actions</span>
+      </div>
+
+      <div class="account-list">
+        <div
+          class="account-row"
+          *ngFor="let acc of residentAccounts; let i = index"
+          (click)="$event.stopPropagation()"
+        >
+          <span class="col-name">{{ acc.fullName }}</span>
+          <span class="col-email">{{ acc.email }}</span>
+          <span class="col-contact">{{ acc.contactNumber }}</span>
+          <span class="col-extra">{{ acc.address }}</span>
+          <span class="col-action">
+            <div
+              class="action-dropdown"
+              (click)="toggleDropdown(i); $event.stopPropagation()"
+            >
+              &#x22EE;
+              <div class="dropdown-menu" *ngIf="openDropdownIndex === i">
+                <button (click)="viewAccount(acc)">View</button>
+                <button (click)="editAccount(acc)">Edit</button>
+                <button (click)="deleteAccount(acc)">Delete</button>
+              </div>
+            </div>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Staff Accounts -->
+    <div *ngIf="activeTab === 'staff'">
+      <div class="account-header">
+        <span class="col-name">Name</span>
+        <span class="col-email">Email</span>
+        <span class="col-contact">Contact</span>
+        <span class="col-extra">Office ID</span>
+
+        <span class="col-action">Actions</span>
+      </div>
+
+      <div class="account-list">
+        <div
+          class="account-row"
+          *ngFor="let acc of staffAccounts; let i = index"
+          (click)="$event.stopPropagation()"
+        >
+          <span class="col-name">{{ acc.fullName }}</span>
+          <span class="col-email">{{ acc.email }}</span>
+          <span class="col-contact">{{ acc.contactNumber }}</span>
+          <span class="col-extra">{{ acc.office_id }}</span>
+
+          <span class="col-action">
+            <div
+              class="action-dropdown"
+              (click)="toggleDropdown(i); $event.stopPropagation()"
+            >
+              &#x22EE;
+              <div class="dropdown-menu" *ngIf="openDropdownIndex === i">
+                <button (click)="viewAccount(acc)">View</button>
+                <button (click)="editAccount(acc)">Edit</button>
+                <button (click)="deleteAccount(acc)">Delete</button>
+              </div>
+            </div>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
