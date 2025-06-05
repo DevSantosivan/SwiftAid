@@ -102,15 +102,8 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.scss",
-              "node_modules/leaflet/dist/leaflet.css",
-              "node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.css"
-            ],
-            "scripts": [
-              "node_modules/leaflet/dist/leaflet.js",
-              "node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.js"
-            ]
+            "styles": ["src/styles.scss"],
+            "scripts": []
           }
         }
       }

@@ -4,7 +4,7 @@ import { DashboardComponent } from './dashboard/dashboard.component';
 import { EmergencyRequestComponent } from './emergency-request/emergency-request.component';
 import { TeamComponent } from './team/team.component';
 import { AccountComponent } from './account/account.component';
-import { FeedbackComponent } from '../superadmiiin/feedback/feedback.component';
+import { FeedbackComponent } from './feedback/feedback.component';
 import { InfoComponent } from './info/info.component';
 import { TeamStaffComponent } from './team-staff/team-staff.component';
 
