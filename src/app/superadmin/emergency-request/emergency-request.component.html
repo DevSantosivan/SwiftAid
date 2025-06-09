@@ -83,11 +83,33 @@
 
       <div class="map-request">
         <div class="map-header">
+          <!-- MAP CONTAINER -->
           <div
             class="map"
             #mapContainer
             style="width: 100%; height: 85vh"
           ></div>
+
+          <!-- FLOATING INFO BOX -->
+          <div
+            #floatingInfoBox
+            class="floating-info-box"
+            style="
+              display: none;
+              position: absolute;
+              top: 15px;
+              right: 15px;
+              z-index: 999;
+              background: white;
+              padding: 10px 15px;
+              border-radius: 6px;
+              box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+              font-size: 14px;
+            "
+          >
+            <strong>Distance:</strong> <span id="distanceText">--</span><br />
+            <strong>Duration:</strong> <span id="durationText">--</span>
+          </div>
         </div>
       </div>
     </div>

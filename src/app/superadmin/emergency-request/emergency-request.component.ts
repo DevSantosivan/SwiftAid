@@ -25,6 +25,7 @@ export class EmergencyRequestComponent implements AfterViewInit {
   staffLocation: L.LatLngExpression = [12.37752449490026, 121.03153380797781];
   staffMarker?: L.Marker;
   routingControl?: any;
+  routeLine?: L.Polyline;
 
   constructor(private requestService: EmergencyRequestService) {}
 
@@ -45,8 +46,8 @@ export class EmergencyRequestComponent implements AfterViewInit {
 
     this.staffMarker = L.marker(this.staffLocation, {
       icon: L.icon({
-        iconUrl: 'assets/logopng.jpg',
-        iconSize: [30, 40],
+        iconUrl: 'assets/ambulance.png',
+        iconSize: [70, 60],
         iconAnchor: [15, 40],
       }),
     })
@@ -82,20 +83,10 @@ export class EmergencyRequestComponent implements AfterViewInit {
     // Add filtered markers
     this.filteredRequests.forEach((req) => {
       if (req.latitude && req.longitude) {
-        const requestIcon = L.divIcon({
-          html: `
-            <div style="
-              width: 80px;
-              height: 80px;
-              background: white url('${
-                req.image || 'assets/default-request-icon.png'
-              }') center/cover no-repeat;
-              box-shadow: 0 0 6px rgba(0,0,0,0.4);
-            "></div>
-          `,
-          iconSize: [40, 40],
-          iconAnchor: [20, 40],
-          className: '',
+        const requestIcon = L.icon({
+          iconUrl: 'assets/logo22.png',
+          iconSize: [70, 60],
+          iconAnchor: [15, 40], // anchor at bottom center
         });
 
         const marker = L.marker([req.latitude, req.longitude], {
@@ -114,25 +105,91 @@ export class EmergencyRequestComponent implements AfterViewInit {
     this.map.fitBounds(group.getBounds().pad(0.2));
   }
 
+  // centerMapOnRequest(request: EmergencyRequest): void {
+  //   if (!request.latitude || !request.longitude) return;
+
+  //   const requestLatLng = L.latLng(request.latitude, request.longitude);
+
+  //   this.markers.forEach((marker) => this.map.removeLayer(marker));
+  //   this.markers = [];
+
+  //   if (this.routingControl) {
+  //     this.map.removeControl(this.routingControl);
+  //     this.routingControl = undefined;
+  //   }
+
+  //   const marker = L.marker(requestLatLng)
+  //     .addTo(this.map)
+  //     .bindPopup(
+  //       `
+  //       <div>
+  //         <img src="${request.image || 'assets/default-request-icon.png'}"
+  //              alt="${request.name}"
+  //              style="width: 100%; height: 100px; object-fit: cover; margin-bottom: 5px;">
+  //         <div><strong>${request.name}</strong></div>
+  //         <div>${request.address}</div>
+  //       </div>
+  //     `
+  //     )
+  //     .openPopup();
+
+  //   this.markers.push(marker);
+  //   const routing = (L as any).Routing;
+
+  //   if (!routing || !routing.control) {
+  //     console.error('Leaflet Routing Machine not loaded properly!');
+  //     return;
+  //   }
+
+  //   this.routingControl = (L as any).Routing.control({
+  //     waypoints: [L.latLng(this.staffLocation), requestLatLng],
+  //     router: (L as any).Routing.osrmv1({
+  //       serviceUrl: 'https://router.project-osrm.org/route/v1',
+  //     }),
+  //     lineOptions: {
+  //       styles: [{ color: 'red', opacity: 0.8, weight: 5 }],
+  //       extendToWaypoints: false,
+  //       missingRouteTolerance: 50,
+  //     },
+  //     createMarker: () => null,
+  //     addWaypoints: false,
+  //     draggableWaypoints: false,
+  //     fitSelectedRoutes: true,
+  //     show: false,
+  //   }).addTo(this.map);
+
+  // }
+
   centerMapOnRequest(request: EmergencyRequest): void {
     if (!request.latitude || !request.longitude) return;
 
     const requestLatLng = L.latLng(request.latitude, request.longitude);
 
+    // Remove old markers & route line
     this.markers.forEach((marker) => this.map.removeLayer(marker));
     this.markers = [];
 
-    if (this.routingControl) {
-      this.map.removeControl(this.routingControl);
-      this.routingControl = undefined;
+    if (this.routeLine) {
+      this.map.removeLayer(this.routeLine);
+      this.routeLine = undefined;
     }
 
-    const marker = L.marker(requestLatLng)
+    // Create custom marker icon
+    const requestIcon = L.icon({
+      iconUrl: 'assets/logo22.png',
+      iconSize: [70, 60],
+      iconAnchor: [15, 40],
+    });
+
+    // Add marker with custom icon
+    const marker = L.marker(requestLatLng, {
+      icon: requestIcon,
+    })
       .addTo(this.map)
       .bindPopup(
         `
         <div>
-          <img src="${request.image || 'assets/default-request-icon.png'}" 
+          <img src="${request.image || 'assets/logo22.png'}" 
                alt="${request.name}" 
                style="width: 100%; height: 100px; object-fit: cover; margin-bottom: 5px;">
           <div><strong>${request.name}</strong></div>
@@ -144,21 +201,21 @@ export class EmergencyRequestComponent implements AfterViewInit {
 
     this.markers.push(marker);
 
-    this.routingControl = (L as any).Routing.control({
-      waypoints: [L.latLng(this.staffLocation), requestLatLng],
-      router: (L as any).Routing.osrmv1({
-        serviceUrl: 'https://router.project-osrm.org/route/v1',
-      }),
-      lineOptions: {
-        styles: [{ color: 'red', opacity: 0.8, weight: 5 }],
-        extendToWaypoints: false,
-        missingRouteTolerance: 50,
-      },
-      createMarker: () => null,
-      addWaypoints: false,
-      draggableWaypoints: false,
-      fitSelectedRoutes: true,
-      show: false,
+    // Draw straight line from staff to request
+    const points = [this.staffLocation, requestLatLng];
+    this.routeLine = L.polyline(points, {
+      color: 'red',
+      weight: 4,
+      opacity: 0.7,
+      dashArray: '10,6',
     }).addTo(this.map);
+
+    // Adjust view
+    const group = L.featureGroup([
+      ...this.markers,
+      this.staffMarker!,
+      this.routeLine,
+    ]);
+    this.map.fitBounds(group.getBounds().pad(0.2));
   }
 }

@@ -187,6 +187,7 @@ export class HomeComponent implements OnInit {
 
       this.notificationService.requestNotificationPermission();
       this.notificationService.listenToEmergencyRequests();
+      this.notificationService.listenForFCMMessages();
     } catch (error) {
       console.error('Error fetching data:', error);
     }
