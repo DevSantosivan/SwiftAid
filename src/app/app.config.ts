@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection, isDevMode } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getFirestore, provideFirestore } from '@angular/fire/firestore';
@@ -14,6 +14,7 @@ import { Scroll } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { provideMessaging, getMessaging } from '@angular/fire/messaging';
+import { provideServiceWorker } from '@angular/service-worker';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,6 +25,9 @@ export const appConfig: ApplicationConfig = {
     provideAuth(() => getAuth()),
     provideFirestore(() => getFirestore()),
     provideMessaging(() => getMessaging()),
-    provideCharts(withDefaultRegisterables()),
+    provideCharts(withDefaultRegisterables()), provideServiceWorker('ngsw-worker.js', {
+            enabled: !isDevMode(),
+            registrationStrategy: 'registerWhenStable:30000'
+          }),
   ],
 };

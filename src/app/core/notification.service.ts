@@ -77,7 +77,7 @@ export class NotificationService {
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(title, {
         body: message,
-        icon: 'assets/logopng.jpg',
+        icon: 'assets/logo22.png',
       });
     }
   }

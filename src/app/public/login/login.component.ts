@@ -13,6 +13,7 @@ import { AuthService } from '../../core/auth.service';
 
 import { CommonModule } from '@angular/common';
 import { LoadingScreenComponent } from '../loading-screen/loading-screen.component';
+import { NavbarComponent } from '../navbar/navbar.component';
 
 declare const gapi: any;
 @Component({

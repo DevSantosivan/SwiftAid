@@ -18,8 +18,8 @@
         >
         <span
           class="filter-box"
-          [class.active]="activeFilter === 'Responding'"
-          (click)="applyFilter('Responding')"
+          [class.active]="activeFilter === 'In Progress'"
+          (click)="applyFilter('In Progress')"
           >In Progress</span
         >
         <span
@@ -49,16 +49,14 @@
 
             <div class="details">
               <h5>{{ req.name }}</h5>
-              <p>
-                Emergency Type: <strong>{{ req.description }}</strong>
-              </p>
+              <p>Emergency Type: <strong>{{ req.description }}</strong></p>
               @if (req.status === 'Pending') {
               <p>
                 <span class="pending">{{ req.status }}</span>
               </p>
               } @if (req.status === 'Responding') {
               <p>
-                <span class="in-progress">In-Progress</span>
+                <span class="In-progress">{{ req.status }}</span>
               </p>
               } @if (req.status === 'resolved') {
               <p>
@@ -66,15 +64,22 @@
               </p>
               }
 
-              <div class="staff-info">
-                <img [src]="req.image" alt="Staff Photo" />
-                <span
-                  >Assisted by: <strong>{{ req.name }}</strong></span
-                >
-              </div>
+              <span
+                >Assisted by:
+                <strong
+                  >{{ req.staffFirstName }} {{ req.staffLastName }}</strong
+                ></span
+              >
 
               <div class="request-actions">
                 <button class="view">View Details</button>
+                <button
+                  class="view"
+                  (click)="$event.stopPropagation(); acceptRequest(req)"
+                  [disabled]="req.status !== 'Pending'"
+                >
+                  {{ req.status === 'Pending' ? 'Accept' : 'Accepted' }}
+                </button>
               </div>
             </div>
           </div>

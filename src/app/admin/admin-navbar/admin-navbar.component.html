@@ -24,7 +24,9 @@
         "
       ></span>
     </i>
-    <span class="notification-name" style="margin-left: 8px">Ivan Santos</span>
+    <span class="notification-name" style="margin-left: 8px">{{
+      currentUser?.email || "User Name"
+    }}</span>
   </div>
   <div class="users" (click)="showSide()">
     <div class="user-name"></div>

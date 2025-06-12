@@ -28,6 +28,7 @@
     "@angular/forms": "^20.0.2",
     "@angular/platform-browser": "^20.0.2",
     "@angular/router": "^20.0.2",
+    "@angular/service-worker": "^20.0.2",
     "chart.js": "^4.4.9",
     "firebase": "^11.9.0",
     "install": "^0.13.0",

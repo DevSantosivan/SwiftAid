@@ -1,45 +1,83 @@
+<div class="navbar">
+  <img
+    src="./../../../assets/arrow-left-circle (1).png"
+    width="40"
+    height="40"
+    alt=""
+  />
+  <img src="./../../../assets/logo22.png" width="50" height="50" alt="" />
+</div>
 <div class="login-container">
-    <form [formGroup]="registerForm">
-        @if(errorMessage){
-            <div class="validation">
-                <strong>Note</strong>
-                <p>{{errorMessage}}</p>
-            </div>
-        }
+  <div class="login-description">
+    <h3>Register your <span>Account</span></h3>
+    <p>Please fill in the details to create your account.</p>
+  </div>
 
-        <div class="input-container">
-            <input type="text" id="charge" formControlName="charge">
-            <label for="charge" class="label">Head in Charge</label>
-            <div class="underline"></div>
-        </div>
-        <div class="input-container">
-            <input type="text" id="office_id" formControlName="office_id">
-            <label for="office_id" class="label">Office ID number</label>
-            <div class="underline"></div>
-        </div>
-        <div class="input-container">
-            <input type="text" id="contactNumber" formControlName="contactNumber">
-            <label for="contactNumber" class="label">Contact number</label>
-            <div class="underline"></div>
-        </div>
-        <div class="input-container">
-            <input type="text" id="email-input" formControlName="email">
-            <label for="email-input" class="label">Email</label>
-         
-                <div class="underline"></div>
-          
-        </div>
+  <form [formGroup]="registerForm" (ngSubmit)="register()">
+    <ng-container *ngIf="errorMessage">
+      <div class="validation">
+        <strong>Note:</strong>
+        <p>{{ errorMessage }}</p>
+      </div>
+    </ng-container>
 
+    <div class="input-container">
+      <input type="text" formControlName="charge" id="charge" />
+      <label for="charge" class="label">Head in Charge</label>
+      <div class="underline"></div>
+    </div>
+
+    <div class="input-container">
+      <input type="text" formControlName="office_id" id="officeId" />
+      <label for="officeId" class="label">Office ID Number</label>
+      <div class="underline"></div>
+    </div>
+
+    <div class="flex">
+      <div class="flex-item">
         <div class="input-container">
-            <input type="password" id="password-input" formControlName="password">
-            <label for="password-input" class="label">Password</label>
-            <div class="underline"></div>
+          <input type="text" formControlName="first_name" id="firstName" />
+          <label for="first_name" class="label">First Name</label>
+          <div class="underline"></div>
         </div>
+      </div>
+      <div class="flex-item">
+        <div class="input-container">
+          <input type="text" formControlName="last_name" id="lastName" />
+          <label for="last_name" class="label">Last Name</label>
+          <div class="underline"></div>
+        </div>
+      </div>
+    </div>
 
-    
-        <button (click)="register()" type="button">Register</button>
+    <div class="input-container">
+      <input type="text" formControlName="contactNumber" id="contactNumber" />
+      <label for="contactNumber" class="label">Contact Number</label>
+      <div class="underline"></div>
+    </div>
 
+    <div class="input-container">
+      <input type="email" formControlName="email" id="email" />
+      <label for="email" class="label">Email</label>
+      <div class="underline"></div>
+    </div>
 
-       
-    </form>
+    <div class="input-container">
+      <input type="password" formControlName="password" id="password" />
+      <label for="password" class="label">Password</label>
+      <div class="underline"></div>
+    </div>
+
+    <button type="submit">Register</button>
+
+    <div class="divider">
+      <hr />
+      Already have a an account?
+      <hr />
+    </div>
+
+    <button class="google-login" type="button" (click)="navigateToLogin()">
+      Login
+    </button>
+  </form>
 </div>

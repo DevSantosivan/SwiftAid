@@ -1,6 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { Auth } from '@angular/fire/auth';
-import { Router } from '@angular/router';
+import {
+  Router,
+  RouterOutlet,
+  RouterLink,
+  RouterLinkActive,
+} from '@angular/router';
 import { LoaderComponent } from '../../loader/loader.component';
 import { AdminNavbarComponent } from '../admin-navbar/admin-navbar.component';
 import { Chart, registerables } from 'chart.js';
@@ -13,12 +18,13 @@ import {
   getDocs,
   DocumentData,
 } from '@angular/fire/firestore';
+import { DashboardComponent } from '../../superadmin/dashboard/dashboard.component';
 
 Chart.register(...registerables);
 
 @Component({
   selector: 'app-home',
-  imports: [LoaderComponent, AdminNavbarComponent],
+  imports: [AdminNavbarComponent, RouterOutlet, RouterLinkActive, RouterLink],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
 })

@@ -1,27 +1,22 @@
 import { Component } from '@angular/core';
+import { ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { EmergencyRequestService } from '../../core/rescue_request.service';
+import { DashboardChartService } from '../../core/dashboard-chart.service';
 import { Auth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
-import { Chart, registerables } from 'chart.js';
 import { UserService } from '../../core/user.service';
-import { EmergencyRequestService } from '../../core/rescue_request.service';
-import { NotificationService } from '../../core/notification.service';
 import { OnInit } from '@angular/core';
-import {
-  Firestore,
-  collection,
-  getDocs,
-  DocumentData,
-} from '@angular/fire/firestore';
-import { DashboardChartService } from '../../core/dashboard-chart.service';
+import { Chart, registerables } from 'chart.js';
+import { Firestore } from '@angular/fire/firestore';
+import { NotificationService } from '../../core/notification.service';
 
-Chart.register(...registerables);
 @Component({
   selector: 'app-dashboard',
   imports: [],
-  templateUrl: './dashboard.component.html',
-  styleUrl: './dashboard.component.scss',
+  templateUrl: './dashboard.html',
+  styleUrl: './dashboard.scss',
 })
-export class DashboardComponent implements OnInit {
+export class Dashboard implements OnInit {
   chart: any;
   pieChart: any; // Declare the pie chart variable
   yearlyChart: any; // Declare the yearly chart variable

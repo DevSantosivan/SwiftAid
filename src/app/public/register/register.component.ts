@@ -1,11 +1,16 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  ReactiveFormsModule,
+} from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { createUserWithEmailAndPassword, Auth } from '@angular/fire/auth';
 import { Firestore, setDoc, doc, getFirestore } from 'firebase/firestore';
-import { initializeApp } from 'firebase/app'; // Import Firebase App initialization
-import { environment } from '../../model/environment'; // Your environment file for Firebase config
+import { initializeApp } from 'firebase/app';
+import { environment } from '../../model/environment';
 import { register } from '../../model/registered';
 
 @Component({
@@ -13,63 +18,82 @@ import { register } from '../../model/registered';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './register.component.html',
-  styleUrls: ['./register.component.scss']
+  styleUrls: ['./register.component.scss'],
 })
 export class RegisterComponent {
   registerForm: FormGroup;
   firestore: Firestore;
-  errorMessage: string = ''; // Variable to track error messages
+  errorMessage: string = '';
 
-  constructor(private fb: FormBuilder, private router: Router, private auth: Auth) {
-    const firebaseApp = initializeApp(environment.firebaseConfig); // Initialize Firebase App
-    this.firestore = getFirestore(firebaseApp); // Get Firestore instance
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    private auth: Auth
+  ) {
+    const firebaseApp = initializeApp(environment.firebaseConfig);
+    this.firestore = getFirestore(firebaseApp);
 
     this.registerForm = this.fb.group({
       charge: ['', Validators.required],
       office_id: ['', Validators.required],
       contactNumber: ['', Validators.required],
+      first_name: ['', Validators.required],
+      last_name: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
-    
     });
   }
 
   async register() {
     if (this.registerForm.valid) {
-      const { charge, office_id,contactNumber, email, password} = this.registerForm.value;
-
-      // Assign the role as 'admin' by default
-      const accountData: register = {
+      const {
         charge,
         office_id,
+        first_name,
+        last_name,
         contactNumber,
         email,
         password,
-        role: 'admin' // Set role as 'admin' by default
+      } = this.registerForm.value;
+
+      const accountData: register = {
+        charge,
+        office_id,
+        first_name,
+        last_name,
+        contactNumber,
+        email,
+        password,
+        role: 'admin',
       };
 
       try {
-        // Register the user with Firebase Authentication
-        const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
-        const user = userCredential.user;
+        const userCredential = await createUserWithEmailAndPassword(
+          this.auth,
+          email,
+          password
+        );
 
-        // Save user data to Firestore
+        const user = userCredential.user;
         const userRef = doc(this.firestore, 'users', user.uid);
+
         await setDoc(userRef, {
-          ...accountData, // Spread the account data here
-          createdAt: new Date() // Add a createdAt timestamp
+          ...accountData,
+          createdAt: new Date(),
         });
 
-        // Redirect the user to the admin page (assuming the role is 'admin')
         this.router.navigate(['/admin']);
       } catch (error) {
-        console.error('Error during registration: ', error);
-        // Set the error message to display in the template
-        this.errorMessage = 'An error occurred during registration. Please try again.';
+        console.error('Error during registration:', error);
+        this.errorMessage =
+          'An error occurred during registration. Please try again.';
       }
     } else {
-      // If the form is invalid, set the error message
       this.errorMessage = 'Please fill in all fields correctly.';
     }
+  }
+
+  navigateToLogin() {
+    this.router.navigate(['/login']);
   }
 }

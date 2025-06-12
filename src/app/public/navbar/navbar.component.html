@@ -1,18 +1,20 @@
 <div class="navbar-container">
-    <div class="company-brand">
-        <h3 class="flex-logo"><img src="assets/logo.jpg" alt="" class="logo">Swift Aid</h3>
-    </div>
-    <ul>
-        <li (click)="navigateToAboutus()">About Us</li>
-        <li (click)="navigateToServices()">Services</li>
-        <li>FAQs</li>
-        <li>Contact Us</li>
-    </ul>
-    <div class="btn-container">
-         <button (click)="loader()">Login</button>
-    </div>
+  <div class="company-brand">
+    <h3 class="flex-logo">
+      <img src="assets/logo22.png" alt="" class="logo" />Swift Aid
+    </h3>
+  </div>
+  <ul>
+    <li (click)="navigateToAboutus()">About Us</li>
+    <li (click)="navigateToServices()">Services</li>
+    <li>FAQs</li>
+    <li>Contact Us</li>
+  </ul>
+  <div class="btn-container">
+    <button (click)="loader()">Login</button>
+  </div>
 </div>
 
 @if(isloader){
-    <app-loader></app-loader>
+<app-loader></app-loader>
 }

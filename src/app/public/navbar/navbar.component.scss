@@ -9,6 +9,8 @@
   padding: 18px 10%;
   background-color: #ffffffac;
   backdrop-filter: blur(10px);
+  z-index: 1000;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
 
   ul {
     display: inline-flex;

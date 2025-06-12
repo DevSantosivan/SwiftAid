@@ -1,4 +1,17 @@
-.loading-screen{
+.navbar {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 18px 10%;
+  background-color: #fff;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+.loading-screen {
   width: 100%;
   height: 100%;
   position: fixed;
@@ -11,209 +24,204 @@
   justify-content: center;
   align-items: center;
 }
-.login-container{
+.login-container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  .login-description {
     width: 100%;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    .login-description{
-        width: 100%;
-        p{
-            font-size: 13px;
-            color: #504c4cf6;
-            letter-spacing: 0.8px;  
-        }
-        h3{
-            font-size: 30px;
-            color: #2c2929;
-            span{
-                color: red;
-            }
-            
-        }
+    p {
+      font-size: 13px;
+      color: #504c4cf6;
+      letter-spacing: 0.8px;
     }
-
-    form{
-        width: 320px;
-  
-        .divider{
-          text-align: center;
-          display: flex;
-          width: 100%;
-          align-items: center;
-          justify-content: center;
-          margin: 20px 0px;
-          font-size: 13px;
-          hr{
-            color: #625c5c9d;
-            width: 50%;
-            margin: 0px 10px;
-          }
-        }
-
-
-        button{
-            width: 100%;
-            height: 42px;
-            margin-top: 15px;
-            background-color: red;
-            border: none;
-            color: #fff;
-            font-size: 18px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            cursor: pointer;
-        }
-        button:hover{
-          background-color: rgb(244, 44, 44);
-        }
-        .google-login{
-          background-color: transparent;
-          color: #2c2929;
-          font-size: 13px;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          letter-spacing: 1px;
-          border: 1px solid gray;
-          img{
-            width: 18px;
-            margin: 0px 5px;
-          }
-        }
-        .google-login:hover{
-          background-color: gainsboro;
-        }
-    }
-}
-/* From Uiverse.io by Satwinder04 */ 
-.input-container {
-    position: relative;
-    margin: 30px auto;
-    width: 100%;
-    top: 10px;
-  }
-  
-  .input-container input[type="text"] {
-    font-size: 15px;
-    width: 100%;
-    border: none;
-    border-bottom: 1px solid #ccc;
-    padding: 8px 0;
-    background-color: transparent;
-    outline: none;
-  }
-  .input-container input[type="password"] {
-    font-size: 15px;
-    width: 100%;
-    border: none;
-    border-bottom: 1px solid #ccc;
-    padding: 8px 0;
-    background-color: transparent;
-    outline: none;
-  }
-  
-  .input-container .label {
-    position: absolute;
-    top: 0;
-    left: 0;
-    color: #ccc;
-    transition: all 0.3s ease;
-    pointer-events: none;
-  }
-  
-  .input-container input[type="text"]:focus ~ .label {
-    top: -18px;
-    font-size: 14px;
-    color: #333;
-    background-color: transparent;
-    outline: none;
-  }
-  .input-container input[type="password"]:focus ~ .label {
-    top: -18px;
-    font-size: 14px;
-    color: #333;
-    background-color: transparent;
-    outline: none;
-  }
-  
-  .input-container .underline {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 2px;
-    width: 100%;
-    background-color: #333;
-    transform: scaleX(0);
-    transition: all 0.3s ease;
-  }
-  
-  .input-container input[type="text"]:focus ~ .underline {
-    transform: scaleX(1);
-  }
-  .input-container input[type="password"]:focus ~ .underline {
-    transform: scaleX(1);
-  }
-  
-
-  .validation{
-    width: 100%;
-    padding: 10px 0px;
-    background-color: rgba(203, 122, 122, 0.198);
-    border: 1px solid red;
-    text-align: center;
-    border-radius: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    margin-bottom: 20px;
-    strong{
-      color: rgba(255, 0, 0, 0.841);
-      font-weight: 500;
-    }
-    p{
-      color: gray;
-      font-size: 14px;
-    }
-
-    animation: popup 1.0s forwards;
-  
-    
-  }
-  .validation.success{
-    background-color: rgba(0, 128, 0, 0.434);
-    border: 1px solid green;
-
-    strong{
-      color: rgba(0, 128, 0, 0.693);
-    }
-    p{
-      color: #fff;
+    h3 {
+      font-size: 30px;
+      color: #2c2929;
+      span {
+        color: red;
+      }
     }
   }
-    @keyframes popup {
-          from{
-            transform: translateX(100px);
-            filter: opacity(0);
-          }
-          to{
-            transform: translateX(0px);
-            filter: opacity(10);
-          }
-    }
 
-    .loaders{
+  form {
+    width: 320px;
+
+    .divider {
+      text-align: center;
+      display: flex;
       width: 100%;
-      height: 100vh;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0px;
+      font-size: 13px;
+      hr {
+        color: #625c5c9d;
+        width: 50%;
+        margin: 0px 10px;
+      }
+    }
+
+    button {
+      width: 100%;
+      height: 42px;
+      margin-top: 15px;
+      background-color: red;
+      border: none;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: rgb(244, 44, 44);
+    }
+    .google-login {
+      background-color: transparent;
+      color: #2c2929;
+      font-size: 13px;
+      font-weight: 500;
       display: flex;
       align-items: center;
       justify-content: center;
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 1000;
+      letter-spacing: 1px;
+      border: 1px solid gray;
+      img {
+        width: 18px;
+        margin: 0px 5px;
+      }
     }
+    .google-login:hover {
+      background-color: gainsboro;
+    }
+  }
+}
+/* From Uiverse.io by Satwinder04 */
+.input-container {
+  position: relative;
+  margin: 30px auto;
+  width: 100%;
+  top: 10px;
+}
+
+.input-container input[type="text"] {
+  font-size: 15px;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #ccc;
+  padding: 8px 0;
+  background-color: transparent;
+  outline: none;
+}
+.input-container input[type="password"] {
+  font-size: 15px;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #ccc;
+  padding: 8px 0;
+  background-color: transparent;
+  outline: none;
+}
+
+.input-container .label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #ccc;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.input-container input[type="text"]:focus ~ .label {
+  top: -18px;
+  font-size: 14px;
+  color: #333;
+  background-color: transparent;
+  outline: none;
+}
+.input-container input[type="password"]:focus ~ .label {
+  top: -18px;
+  font-size: 14px;
+  color: #333;
+  background-color: transparent;
+  outline: none;
+}
+
+.input-container .underline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  background-color: #333;
+  transform: scaleX(0);
+  transition: all 0.3s ease;
+}
+
+.input-container input[type="text"]:focus ~ .underline {
+  transform: scaleX(1);
+}
+.input-container input[type="password"]:focus ~ .underline {
+  transform: scaleX(1);
+}
+
+.validation {
+  width: 100%;
+  padding: 10px 0px;
+  background-color: rgba(203, 122, 122, 0.198);
+  border: 1px solid red;
+  text-align: center;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  margin-bottom: 20px;
+  strong {
+    color: rgba(255, 0, 0, 0.841);
+    font-weight: 500;
+  }
+  p {
+    color: gray;
+    font-size: 14px;
+  }
+
+  animation: popup 1s forwards;
+}
+.validation.success {
+  background-color: rgba(0, 128, 0, 0.434);
+  border: 1px solid green;
+
+  strong {
+    color: rgba(0, 128, 0, 0.693);
+  }
+  p {
+    color: #fff;
+  }
+}
+@keyframes popup {
+  from {
+    transform: translateX(100px);
+    filter: opacity(0);
+  }
+  to {
+    transform: translateX(0px);
+    filter: opacity(10);
+  }
+}
+
+.loaders {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+}
