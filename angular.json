@@ -41,12 +41,15 @@
               "src/styles.scss",
               "node_modules/leaflet/dist/leaflet.css",
               "node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.css",
-              "node_modules/leaflet-control-geocoder/dist/Control.Geocoder.css"
+              "node_modules/leaflet-control-geocoder/dist/Control.Geocoder.css",
+              "node_modules/leaflet.markercluster/dist/MarkerCluster.css",
+              "node_modules/leaflet.markercluster/dist/MarkerCluster.Default.css"
             ],
             "scripts": [
               "node_modules/leaflet/dist/leaflet.js",
               "node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.js",
-              "node_modules/leaflet-control-geocoder/dist/Control.Geocoder.js"
+              "node_modules/leaflet-control-geocoder/dist/Control.Geocoder.js",
+              "node_modules/leaflet.markercluster/dist/leaflet.markercluster.js"
             ],
             "allowedCommonJsDependencies": [
               "leaflet",

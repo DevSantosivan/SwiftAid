@@ -13,7 +13,7 @@ import { EmergencyRequest } from '../../model/emergency';
 import { UserService } from '../../core/user.service';
 import * as L from 'leaflet';
 import 'leaflet.markercluster';
-import { getAuth } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { debounce } from 'lodash';
 import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
@@ -38,12 +38,11 @@ export class MapRequest implements AfterViewInit, OnDestroy {
   routeLine?: L.Polyline;
 
   loadingRequests = false;
+  currentStaff: any = null;
+  private currentRequestId: string | null = null;
 
   private watchId?: number;
   private requestSubscription?: Subscription;
-
-  currentStaff: any = null;
-  private currentRequestId: string | null = null;
 
   markerClusterGroup!: L.MarkerClusterGroup;
 
@@ -59,11 +58,9 @@ export class MapRequest implements AfterViewInit, OnDestroy {
     this.initializeMap();
 
     this.loadingRequests = true;
-    try {
-      await this.loadCurrentStaff();
-    } finally {
-      setTimeout(() => (this.loadingRequests = false));
-    }
+    this.cdr.detectChanges(); // notify Angular immediately about loading start
+
+    await this.loadCurrentStaff();
 
     this.requestSubscription = this.requestService
       .getRequestRealtime()
@@ -73,40 +70,45 @@ export class MapRequest implements AfterViewInit, OnDestroy {
             this.requests = requests;
             this.applyFilter(this.activeFilter || 'All');
             this.loadingRequests = false;
-            this.cdr.detectChanges();
+            this.cdr.detectChanges(); // update bindings
           });
         },
         error: (error) => {
           console.error('Error receiving realtime requests:', error);
-          this.loadingRequests = false;
+          this.ngZone.run(() => {
+            this.loadingRequests = false;
+            this.cdr.detectChanges();
+          });
         },
       });
 
-    if (
-      this.currentStaff?.staffLat !== undefined &&
-      this.currentStaff?.staffLng !== undefined
-    ) {
-      this.staffLocation = [
-        this.currentStaff.staffLat,
-        this.currentStaff.staffLng,
-      ];
-    } else {
-      try {
-        const position = await new Promise<GeolocationPosition>(
-          (resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-            });
-          }
-        );
+    await this.ngZone.run(async () => {
+      if (
+        this.currentStaff?.staffLat !== undefined &&
+        this.currentStaff?.staffLng !== undefined
+      ) {
         this.staffLocation = [
-          position.coords.latitude,
-          position.coords.longitude,
+          this.currentStaff.staffLat,
+          this.currentStaff.staffLng,
         ];
-      } catch {
-        // fallback
+      } else {
+        try {
+          const position = await new Promise<GeolocationPosition>(
+            (resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: true,
+              });
+            }
+          );
+          this.staffLocation = [
+            position.coords.latitude,
+            position.coords.longitude,
+          ];
+        } catch (err) {
+          console.warn('Geolocation failed, using default.');
+        }
       }
-    }
+    });
 
     this.staffMarker = L.marker(this.staffLocation, {
       icon: L.icon({
@@ -122,9 +124,8 @@ export class MapRequest implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.watchId !== undefined) {
+    if (this.watchId !== undefined)
       navigator.geolocation.clearWatch(this.watchId);
-    }
     this.requestSubscription?.unsubscribe();
   }
 
@@ -133,19 +134,26 @@ export class MapRequest implements AfterViewInit, OnDestroy {
       [14.5995, 120.9842],
       12
     );
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(this.map);
 
-    this.markerClusterGroup = L.markerClusterGroup();
-    this.map.addLayer(this.markerClusterGroup);
+    try {
+      this.markerClusterGroup = L.markerClusterGroup();
+      this.map.addLayer(this.markerClusterGroup);
+    } catch (error) {
+      console.error(
+        'Failed to initialize markerClusterGroup. Ensure leaflet.markercluster is loaded.'
+      );
+    }
   }
 
   trackStaffLocation(): void {
     if (!navigator.geolocation) return;
 
     this.watchId = navigator.geolocation.watchPosition(
-      (position) => {
+      async (position) => {
         this.ngZone.run(async () => {
           this.staffLocation = [
             position.coords.latitude,
@@ -162,21 +170,19 @@ export class MapRequest implements AfterViewInit, OnDestroy {
                   first_name: this.currentStaff.first_name,
                   last_name: this.currentStaff.last_name,
                   email: this.currentStaff.email,
-                  lat: (this.staffLocation as [number, number])[0],
-                  lng: (this.staffLocation as [number, number])[1],
+                  lat: this.staffLocation[0],
+                  lng: this.staffLocation[1],
                 },
                 false
               );
-            } catch {}
+            } catch (err) {
+              console.error('Failed to update staff location:', err);
+            }
           }
         });
       },
       () => {},
-      {
-        enableHighAccuracy: true,
-        maximumAge: 3000,
-        timeout: 10000,
-      }
+      { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
     );
   }
 
@@ -188,7 +194,7 @@ export class MapRequest implements AfterViewInit, OnDestroy {
         ? this.requests
         : this.requests.filter((r) => r.status === status);
 
-    this.markerClusterGroup.clearLayers();
+    this.markerClusterGroup?.clearLayers();
 
     this.filteredRequests.forEach((req) => {
       if (req.latitude && req.longitude) {
@@ -202,13 +208,13 @@ export class MapRequest implements AfterViewInit, OnDestroy {
         }).bindPopup(this.generatePopupContent(req));
 
         marker.on('click', () => this.centerMapOnRequest(req));
-        this.markerClusterGroup.addLayer(marker);
+        this.markerClusterGroup?.addLayer(marker);
       }
     });
 
     if (this.staffMarker) {
       const layers = [this.staffMarker, ...this.markerClusterGroup.getLayers()];
-      const group = L.featureGroup(layers as L.Layer[]);
+      const group = L.featureGroup(layers);
       this.map.fitBounds(group.getBounds().pad(0.2));
     }
   }, 300);
@@ -218,24 +224,13 @@ export class MapRequest implements AfterViewInit, OnDestroy {
   }
 
   centerMapOnRequest(request: EmergencyRequest): void {
-    if (request.staffLat !== undefined && request.staffLng !== undefined) {
-      this.staffLocation = [request.staffLat, request.staffLng];
-      if (this.staffMarker) {
-        this.staffMarker.setLatLng(this.staffLocation);
-      }
-    }
-
     if (!request.latitude || !request.longitude) return;
 
     const staffLoc = L.latLng(this.staffLocation);
     const requestLoc = L.latLng(request.latitude, request.longitude);
 
-    this.markerClusterGroup.clearLayers();
-
-    if (this.routeLine) {
-      this.map.removeLayer(this.routeLine);
-      this.routeLine = undefined;
-    }
+    this.markerClusterGroup?.clearLayers();
+    if (this.routeLine) this.map.removeLayer(this.routeLine);
 
     const marker = L.marker(requestLoc, {
       icon: L.icon({
@@ -253,7 +248,7 @@ export class MapRequest implements AfterViewInit, OnDestroy {
       if (btn) btn.onclick = () => this.acceptRequest(request);
     });
 
-    this.markerClusterGroup.addLayer(marker);
+    this.markerClusterGroup?.addLayer(marker);
 
     this.routeLine = L.polyline([staffLoc, requestLoc], {
       color: 'red',
@@ -262,87 +257,96 @@ export class MapRequest implements AfterViewInit, OnDestroy {
       dashArray: '10,6',
     }).addTo(this.map);
 
-    const layers: L.Layer[] = [marker];
-    if (this.staffMarker) layers.push(this.staffMarker);
-    if (this.routeLine) layers.push(this.routeLine);
-
-    const group = L.featureGroup(layers);
-    this.map.fitBounds(group.getBounds().pad(0.2));
+    const layers = [marker, this.staffMarker, this.routeLine].filter(
+      Boolean
+    ) as L.Layer[];
+    this.map.fitBounds(L.featureGroup(layers).getBounds().pad(0.2));
   }
 
-  generatePopupContent(
-    request: EmergencyRequest,
-    detailed: boolean = false
-  ): string {
+  generatePopupContent(req: EmergencyRequest, detailed = false): string {
     return `
       <div>
         ${
-          detailed && request.image
-            ? `<img src="${request.image}" alt="${request.name}" style="width:100%; height:100px; object-fit:cover;">`
+          detailed && req.image
+            ? `<img src="${req.image}" alt="${req.name}" style="width:100%; height:100px; object-fit:cover;">`
             : ''
         }
-        <strong>${request.name}</strong><br>
-        <em>${request.address || 'No address'}</em><br>
-        Contact: ${request.contactNumber || 'N/A'}<br>
-        Event: ${request.event || 'N/A'}<br>
-        Needs: ${request.needs || 'N/A'}<br>
-        Description: ${request.description || 'N/A'}<br>
+        <strong>${req.name}</strong><br>
+        <em>${req.address || 'No address'}</em><br>
+        Contact: ${req.contactNumber || 'N/A'}<br>
+        Event: ${req.event || 'N/A'}<br>
+        Needs: ${req.needs || 'N/A'}<br>
+        Description: ${req.description || 'N/A'}<br>
         ${
           detailed
-            ? `Email: ${request.email || 'N/A'}<br>
-        Staff: ${request.staffFirstName || 'N/A'} ${
-                request.staffLastName || 'N/A'
-              }<br><br>
-        Status: ${request.status || 'N/A'}<br>`
+            ? `Email: ${req.email || 'N/A'}<br>
+               Staff: ${req.staffFirstName || 'N/A'} ${
+                req.staffLastName || 'N/A'
+              }<br>
+               Status: ${req.status || 'N/A'}<br>
+               <button id="acceptBtn">Accept</button>`
             : ''
         }
       </div>`;
   }
 
-  async ViewRequest(request: EmergencyRequest) {
-    this.router.navigate(['/admin/EmergencyRequest', request.id]);
+  async ViewRequest(req: EmergencyRequest) {
+    this.router.navigate(['/admin/EmergencyRequest', req.id]);
   }
 
-  async acceptRequest(request: EmergencyRequest) {
+  async acceptRequest(req: EmergencyRequest) {
     if (!this.currentStaff || !this.staffLocation) {
       alert('Staff or location not available.');
       return;
     }
 
     try {
-      const latLng = L.latLng(this.staffLocation);
+      if (req.status === 'Pending') {
+        const [lat, lng] = this.staffLocation as [number, number];
 
-      if (request.status === 'Pending') {
-        // ✅ Only update if it’s still Pending
         await this.requestService.updateRequestWithStaffInfo(
-          request.id!,
+          req.id!,
           {
             uid: this.currentStaff.uid,
             first_name: this.currentStaff.first_name,
             last_name: this.currentStaff.last_name,
             email: this.currentStaff.email,
-            lat: latLng.lat,
-            lng: latLng.lng,
+            lat,
+            lng,
           },
           true
         );
       }
 
-      this.currentRequestId = request.id!;
-      this.router.navigate(['/admin/EmergencyRequest', request.id]);
-    } catch {
+      this.currentRequestId = req.id!;
+      this.router.navigate(['/admin/EmergencyRequest', req.id]);
+    } catch (err) {
+      console.error('Accept request failed:', err);
       alert('Failed to accept request.');
     }
   }
 
-  async loadCurrentStaff() {
-    const user = getAuth().currentUser;
-    if (user) {
-      try {
-        this.currentStaff = await this.userService.getUserById(user.uid);
-      } catch {
-        // silent
-      }
-    }
+  async loadCurrentStaff(): Promise<void> {
+    const auth = getAuth();
+    return new Promise((resolve) => {
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          try {
+            const staff = await this.userService.getUserById(user.uid);
+            this.ngZone.run(() => {
+              this.currentStaff = staff;
+              this.cdr.detectChanges();
+              resolve();
+            });
+          } catch (err) {
+            console.error('Failed to load current staff:', err);
+            resolve();
+          }
+        } else {
+          console.warn('No authenticated user.');
+          resolve();
+        }
+      });
+    });
   }
 }

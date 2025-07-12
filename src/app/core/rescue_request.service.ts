@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, NgZone } from '@angular/core';
 import {
   Firestore,
   collection,
@@ -9,7 +9,6 @@ import {
   doc,
   query,
   where,
-  QuerySnapshot,
   DocumentSnapshot,
 } from '@angular/fire/firestore';
 import { EmergencyRequest } from '../model/emergency';
@@ -20,9 +19,9 @@ import { Observable } from 'rxjs';
 })
 export class EmergencyRequestService {
   private firestore: Firestore = inject(Firestore);
+  private ngZone: NgZone = inject(NgZone);
   private collectionName = 'EmergencyRequest';
 
-  // 🔢 Get total request count
   async getRequestCount(): Promise<number> {
     try {
       const ref = collection(this.firestore, this.collectionName);
@@ -34,12 +33,10 @@ export class EmergencyRequestService {
     }
   }
 
-  // 📄 Get a single request by ID
   async getRequestById(id: string): Promise<EmergencyRequest | null> {
     try {
       const ref = doc(this.firestore, this.collectionName, id);
       const snap: DocumentSnapshot = await getDoc(ref);
-
       if (snap.exists()) {
         return {
           id: snap.id,
@@ -55,7 +52,6 @@ export class EmergencyRequestService {
     }
   }
 
-  // 📄 Get all requests once
   async getRequest(): Promise<EmergencyRequest[]> {
     try {
       const ref = collection(this.firestore, this.collectionName);
@@ -70,7 +66,6 @@ export class EmergencyRequestService {
     }
   }
 
-  // 🔁 Real-time subscription
   getRequestRealtime(): Observable<EmergencyRequest[]> {
     return new Observable((subscriber) => {
       const ref = collection(this.firestore, this.collectionName);
@@ -79,20 +74,25 @@ export class EmergencyRequestService {
       const unsubscribe = onSnapshot(
         q,
         (snap) => {
-          const list = snap.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as EmergencyRequest[];
-          subscriber.next(list);
+          this.ngZone.run(() => {
+            const list = snap.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            })) as EmergencyRequest[];
+            subscriber.next(list);
+          });
         },
-        (error) => subscriber.error(error)
+        (error) => {
+          this.ngZone.run(() => {
+            subscriber.error(error);
+          });
+        }
       );
 
       return { unsubscribe };
     });
   }
 
-  // 📂 Get requests filtered by status
   async updateRequestWithStaffInfo(
     requestId: string,
     staffInfo: {
@@ -103,7 +103,7 @@ export class EmergencyRequestService {
       lat?: number;
       lng?: number;
     },
-    accept: boolean = false // 👈 added flag to control status update
+    accept: boolean = false
   ): Promise<void> {
     try {
       const docRef = doc(this.firestore, this.collectionName, requestId);
@@ -117,12 +117,10 @@ export class EmergencyRequestService {
         staffUpdatedAt: new Date(),
       };
 
-      // ✅ Only update to 'Responding' if it's still 'Pending' and accept flag is true
       if (accept && currentData.status === 'Pending') {
         updateData.status = 'Responding';
       }
 
-      // Set staff details
       if (staffInfo.uid) updateData.staffId = staffInfo.uid;
 
       if (staffInfo.first_name || staffInfo.last_name) {
@@ -137,7 +135,7 @@ export class EmergencyRequestService {
       if (staffInfo.lat !== undefined) updateData.staffLat = staffInfo.lat;
       if (staffInfo.lng !== undefined) updateData.staffLng = staffInfo.lng;
 
-      await updateDoc(docRef, updateData);
+      await this.ngZone.run(() => updateDoc(docRef, updateData));
       console.log(
         `Staff info updated for request ${requestId}${
           accept ? ' (accepted)' : ''
@@ -149,13 +147,14 @@ export class EmergencyRequestService {
     }
   }
 
-  // ✅ Mark a request as resolved
   async markRequestAsResolved(requestId: string): Promise<void> {
     const ref = doc(this.firestore, this.collectionName, requestId);
-    await updateDoc(ref, {
-      status: 'Resolved',
-      resolvedAt: new Date(),
-    });
+    await this.ngZone.run(() =>
+      updateDoc(ref, {
+        status: 'Resolved',
+        resolvedAt: new Date(),
+      })
+    );
     console.log(`Request ${requestId} marked as Resolved.`);
   }
 }
