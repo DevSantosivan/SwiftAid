@@ -1,4 +1,4 @@
-<div class="content-body">
+<div class="content-body" id="dashboard-to-print">
   <div class="content_1">
     <h4>Dashboard</h4>
     <p>Main</p>
@@ -61,7 +61,7 @@
   <div class="content_2">
     <div class="btn-flex">
       @if(!isAdmin) {
-      <div class="btn">
+      <div class="btn" (click)="printDashboard()">
         <i class="bx bx-printer"></i>
         <h3>Print</h3>
       </div>
@@ -103,5 +103,16 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="mobile-message">
+  <div class="mobile-content-message">
+    <img src="../../../assets/formobile.gif" alt="" />
+    <h1>Mobile View Not Supported</h1>
+    <p>
+      This dashboard is not optimized for mobile devices. Please access it from
+      a desktop or laptop for the best experience.
+    </p>
   </div>
 </div>

@@ -14,6 +14,7 @@ import { AuthService } from '../../core/auth.service';
 import { CommonModule } from '@angular/common';
 import { LoadingScreenComponent } from '../loading-screen/loading-screen.component';
 import { NavbarComponent } from '../navbar/navbar.component';
+import { PresenceService } from '../../core/presence.service';
 
 declare const gapi: any;
 @Component({
@@ -48,7 +49,11 @@ export class LoginComponent implements OnInit {
     password: new FormControl('', Validators.required),
   });
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private presence: PresenceService
+  ) {}
 
   ngOnInit(): void {
     this.isLoggedIn = this.authService.getErrorValidation();

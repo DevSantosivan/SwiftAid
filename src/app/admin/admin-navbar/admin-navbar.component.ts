@@ -17,6 +17,8 @@ import { UserService } from '../../core/user.service';
 export class AdminNavbarComponent implements OnInit {
   showSideBar: boolean = false;
   currentUser: account | null = null;
+  isClosing: boolean = false;
+  isExiting: boolean = false;
 
   constructor(
     private afAuth: Auth,
@@ -43,9 +45,14 @@ export class AdminNavbarComponent implements OnInit {
 
   showSide() {
     this.showSideBar = true;
+    this.isExiting = false;
   }
+
   exit() {
-    this.showSideBar = false;
+    this.isExiting = true;
+    setTimeout(() => {
+      this.showSideBar = false;
+    }, 300); // duration matches CSS
   }
 
   logout() {

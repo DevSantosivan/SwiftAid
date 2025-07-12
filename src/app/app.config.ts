@@ -1,16 +1,17 @@
-import { ApplicationConfig, provideZoneChangeDetection, isDevMode } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import {
+  ApplicationConfig,
+  provideZoneChangeDetection,
+  isDevMode,
+} from '@angular/core';
+import {
+  provideRouter,
+  withEnabledBlockingInitialNavigation,
+} from '@angular/router'; // add withEnabledBlockingInitialNavigation
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getFirestore, provideFirestore } from '@angular/fire/firestore';
-import {
-  getAuth,
-  provideAuth,
-  signInWithPopup,
-  GoogleAuthProvider,
-} from '@angular/fire/auth';
+import { getAuth, provideAuth } from '@angular/fire/auth';
 import { environment } from './model/environment';
 import { routes } from './app.routes';
-import { Scroll } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { provideMessaging, getMessaging } from '@angular/fire/messaging';
@@ -19,15 +20,16 @@ import { provideServiceWorker } from '@angular/service-worker';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(routes),
+    provideRouter(routes, withEnabledBlockingInitialNavigation()), // dito
     provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
     provideAnimations(),
     provideAuth(() => getAuth()),
     provideFirestore(() => getFirestore()),
     provideMessaging(() => getMessaging()),
-    provideCharts(withDefaultRegisterables()), provideServiceWorker('ngsw-worker.js', {
-            enabled: !isDevMode(),
-            registrationStrategy: 'registerWhenStable:30000'
-          }),
+    provideCharts(withDefaultRegisterables()),
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000',
+    }),
   ],
 };

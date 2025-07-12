@@ -17,10 +17,6 @@
         </button>
       </div>
     </div>
-    <!-- <div class="add-member">
-      <button (click)="openAddMemberModal()">
-        <i class="bx bx-plus"></i> Add Member
-      </button> -->
 
     <div class="team-container">
       <div
@@ -32,51 +28,66 @@
           <i class="bx bx-dots-vertical-rounded"></i>
           <div class="dropdown-menu" *ngIf="openDropdownIndex === i">
             <ul>
-              <li (click)="editMember(member)"><i class='bx  bx-edit-alt'></i>  Edit</li>
-              <li (click)="viewMember(member.uid)"><i class='bx  bx-eye-alt'></i>  View</li>
-              <li (click)="confirmDeleteMember(member)"><i class='bx  bx-trash-alt'></i>  Delete</li>
+              <li (click)="editMember(member)">
+                <i class="bx bx-edit-alt"></i> Edit
+              </li>
+              <li (click)="viewMember(member.uid)">
+                <i class="bx bx-show"></i> View
+              </li>
+              <li (click)="confirmDeleteMember(member)">
+                <i class="bx bx-trash-alt"></i> Delete
+              </li>
             </ul>
           </div>
         </div>
 
         <div class="member-info">
-          @if(member.profilePicture) {
-          <img [src]="member.profilePicture" alt="Team Member" />
-          } @else {
           <img
-            src="https://i.pinimg.com/736x/32/e4/61/32e46132a367eb48bb0c9e5d5b659c88.jpg"
-            alt=""
+            [src]="
+              member.profilePicture
+                ? member.profilePicture
+                : 'https://i.pinimg.com/736x/32/e4/61/32e46132a367eb48bb0c9e5d5b659c88.jpg'
+            "
+            alt="Team Member"
           />
-
-          }
           <h5>{{ member.email }}</h5>
-          <p>{{ member.fullName }}</p>
+          <p>
+            {{ member.fullName }}
+            <span
+              class="status-dot"
+              [class.online]="member.status.online"
+              [class.offline]="!member.status.online"
+              [title]="
+                member.status.online
+                  ? 'Online'
+                  : member.status.last
+                  ? 'Last active: ' + (member.status.last | timeDiff)
+                  : 'Offline'
+              "
+            ></span>
+          </p>
+          <span style="font-size: 13px">
+            {{
+              member.status.online
+                ? "Active now"
+                : member.status.last
+                ? "Active " + (member.status.last | timeDiff)
+                : "Offline"
+            }}
+          </span>
         </div>
         <p class="staff-label">{{ member.role }}</p>
       </div>
-
-      <!-- Add more team members as needed -->
     </div>
 
     <div *ngIf="filteredMembers.length === 0" class="loading">
-      <svg width="64px" height="48px">
-        <polyline
-          points="0.157 23.954, 14 23.954, 21.843 48, 43 0, 50 24, 64 24"
-          id="back"
-        ></polyline>
-        <polyline
-          points="0.157 23.954, 14 23.954, 21.843 48, 43 0, 50 24, 64 24"
-          id="front"
-        ></polyline>
-      </svg>
+      <img src="../../../assets/nodata.gif" alt="" />
       <p>No team members found.</p>
     </div>
   </div>
-
-  <!-- Router outlet to load team-details inside this page -->
 </div>
-<!-- team.component.html -->
 
+<!-- Edit Member Modal -->
 <div class="modal" *ngIf="selectedMember">
   <div class="modal-content">
     <span class="close" (click)="closeModal()">&times;</span>
@@ -125,5 +136,65 @@
         <i class="bx bx-trash"></i> Delete
       </button>
     </div>
+  </div>
+</div>
+
+<!-- View Member Modal -->
+<div
+  class="isProfilemodal"
+  [ngClass]="{ 'hide-modal': isClosing }"
+  *ngIf="viewedMember"
+>
+  <div
+    class="modal-content view-member-modal"
+    [ngClass]="{ 'hide-animation': isClosing }"
+  >
+    <span class="close" (click)="closeViewModal()">&times;</span>
+    <h2>View Profile Details</h2>
+
+    <div class="profile-header">
+      <img
+        [src]="
+          viewedMember.profilePicture ||
+          'https://i.pinimg.com/736x/32/e4/61/32e46132a367eb48bb0c9e5d5b659c88.jpg'
+        "
+        alt="Profile"
+        class="profile-img"
+      />
+      <div class="profile-info">
+        <h3>{{ viewedMember.fullName }}</h3>
+        <p>{{ viewedMember.email }}</p>
+      </div>
+    </div>
+
+    <div class="member-card">
+      <div class="member-info-row" *ngIf="viewedMember.role">
+        <span class="label">Role:</span>
+        <span class="value">{{ viewedMember.role }}</span>
+      </div>
+      <div class="member-info-row" *ngIf="viewedMember.contactNumber">
+        <span class="label">Contact Number:</span>
+        <span class="value">{{ viewedMember.contactNumber }}</span>
+      </div>
+      <div class="member-info-row" *ngIf="viewedMember.office_id">
+        <span class="label">Office ID:</span>
+        <span class="value">{{ viewedMember.office_id }}</span>
+      </div>
+      <div class="member-info-row" *ngIf="viewedMember.charge">
+        <span class="label">Charge:</span>
+        <span class="value">{{ viewedMember.charge }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mobile-message">
+  <div class="mobile-content-message">
+    <img src="../../../assets/formobile.gif" alt="" />
+    <h1>Mobile View Not Supported</h1>
+    <p>
+      This dashboard is not optimized for mobile devices. Please access it from
+      a desktop or laptop for the best experience.
+    </p>
   </div>
 </div>

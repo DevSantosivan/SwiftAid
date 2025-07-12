@@ -1,4 +1,3 @@
-// user.service.ts
 import { Injectable } from '@angular/core';
 import {
   collection,
@@ -15,7 +14,20 @@ import {
 import { account } from '../model/users';
 import { environment } from '../model/environment';
 import { initializeApp } from 'firebase/app';
-import { uid } from 'chart.js/dist/helpers/helpers.core';
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set,
+  onDisconnect,
+  serverTimestamp,
+} from 'firebase/database';
+import { Observable } from 'rxjs';
+import { collectionData } from '@angular/fire/firestore';
+
+export interface AccountWithStatus extends account {
+  status: { online: boolean; last: number | null };
+}
 
 @Injectable({
   providedIn: 'root',
@@ -43,30 +55,63 @@ export class UserService {
     try {
       const usersCollection = collection(this.db, 'users');
       const snapshot = await getDocs(usersCollection);
-      return snapshot.docs.map((doc) => doc.data() as account);
+      return snapshot.docs.map(
+        (doc) => ({ ...doc.data(), id: doc.id } as account)
+      );
     } catch (error) {
       console.error('Error fetching users:', error);
       throw error;
     }
   }
 
-  async getAdmins(): Promise<account[]> {
+  getAllAccounts(): Observable<account[]> {
+    const accountsRef = collection(this.db, 'users');
+    return collectionData(accountsRef, { idField: 'id' }) as Observable<
+      account[]
+    >;
+  }
+
+  async addUser(data: account): Promise<void> {
     try {
-      const usersCollection = collection(this.db, 'users');
-      const adminQuery = query(usersCollection, where('role', '==', 'admin'));
-      const snapshot = await getDocs(adminQuery);
-      return snapshot.docs.map((doc) => {
-        const data = doc.data() as Omit<account, 'uid'>;
-        return {
-          ...data,
-          uid: doc.id, // <-- assign doc.id to uid
-          id: data.id || '', // optionally fill id if needed
-        };
-      });
+      const newDocRef = doc(this.db, 'users', data.uid);
+      await setDoc(newDocRef, data);
     } catch (error) {
-      console.error('Error fetching admin users:', error);
+      console.error('Error adding user:', error);
       throw error;
     }
+  }
+
+  subscribeUserStatus(
+    uid: string,
+    cb: (online: boolean, last: number | null) => void
+  ) {
+    const db_rt = getDatabase();
+    const connsRef = ref(db_rt, `status/${uid}/connections`);
+    const lastRef = ref(db_rt, `status/${uid}/lastOnline`);
+
+    onValue(connsRef, (snap) => {
+      if (snap.exists() && Object.keys(snap.val()).length > 0) {
+        cb(true, null);
+      } else {
+        onValue(
+          lastRef,
+          (lastSnap) => {
+            cb(false, lastSnap.exists() ? (lastSnap.val() as number) : null);
+          },
+          { onlyOnce: true }
+        );
+      }
+    });
+  }
+
+  async getAdmins(): Promise<AccountWithStatus[]> {
+    const q = query(collection(this.db, 'users'), where('role', '==', 'admin'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({
+      ...(doc.data() as account),
+      uid: doc.id,
+      status: { online: false, last: null },
+    }));
   }
 
   async getUserById(uid: string): Promise<account | null> {
@@ -85,7 +130,8 @@ export class UserService {
       throw error;
     }
   }
-  updateUser(uid: string, data: any): Promise<void> {
+
+  updateUser(uid: string, data: Partial<account>): Promise<void> {
     const userDocRef = doc(this.db, 'users', uid);
     return updateDoc(userDocRef, data);
   }
@@ -93,5 +139,27 @@ export class UserService {
   deleteUser(uid: string): Promise<void> {
     const userDocRef = doc(this.db, 'users', uid);
     return deleteDoc(userDocRef);
+  }
+
+  async deleteUsers(uids: string[]): Promise<void> {
+    try {
+      await Promise.all(uids.map((uid) => this.deleteUser(uid)));
+    } catch (error) {
+      console.error('Error deleting multiple users:', error);
+      throw error;
+    }
+  }
+
+  async blockUsers(uids: string[], reason: string): Promise<void> {
+    try {
+      await Promise.all(
+        uids.map((uid) =>
+          this.updateUser(uid, { blocked: true, blockReason: reason })
+        )
+      );
+    } catch (error) {
+      console.error('Error blocking users:', error);
+      throw error;
+    }
   }
 }

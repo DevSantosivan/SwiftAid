@@ -13,6 +13,7 @@ import { TeamComponent } from './team/team.component';
 import { FeedbackComponent } from './feedback/feedback.component';
 import { InfoComponent } from './info/info.component';
 import { TeamStaffComponent } from './team-staff/team-staff.component';
+import { TimeDiffPipe } from '../../pipe/time-diff.pipe';
 
 @NgModule({
   imports: [
@@ -28,6 +29,17 @@ import { TeamStaffComponent } from './team-staff/team-staff.component';
     FeedbackComponent,
     InfoComponent,
     TeamStaffComponent,
+  ],
+  declarations: [
+    HomeComponent,
+    DashboardComponent,
+    EmergencyRequestComponent,
+    AccountComponent,
+    TeamComponent,
+    FeedbackComponent,
+    InfoComponent,
+    TeamStaffComponent,
+    TimeDiffPipe, // Idagdag dito
   ],
 })
 export class SuperAdminModule {}

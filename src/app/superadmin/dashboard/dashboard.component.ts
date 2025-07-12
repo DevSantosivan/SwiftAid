@@ -245,4 +245,105 @@ export class DashboardComponent implements OnInit {
       this.isloader = true;
     });
   }
+
+  printDashboard(): void {
+    const dashboardContent = document.getElementById('dashboard-to-print');
+    if (!dashboardContent) return;
+
+    const clone = dashboardContent.cloneNode(true) as HTMLElement;
+    const canvases = dashboardContent.querySelectorAll('canvas');
+    const clonedCanvases = clone.querySelectorAll('canvas');
+
+    canvases.forEach((canvas, index) => {
+      const chartImage = document.createElement('img');
+      chartImage.src = (canvas as HTMLCanvasElement).toDataURL('image/png');
+      chartImage.style.width = '100%';
+      chartImage.style.height = 'auto';
+
+      const clonedCanvas = clonedCanvases[index];
+      if (clonedCanvas && clonedCanvas.parentNode) {
+        clonedCanvas.parentNode.replaceChild(chartImage, clonedCanvas);
+      }
+    });
+
+    const currentDate = new Date().toLocaleString();
+    const monthLabels = this.getMonthLabels(7);
+    const policeData = this.lineChartConfig.data.datasets[0].data;
+    const pieLabels = this.pieChartConfig.data.labels;
+    const pieData = this.pieChartConfig.data.datasets[0].data;
+    const yearlyYears = this.yearlyChartConfig.data.labels;
+    const yearlyCounts = this.yearlyChartConfig.data.datasets[0].data;
+
+    const peakPoliceIndex = policeData.indexOf(Math.max(...policeData));
+    const peakPoliceMonth = monthLabels[peakPoliceIndex];
+    const peakPoliceValue = policeData[peakPoliceIndex];
+
+    const maxPieIndex = pieData.indexOf(Math.max(...pieData));
+    const topCategory = pieLabels[maxPieIndex];
+    const topCategoryCount = pieData[maxPieIndex];
+
+    const summary = `
+      <h2>📌SwiftAid Dashboard Report</h2>
+      <p><strong>🗓️ Generated on:</strong> ${currentDate}</p>
+      <p><strong>🧍 Total Registered Users:</strong> ${this.userCount}</p>
+      <p><strong>🚨 Total Emergency Rescue Requests:</strong> ${
+        this.EmergencyRequest
+      }</p>
+      <h3>📊 Monthly Rescue Insights</h3>
+      <p>Highest number of Police-related interventions occurred in <strong>${peakPoliceMonth}</strong> with <strong>${peakPoliceValue}</strong> reports.</p>
+      <h3>🍰 Top Incident Category</h3>
+      <p>Most common incident reported: "<strong>${topCategory}</strong>" with <strong>${topCategoryCount}</strong> cases.</p>
+      <h3>📈 Yearly Trends</h3>
+      <p>Incidents increased from <strong>${
+        yearlyCounts[0]
+      }</strong> in <strong>${yearlyYears[0]}</strong> to <strong>${
+      yearlyCounts[yearlyCounts.length - 1]
+    }</strong> in <strong>${yearlyYears[yearlyYears.length - 1]}</strong>.</p>
+      <hr>
+      <h3>📉 Charts Overview</h3>
+    `;
+
+    const printWindow = window.open('', '_blank', 'width=1000,height=900');
+    if (!printWindow) return;
+
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Emergency Dashboard Report</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 30px;
+              color: #000;
+            }
+            .header { text-align: center; margin-bottom: 40px; }
+            .logo { width: 100px; height: auto; }
+            .report-title { font-size: 24px; font-weight: bold; color: #d32f2f; margin-top: 10px; }
+            .report-date { font-size: 14px; color: #666; }
+            .box, .chart, .list {
+              border: 1px solid #ccc;
+              padding: 15px;
+              margin-bottom: 20px;
+            }
+            img { max-width: 100%; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="header">
+            <img src="../../../assets/logo22.png" alt="Logo" class="logo" />
+            <div class="report-title">Emergency Dashboard Report</div>
+            <div class="report-date">${currentDate}</div>
+          </div>
+          <div>
+            ${summary}
+            ${clone.innerHTML}
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  }
 }

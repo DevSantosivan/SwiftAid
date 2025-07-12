@@ -1,10 +1,17 @@
-import { Component, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import {
+  Component,
+  AfterViewInit,
+  ViewChild,
+  ElementRef,
+  OnDestroy,
+  NgZone,
+} from '@angular/core';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { EmergencyRequest } from '../../model/emergency';
-
 import * as L from 'leaflet';
-import 'leaflet-routing-machine';
 import { CommonModule } from '@angular/common';
+import { Firestore, doc, getDoc } from '@angular/fire/firestore';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-emergency-request',
@@ -13,7 +20,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './emergency-request.component.html',
   styleUrl: './emergency-request.component.scss',
 })
-export class EmergencyRequestComponent implements AfterViewInit {
+export class EmergencyRequestComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef;
 
   map!: L.Map;
@@ -24,14 +31,31 @@ export class EmergencyRequestComponent implements AfterViewInit {
 
   staffLocation: L.LatLngExpression = [12.37752449490026, 121.03153380797781];
   staffMarker?: L.Marker;
-  routingControl?: any;
   routeLine?: L.Polyline;
 
-  constructor(private requestService: EmergencyRequestService) {}
+  private watchId?: number;
+  private requestSubscription?: Subscription;
+
+  staffDetailsMap: Record<string, { first_name: string; last_name: string }> =
+    {};
+
+  constructor(
+    private requestService: EmergencyRequestService,
+    private firestore: Firestore,
+    private ngZone: NgZone
+  ) {}
 
   ngAfterViewInit(): void {
     this.initializeMap();
-    this.loadRequests();
+    this.subscribeToRequests();
+    this.startTrackingStaffLocation();
+  }
+
+  ngOnDestroy(): void {
+    if (this.watchId !== undefined) {
+      navigator.geolocation.clearWatch(this.watchId);
+    }
+    this.requestSubscription?.unsubscribe();
   }
 
   initializeMap(): void {
@@ -55,117 +79,93 @@ export class EmergencyRequestComponent implements AfterViewInit {
       .bindPopup('<strong>Staff Location</strong>');
   }
 
-  async loadRequests(): Promise<void> {
-    try {
-      this.requests = await this.requestService.getRequest();
-      this.applyFilter('All'); // Default to show all
-    } catch (error) {
-      console.error('Failed to load emergency requests:', error);
-    }
+  subscribeToRequests(): void {
+    this.requestSubscription = this.requestService
+      .getRequestRealtime()
+      .subscribe({
+        next: async (requests) => {
+          this.ngZone.run(async () => {
+            this.requests = requests;
+
+            const staffIdsToFetch = requests
+              .map((r) => r.staffId)
+              .filter((id): id is string => !!id && !this.staffDetailsMap[id]);
+
+            for (const staffId of staffIdsToFetch) {
+              try {
+                const docRef = doc(this.firestore, `users/${staffId}`);
+                const snap = await getDoc(docRef);
+                if (snap.exists()) {
+                  const data = snap.data();
+                  this.staffDetailsMap[staffId] = {
+                    first_name: data['first_name'] || '',
+                    last_name: data['last_name'] || '',
+                  };
+                }
+              } catch (err) {
+                console.warn(`Failed to fetch user ${staffId}:`, err);
+              }
+            }
+
+            this.applyFilter(this.activeFilter || 'All');
+          });
+        },
+        error: (error) => {
+          console.error('Error receiving realtime emergency requests:', error);
+        },
+      });
+  }
+
+  getStaffFullName(staffId?: string): string {
+    if (!staffId) return '';
+    const staff = this.staffDetailsMap[staffId];
+    return staff ? `${staff.first_name} ${staff.last_name}` : 'Unknown Staff';
   }
 
   applyFilter(status: string): void {
     this.activeFilter = status;
 
-    // Filter list
-    if (status === 'All') {
-      this.filteredRequests = this.requests;
-    } else {
-      this.filteredRequests = this.requests.filter(
-        (req) => req.status === status
-      );
-    }
+    this.filteredRequests =
+      status === 'All'
+        ? this.requests
+        : this.requests.filter((req) => req.status === status);
 
-    // Clear old markers
     this.markers.forEach((marker) => this.map.removeLayer(marker));
     this.markers = [];
 
-    // Add filtered markers
     this.filteredRequests.forEach((req) => {
       if (req.latitude && req.longitude) {
-        const requestIcon = L.icon({
-          iconUrl: 'assets/logo22.png',
-          iconSize: [70, 60],
-          iconAnchor: [15, 40], // anchor at bottom center
-        });
-
         const marker = L.marker([req.latitude, req.longitude], {
-          icon: requestIcon,
+          icon: L.icon({
+            iconUrl: 'assets/logo22.png',
+            iconSize: [70, 60],
+            iconAnchor: [15, 40],
+          }),
           title: req.name,
-        })
-          .addTo(this.map)
-          .bindPopup(`<strong>${req.name}</strong><br>${req.address}`);
+        }).bindPopup(
+          `<strong>${req.name}</strong><br>${
+            req.address
+          }<br>Staff: ${this.getStaffFullName(req.staffId)}`
+        );
 
+        marker.addTo(this.map);
         this.markers.push(marker);
       }
     });
 
-    // Adjust view to fit markers
-    const group = L.featureGroup([...this.markers, this.staffMarker!]);
-    this.map.fitBounds(group.getBounds().pad(0.2));
+    if (this.markers.length > 0 && this.staffMarker) {
+      const group = L.featureGroup([...this.markers, this.staffMarker]);
+      this.map.fitBounds(group.getBounds().pad(0.2));
+    } else if (this.staffMarker) {
+      this.map.setView(this.staffLocation, 12);
+    }
   }
-
-  // centerMapOnRequest(request: EmergencyRequest): void {
-  //   if (!request.latitude || !request.longitude) return;
-
-  //   const requestLatLng = L.latLng(request.latitude, request.longitude);
-
-  //   this.markers.forEach((marker) => this.map.removeLayer(marker));
-  //   this.markers = [];
-
-  //   if (this.routingControl) {
-  //     this.map.removeControl(this.routingControl);
-  //     this.routingControl = undefined;
-  //   }
-
-  //   const marker = L.marker(requestLatLng)
-  //     .addTo(this.map)
-  //     .bindPopup(
-  //       `
-  //       <div>
-  //         <img src="${request.image || 'assets/default-request-icon.png'}"
-  //              alt="${request.name}"
-  //              style="width: 100%; height: 100px; object-fit: cover; margin-bottom: 5px;">
-  //         <div><strong>${request.name}</strong></div>
-  //         <div>${request.address}</div>
-  //       </div>
-  //     `
-  //     )
-  //     .openPopup();
-
-  //   this.markers.push(marker);
-  //   const routing = (L as any).Routing;
-
-  //   if (!routing || !routing.control) {
-  //     console.error('Leaflet Routing Machine not loaded properly!');
-  //     return;
-  //   }
-
-  //   this.routingControl = (L as any).Routing.control({
-  //     waypoints: [L.latLng(this.staffLocation), requestLatLng],
-  //     router: (L as any).Routing.osrmv1({
-  //       serviceUrl: 'https://router.project-osrm.org/route/v1',
-  //     }),
-  //     lineOptions: {
-  //       styles: [{ color: 'red', opacity: 0.8, weight: 5 }],
-  //       extendToWaypoints: false,
-  //       missingRouteTolerance: 50,
-  //     },
-  //     createMarker: () => null,
-  //     addWaypoints: false,
-  //     draggableWaypoints: false,
-  //     fitSelectedRoutes: true,
-  //     show: false,
-  //   }).addTo(this.map);
-
-  // }
 
   centerMapOnRequest(request: EmergencyRequest): void {
     if (!request.latitude || !request.longitude) return;
 
     const requestLatLng = L.latLng(request.latitude, request.longitude);
 
-    // Remove old markers & route line
     this.markers.forEach((marker) => this.map.removeLayer(marker));
     this.markers = [];
 
@@ -174,16 +174,12 @@ export class EmergencyRequestComponent implements AfterViewInit {
       this.routeLine = undefined;
     }
 
-    // Create custom marker icon
-    const requestIcon = L.icon({
-      iconUrl: 'assets/logo22.png',
-      iconSize: [70, 60],
-      iconAnchor: [15, 40],
-    });
-
-    // Add marker with custom icon
     const marker = L.marker(requestLatLng, {
-      icon: requestIcon,
+      icon: L.icon({
+        iconUrl: 'assets/logo22.png',
+        iconSize: [70, 60],
+        iconAnchor: [15, 40],
+      }),
     })
       .addTo(this.map)
       .bindPopup(
@@ -194,6 +190,7 @@ export class EmergencyRequestComponent implements AfterViewInit {
                style="width: 100%; height: 100px; object-fit: cover; margin-bottom: 5px;">
           <div><strong>${request.name}</strong></div>
           <div>${request.address}</div>
+          <div>Staff: ${this.getStaffFullName(request.staffId)}</div>
         </div>
       `
       )
@@ -201,7 +198,6 @@ export class EmergencyRequestComponent implements AfterViewInit {
 
     this.markers.push(marker);
 
-    // Draw straight line from staff to request
     const points = [this.staffLocation, requestLatLng];
     this.routeLine = L.polyline(points, {
       color: 'red',
@@ -210,12 +206,42 @@ export class EmergencyRequestComponent implements AfterViewInit {
       dashArray: '10,6',
     }).addTo(this.map);
 
-    // Adjust view
     const group = L.featureGroup([
       ...this.markers,
       this.staffMarker!,
       this.routeLine,
     ]);
     this.map.fitBounds(group.getBounds().pad(0.2));
+  }
+
+  startTrackingStaffLocation(): void {
+    if (!navigator.geolocation) {
+      console.warn('Geolocation is not supported by this browser.');
+      return;
+    }
+
+    this.watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const newLatLng: L.LatLngExpression = [
+          position.coords.latitude,
+          position.coords.longitude,
+        ];
+
+        this.staffLocation = newLatLng;
+
+        if (this.staffMarker) {
+          this.staffMarker.setLatLng(newLatLng);
+        }
+
+        if (this.routeLine && this.markers.length > 0) {
+          const requestLatLng = this.markers[0].getLatLng();
+          this.routeLine.setLatLngs([newLatLng, requestLatLng]);
+        }
+      },
+      (error) => {
+        console.error('Error watching position:', error);
+      },
+      { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+    );
   }
 }

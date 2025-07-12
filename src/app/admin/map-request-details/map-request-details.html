@@ -1,0 +1,254 @@
+<div class="content-body">
+  <div class="content_1">
+    <div class="content-header">
+      <i class="bx bx-left-arrow-alt"></i>
+      <span>Back To Emergency Request List</span>
+    </div>
+    <h4>Emergency Response Panel</h4>
+    <p>Details for Emergency Request Review</p>
+
+    <div *ngIf="request" class="request-details-container">
+      <!-- LEFT PANEL: Reporter Info -->
+      <div class="left-panel">
+        <h4>
+          <i class="bx bx-error-circle"></i> Emergency ID #{{ request.id }}
+        </h4>
+        <div class="caller-info">
+          <img
+            [src]="request.image"
+            alt="Reporter Image"
+            class="caller-photo"
+          />
+          <h5>{{ request.name }}</h5>
+          <p class="subtext">Submitted by Resident</p>
+        </div>
+        <br />
+        <div class="form-group" style="display: flex">
+          <label><i class="bx bx-bolt-circle"></i> Event Type :</label>
+          <p class="readonly-text">{{ request.event }}</p>
+        </div>
+
+        <div class="form-group" style="display: flex">
+          <label><i class="bx bx-phone"></i> Contact Number :</label>
+          <p class="readonly-text">{{ request.contactNumber }}</p>
+        </div>
+
+        <div class="form-group" style="display: flex">
+          <label><i class="bx bx-envelope"></i> Email :</label>
+          <p class="readonly-text">{{ request.email }}</p>
+        </div>
+
+        <div class="form-group" style="display: flex">
+          <label><i class="bx bx-first-aid"></i> Needs :</label>
+          <p class="readonly-text">{{ request.needs }}</p>
+        </div>
+
+        <div class="form-group" style="display: flex">
+          <label><i class="bx bx-calendar"></i> Submitted On :</label>
+          <p class="readonly-text">
+            {{ request.timestamp?.toDate() | date: 'medium' }}
+          </p>
+        </div>
+      </div>
+
+      <!-- MIDDLE PANEL: Location Info -->
+      <!-- MIDDLE PANEL: Location Info -->
+      <div class="middle-panel">
+        <h4><i class="bx bx-map"></i> Location Information</h4>
+
+        <div class="form-group">
+          <label><i class="bx bx-globe"></i> Country</label>
+          <input type="text" value="Philippines" readonly />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label><i class="bx bx-current-location"></i> Street Address</label>
+            <input type="text" [value]="request.address || 'N/A'" readonly />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label><i class="bx bx-target-lock"></i> Latitude</label>
+            <input type="text" [value]="request.latitude" readonly />
+          </div>
+          <div class="form-group">
+            <label><i class="bx bx-target-lock"></i> Longitude</label>
+            <input type="text" [value]="request.longitude" readonly />
+          </div>
+        </div>
+
+        <!-- New Staff Coordinates Section -->
+        <div class="form-row">
+          <div class="form-group">
+            <label><i class="bx bx-map-pin"></i> Staff Latitude</label>
+            <input type="text" [value]="request.staffLat || 'N/A'" readonly />
+          </div>
+          <div class="form-group">
+            <label><i class="bx bx-map-pin"></i> Staff Longitude</label>
+            <input type="text" [value]="request.staffLng || 'N/A'" readonly />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label><i class="bx bx-shield-plus"></i> Status</label>
+          <input type="text" [value]="request.status" readonly />
+        </div>
+        <br />
+        <br />
+        <br />
+      </div>
+
+      <!-- RIGHT PANEL: Map + Dispatch -->
+      <div class="right-panel">
+        <div class="map-box">
+          <div
+            #mapContainer
+            class="map-container"
+            style="width: 100%; height: 50vh"
+          ></div>
+        </div>
+        <div class="form-group" *ngIf="currentUserRole === 'admin'">
+          <label
+            ><i class="bx bx-map-pin"></i> Your Current Location (Live):</label
+          >
+          <p class="readonly-text">{{ staffAddress }}</p>
+        </div>
+        <div class="rescue-info">
+          <h4><i class="bx bx-user-check"></i> Dispatched Team</h4>
+          <div class="rescue-card">
+            <p>
+              <i class="bx bx-user"></i> <strong>Name:</strong> {{
+              request.staffFirstName }} {{ request.staffLastName }}
+            </p>
+            <p>
+              <i class="bx bx-envelope"></i> <strong>Email:</strong> {{
+              request.staffEmail }}
+            </p>
+            <p>
+              <i class="bx bx-briefcase"></i>
+              <strong>Position:</strong> Mdrrmo Staff
+            </p>
+            <p>
+              <i class="bx bx-time-five"></i>
+              <strong>Dispatched At:</strong>
+              {{ request.staffUpdatedAt?.toDate() | date: 'short' }}
+            </p>
+          </div>
+
+          <!-- Submit Status UI -->
+          <div *ngIf="isSubmitting" class="submit-status submitting">
+            <img src="../../../assets/resolve.gif" alt="" />
+          </div>
+
+          <div *ngIf="submitSuccess" class="submit-status success">
+            <div class="modal-backdrop isResolvedModal">
+              <div
+                class="modal-content resolved-request-modal"
+                (click)="$event.stopPropagation()"
+              >
+                <img src="../../../assets/successresolve.gif" alt="" />
+                <div class="modal-header">
+                  <h3>Emergency Request Resolved</h3>
+                </div>
+
+                <div class="modal-body">
+                  <div class="info-row">
+                    <label>Status:</label>
+                    <span class="status success">Resolved</span>
+                  </div>
+
+                  <div class="info-row">
+                    <label>Date Resolved:</label>
+                    <span>
+                      {{ request.staffUpdatedAt?.toDate() | date: 'short'
+                      }}</span
+                    >
+                  </div>
+                  <br /><br />
+                  <br />
+                  <br />
+                  <br />
+                  <i class="bx bx-right-arrow-alt"></i>
+                  <br />
+                  <span>Navigate to Emergency List</span>
+                  <br />
+                  <button
+                    class="resolve-btn"
+                    (click)="navigateToEmergencyRequest()"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="submitSuccessAccept" class="submit-status success">
+            <div class="modal-backdrop isResolvedModal">
+              <div
+                class="modal-content resolved-request-modal"
+                (click)="$event.stopPropagation()"
+              >
+                <img src="../../../assets/accept.gif" alt="" />
+                <div class="modal-header">
+                  <h3>Emergency Request Accepted</h3>
+                </div>
+
+                <div class="modal-body">
+                  <div class="info-row">
+                    <label>Date Accept:</label>
+                    <span>
+                      {{ request.staffUpdatedAt?.toDate() | date: 'short'
+                      }}</span
+                    >
+                  </div>
+                  <br /><br />
+                  <br />
+                  <br />
+                  <br />
+                  <i class="bx bx-right-arrow-alt"></i>
+                  <br />
+                  <span>Navigate same page</span>
+                  <br />
+                  <button class="resolve-btn" (click)="navigateToNone()">
+                    Ok
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Accept Button: Show only if status is Pending -->
+          <!-- ✅ Accept Button: Show only when Pending -->
+          <button
+            class="dispatch-btn"
+            *ngIf="request?.status === 'Pending'"
+            [disabled]="isSubmitting"
+            (click)="acceptRequest(request)"
+          >
+            <i class="bx bx-user-check"></i>
+            Accept Request
+          </button>
+
+          <!-- ✅ Mark as Resolved: Show only when Responding -->
+          <button
+            class="dispatch-btn"
+            *ngIf="request?.status === 'Responding'"
+            [disabled]="isSubmitting || submitSuccess"
+            (click)="markAsResolved()"
+          >
+            <i class="bx bx-check-shield"></i>
+            Confirm Arrival & Mark as Resolved
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fallback Loading State -->
+    <div *ngIf="!request" class="loading-state">
+      <p><i class="bx bx-loader-circle bx-spin"></i> Loading request data...</p>
+    </div>
+  </div>
+</div>

@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { DashboardChartService } from '../../core/dashboard-chart.service';
-import { Auth } from '@angular/fire/auth';
+import { Auth, getAuth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { UserService } from '../../core/user.service';
 import { OnInit } from '@angular/core';
@@ -189,11 +189,23 @@ export class Dashboard implements OnInit {
     private notificationService: NotificationService,
     private dashboardChartService: DashboardChartService
   ) {}
+  currentStaff: any = null;
+  currentUserRole: string = '';
+  async loadCurrentStaff() {
+    const user = getAuth().currentUser;
+    if (user) {
+      try {
+        this.currentStaff = await this.userService.getUserById(user.uid);
+        this.currentUserRole = this.currentStaff?.role || '';
+      } catch {
+        // fail silently
+      }
+    }
+  }
 
   async ngOnInit() {
     const admins = await this.userService.getAdmins();
     this.isAdmin = admins.some((admin) => admin.uid === this.currentUserId);
-    console.log('Is current user an admin?', this.isAdmin);
 
     // Initialize the charts
     this.chart = new Chart('MyLineChart', this.lineChartConfig);
@@ -202,13 +214,13 @@ export class Dashboard implements OnInit {
 
     try {
       const userCount = await this.userService.getUserCount();
-      console.log('Total users fetched:', userCount);
+
       this.userCount = userCount;
 
       // Fetch emergency request count
       const registeredAccount =
         await this.EmergencyRequestService.getRequestCount();
-      console.log('Total emergency requests fetched:', registeredAccount);
+
       this.EmergencyRequest = registeredAccount;
 
       // Use DashboardChartService to fetch data for charts
@@ -218,6 +230,7 @@ export class Dashboard implements OnInit {
         accidentCategoryCounts
       );
       this.pieChart.update();
+      this.loadCurrentStaff();
 
       const yearlyData =
         await this.dashboardChartService.fetchYearlyAccidentData();
@@ -228,7 +241,7 @@ export class Dashboard implements OnInit {
       // Continue with other data fetching as needed
       // ...
     } catch (error) {
-      console.error('Error fetching chart data:', error);
+      console.error(error);
     }
   }
 

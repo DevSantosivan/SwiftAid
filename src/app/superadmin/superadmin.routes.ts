@@ -17,7 +17,6 @@ export const SuperAdminRoutes: Routes = [
       { path: 'Dashboard', component: DashboardComponent },
       { path: 'EmergencyRequest', component: EmergencyRequestComponent },
       { path: 'Team', component: TeamComponent },
-
       { path: 'Team-Details', component: TeamStaffComponent },
       { path: 'Account', component: AccountComponent },
       { path: 'Feedback', component: FeedbackComponent },

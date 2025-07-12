@@ -22,4 +22,5 @@ export interface EmergencyRequest {
   staffLat?: number;
   staffLng?: number;
   staffUpdatedAt?: any;
+  staffFullName?: string;
 }

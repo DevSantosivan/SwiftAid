@@ -3,6 +3,7 @@ import { HomeComponent } from './home/home.component';
 
 import { MapRequest } from './map-request/map-request';
 import { Dashboard } from './dashboard/dashboard';
+import { MapRequestDetails } from './map-request-details/map-request-details';
 
 // {
 //     path: '',
@@ -27,6 +28,13 @@ export const AdminRoutes: Routes = [
       { path: '', redirectTo: 'Dashboard', pathMatch: 'full' },
       { path: 'Dashboard', component: Dashboard },
       { path: 'EmergencyRequest', component: MapRequest },
+      {
+        path: 'EmergencyRequest/:id',
+        loadComponent: () =>
+          import('./map-request-details/map-request-details').then(
+            (m) => m.MapRequestDetails
+          ),
+      },
     ],
   },
 ];

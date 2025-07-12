@@ -1,36 +1,41 @@
 .navbar {
   border-bottom: 1px solid #e0e0e0;
+  z-index: 99999;
 }
+
 .user-details-hover {
-  .exit {
-    position: absolute;
-    top: 0;
-    left: 0;
-    margin: 5px;
-    i {
-      font-size: 33px;
-      color: #fff;
-      transition: 0.2s ease-in;
-    }
-    i:hover {
-      transform: rotate(180deg);
-      font-size: 33px;
-      cursor: pointer;
-    }
-  }
+  position: fixed;
+  top: 0;
+  right: 0;
   width: 200px;
   height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  z-index: 100000;
+  z-index: 9999999;
   background-color: #121212;
-  position: fixed;
-  top: 0;
-  right: 0;
   padding-top: 50px;
   animation: details_side 0.4s ease-in-out forwards;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+
+  .exit {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 5px;
+
+    i {
+      font-size: 33px;
+      color: #fff;
+      transition: 0.2s ease-in;
+
+      &:hover {
+        transform: rotate(180deg);
+        cursor: pointer;
+      }
+    }
+  }
 
   .user-pic {
     width: 60px;
@@ -39,19 +44,31 @@
     border-radius: 50%;
     margin-bottom: 20px;
   }
+
   ul {
     list-style: none;
+    padding: 0;
+
     li {
       color: #fff;
       margin: 8px 0px;
-    }
-    li:hover {
-      font-weight: 700;
-      cursor: pointer;
+
+      &:hover {
+        font-weight: 700;
+        cursor: pointer;
+      }
     }
   }
 }
 
+/* Exit animation class for closing the sidebar */
+.exit-animate {
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Entry animation keyframes */
 @keyframes details_side {
   from {
     width: 0px;
@@ -60,16 +77,19 @@
     width: 200px;
   }
 }
+
 .notification i {
   border: 1px solid #e0e0e0;
   border-radius: 50%;
   padding: 5px;
   font-size: 20px;
+
+  &:hover {
+    background-color: #e0e0e0;
+    cursor: pointer;
+  }
 }
-.notification i:hover {
-  background-color: #e0e0e0;
-  cursor: pointer;
-}
+
 .notification-name {
   margin: 0px 10px;
   border: 1px solid #e0e0e0;

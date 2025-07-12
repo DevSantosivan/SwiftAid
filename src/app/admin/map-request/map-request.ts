@@ -5,13 +5,18 @@ import {
   AfterViewInit,
   NgZone,
   OnDestroy,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { EmergencyRequest } from '../../model/emergency';
 import { UserService } from '../../core/user.service';
 import * as L from 'leaflet';
+import 'leaflet.markercluster';
 import { getAuth } from 'firebase/auth';
+import { debounce } from 'lodash';
+import { Subscription } from 'rxjs';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-map-request',
@@ -26,40 +31,81 @@ export class MapRequest implements AfterViewInit, OnDestroy {
   map!: L.Map;
   requests: EmergencyRequest[] = [];
   filteredRequests: EmergencyRequest[] = [];
-  markers: L.Marker[] = [];
   activeFilter: string = 'All';
 
   staffLocation: L.LatLngExpression = [12.3775, 121.0315];
   staffMarker?: L.Marker;
   routeLine?: L.Polyline;
 
+  loadingRequests = false;
+
   private watchId?: number;
+  private requestSubscription?: Subscription;
+
   currentStaff: any = null;
+  private currentRequestId: string | null = null;
+
+  markerClusterGroup!: L.MarkerClusterGroup;
 
   constructor(
     private requestService: EmergencyRequestService,
     private userService: UserService,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   async ngAfterViewInit(): Promise<void> {
     this.initializeMap();
-    await this.loadCurrentStaff();
 
+    this.loadingRequests = true;
     try {
-      const position = await new Promise<GeolocationPosition>(
-        (resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
+      await this.loadCurrentStaff();
+    } finally {
+      setTimeout(() => (this.loadingRequests = false));
+    }
+
+    this.requestSubscription = this.requestService
+      .getRequestRealtime()
+      .subscribe({
+        next: (requests) => {
+          this.ngZone.run(() => {
+            this.requests = requests;
+            this.applyFilter(this.activeFilter || 'All');
+            this.loadingRequests = false;
+            this.cdr.detectChanges();
           });
-        }
-      );
+        },
+        error: (error) => {
+          console.error('Error receiving realtime requests:', error);
+          this.loadingRequests = false;
+        },
+      });
+
+    if (
+      this.currentStaff?.staffLat !== undefined &&
+      this.currentStaff?.staffLng !== undefined
+    ) {
       this.staffLocation = [
-        position.coords.latitude,
-        position.coords.longitude,
+        this.currentStaff.staffLat,
+        this.currentStaff.staffLng,
       ];
-    } catch (error) {
-      console.warn('Using default location due to error:', error);
+    } else {
+      try {
+        const position = await new Promise<GeolocationPosition>(
+          (resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+            });
+          }
+        );
+        this.staffLocation = [
+          position.coords.latitude,
+          position.coords.longitude,
+        ];
+      } catch {
+        // fallback
+      }
     }
 
     this.staffMarker = L.marker(this.staffLocation, {
@@ -73,13 +119,13 @@ export class MapRequest implements AfterViewInit, OnDestroy {
       .bindPopup('<strong>Staff Location</strong>');
 
     this.trackStaffLocation();
-    await this.loadRequests();
   }
 
   ngOnDestroy(): void {
     if (this.watchId !== undefined) {
       navigator.geolocation.clearWatch(this.watchId);
     }
+    this.requestSubscription?.unsubscribe();
   }
 
   initializeMap(): void {
@@ -90,6 +136,9 @@ export class MapRequest implements AfterViewInit, OnDestroy {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(this.map);
+
+    this.markerClusterGroup = L.markerClusterGroup();
+    this.map.addLayer(this.markerClusterGroup);
   }
 
   trackStaffLocation(): void {
@@ -97,16 +146,32 @@ export class MapRequest implements AfterViewInit, OnDestroy {
 
     this.watchId = navigator.geolocation.watchPosition(
       (position) => {
-        this.ngZone.run(() => {
+        this.ngZone.run(async () => {
           this.staffLocation = [
             position.coords.latitude,
             position.coords.longitude,
           ];
           this.staffMarker?.setLatLng(this.staffLocation);
-          console.log('Updated staff location:', this.staffLocation);
+
+          if (this.currentRequestId && this.currentStaff) {
+            try {
+              await this.requestService.updateRequestWithStaffInfo(
+                this.currentRequestId,
+                {
+                  uid: this.currentStaff.uid,
+                  first_name: this.currentStaff.first_name,
+                  last_name: this.currentStaff.last_name,
+                  email: this.currentStaff.email,
+                  lat: (this.staffLocation as [number, number])[0],
+                  lng: (this.staffLocation as [number, number])[1],
+                },
+                false
+              );
+            } catch {}
+          }
         });
       },
-      (error) => console.error('Error tracking location:', error),
+      () => {},
       {
         enableHighAccuracy: true,
         maximumAge: 3000,
@@ -115,24 +180,15 @@ export class MapRequest implements AfterViewInit, OnDestroy {
     );
   }
 
-  async loadRequests(): Promise<void> {
-    try {
-      this.requests = await this.requestService.getRequest();
-      this.applyFilter('All');
-    } catch (error) {
-      console.error('Failed to load requests:', error);
-    }
-  }
-
-  applyFilter(status: string): void {
+  private _applyFilterDebounced = debounce((status: string) => {
     this.activeFilter = status;
+
     this.filteredRequests =
       status === 'All'
         ? this.requests
         : this.requests.filter((r) => r.status === status);
 
-    this.markers.forEach((m) => this.map.removeLayer(m));
-    this.markers = [];
+    this.markerClusterGroup.clearLayers();
 
     this.filteredRequests.forEach((req) => {
       if (req.latitude && req.longitude) {
@@ -143,32 +199,45 @@ export class MapRequest implements AfterViewInit, OnDestroy {
             iconAnchor: [15, 40],
           }),
           title: req.name,
-        })
-          .addTo(this.map)
-          .bindPopup(this.generatePopupContent(req))
-          .on('click', () => this.centerMapOnRequest(req));
+        }).bindPopup(this.generatePopupContent(req));
 
-        this.markers.push(marker);
+        marker.on('click', () => this.centerMapOnRequest(req));
+        this.markerClusterGroup.addLayer(marker);
       }
     });
 
-    const group = L.featureGroup([...this.markers, this.staffMarker!]);
-    this.map.fitBounds(group.getBounds().pad(0.2));
+    if (this.staffMarker) {
+      const layers = [this.staffMarker, ...this.markerClusterGroup.getLayers()];
+      const group = L.featureGroup(layers as L.Layer[]);
+      this.map.fitBounds(group.getBounds().pad(0.2));
+    }
+  }, 300);
+
+  applyFilter(status: string): void {
+    this._applyFilterDebounced(status);
   }
 
   centerMapOnRequest(request: EmergencyRequest): void {
+    if (request.staffLat !== undefined && request.staffLng !== undefined) {
+      this.staffLocation = [request.staffLat, request.staffLng];
+      if (this.staffMarker) {
+        this.staffMarker.setLatLng(this.staffLocation);
+      }
+    }
+
     if (!request.latitude || !request.longitude) return;
 
-    const location = L.latLng(request.latitude, request.longitude);
-    this.markers.forEach((m) => this.map.removeLayer(m));
-    this.markers = [];
+    const staffLoc = L.latLng(this.staffLocation);
+    const requestLoc = L.latLng(request.latitude, request.longitude);
+
+    this.markerClusterGroup.clearLayers();
 
     if (this.routeLine) {
       this.map.removeLayer(this.routeLine);
       this.routeLine = undefined;
     }
 
-    const marker = L.marker(location, {
+    const marker = L.marker(requestLoc, {
       icon: L.icon({
         iconUrl: 'assets/logo22.png',
         iconSize: [70, 60],
@@ -184,16 +253,20 @@ export class MapRequest implements AfterViewInit, OnDestroy {
       if (btn) btn.onclick = () => this.acceptRequest(request);
     });
 
-    this.markers.push(marker);
+    this.markerClusterGroup.addLayer(marker);
 
-    this.routeLine = L.polyline([this.staffLocation, location], {
+    this.routeLine = L.polyline([staffLoc, requestLoc], {
       color: 'red',
       weight: 4,
       opacity: 0.7,
       dashArray: '10,6',
     }).addTo(this.map);
 
-    const group = L.featureGroup([marker, this.staffMarker!, this.routeLine]);
+    const layers: L.Layer[] = [marker];
+    if (this.staffMarker) layers.push(this.staffMarker);
+    if (this.routeLine) layers.push(this.routeLine);
+
+    const group = L.featureGroup(layers);
     this.map.fitBounds(group.getBounds().pad(0.2));
   }
 
@@ -217,13 +290,17 @@ export class MapRequest implements AfterViewInit, OnDestroy {
         ${
           detailed
             ? `Email: ${request.email || 'N/A'}<br>
-      Staff: ${(request.staffFirstName, request.staffLastName || 'N/A')}<br>
-<br>
-        Status: ${request.status || 'N/A'}<br>
-        <button id="acceptBtn">Accept</button>`
+        Staff: ${request.staffFirstName || 'N/A'} ${
+                request.staffLastName || 'N/A'
+              }<br><br>
+        Status: ${request.status || 'N/A'}<br>`
             : ''
         }
       </div>`;
+  }
+
+  async ViewRequest(request: EmergencyRequest) {
+    this.router.navigate(['/admin/EmergencyRequest', request.id]);
   }
 
   async acceptRequest(request: EmergencyRequest) {
@@ -233,18 +310,27 @@ export class MapRequest implements AfterViewInit, OnDestroy {
     }
 
     try {
-      await this.requestService.updateRequestWithStaffInfo(request.id!, {
-        uid: this.currentStaff.uid,
-        first_name: this.currentStaff.first_name,
-        last_name: this.currentStaff.last_name,
-        email: this.currentStaff.email,
-        lat: (this.staffLocation as [number, number])[0],
-        lng: (this.staffLocation as [number, number])[1],
-      });
-      alert(`Accepted request for ${request.name}`);
-      await this.loadRequests();
-    } catch (error) {
-      console.error('Accept failed:', error);
+      const latLng = L.latLng(this.staffLocation);
+
+      if (request.status === 'Pending') {
+        // ✅ Only update if it’s still Pending
+        await this.requestService.updateRequestWithStaffInfo(
+          request.id!,
+          {
+            uid: this.currentStaff.uid,
+            first_name: this.currentStaff.first_name,
+            last_name: this.currentStaff.last_name,
+            email: this.currentStaff.email,
+            lat: latLng.lat,
+            lng: latLng.lng,
+          },
+          true
+        );
+      }
+
+      this.currentRequestId = request.id!;
+      this.router.navigate(['/admin/EmergencyRequest', request.id]);
+    } catch {
       alert('Failed to accept request.');
     }
   }
@@ -254,12 +340,9 @@ export class MapRequest implements AfterViewInit, OnDestroy {
     if (user) {
       try {
         this.currentStaff = await this.userService.getUserById(user.uid);
-        console.log('Loaded staff:', this.currentStaff);
-      } catch (err) {
-        console.error('Staff load failed:', err);
+      } catch {
+        // silent
       }
-    } else {
-      console.warn('No user logged in');
     }
   }
 }

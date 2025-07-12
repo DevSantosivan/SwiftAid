@@ -1,40 +1,59 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, inject } from '@angular/core';
+import { Component, HostListener, inject, Input } from '@angular/core';
 import { account } from '../../model/users';
 import { UserService } from '../../core/user.service';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterOutlet } from '@angular/router';
-import { ActivatedRoute } from '@angular/router';
-import { RouterLink } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { TimeDiffPipe } from '../../../pipe/time-diff.pipe';
+
+interface AccountWithStatus extends account {
+  isOnline?: boolean; // Add online status here
+}
 
 @Component({
   selector: 'app-team',
-  standalone: true, // add standalone to use imports here
-  imports: [CommonModule, FormsModule],
+  standalone: true,
+  imports: [CommonModule, FormsModule, TimeDiffPipe],
   templateUrl: './team.component.html',
   styleUrl: './team.component.scss',
 })
 export class TeamComponent {
+  isValidNumber(arg0: number | null): any {
+    throw new Error('Method not implemented.');
+  }
   private userService = inject(UserService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  teamMembers: account[] = [];
-  filteredMembers: account[] = [];
+
+  teamMembers: AccountWithStatus[] = [];
+  filteredMembers: AccountWithStatus[] = [];
   openDropdownIndex: number | null = null;
   searchTerm: string = '';
+  isProfileVisible = false;
+  viewedMember: AccountWithStatus | null = null;
+  isClosing: boolean = false;
 
   // For editing modal/view
-  selectedMember: account | null = null;
+  selectedMember: AccountWithStatus | null = null;
+  @Input() member: any;
 
   // For delete confirmation modal
-  deleteMemberToConfirm: account | null = null;
+  deleteMemberToConfirm: AccountWithStatus | null = null;
 
   async ngOnInit() {
     try {
       this.teamMembers = await this.userService.getAdmins();
       this.filteredMembers = [...this.teamMembers];
+
+      // Subscribe for status updates (optional)
+      this.teamMembers.forEach((m) => {
+        this.userService.subscribeUserStatus(m.uid, (online, last) => {
+          m.status = { online, last };
+          this.filteredMembers = [...this.filteredMembers];
+        });
+      });
     } catch (error) {
-      console.error('Error loading admins:', error);
+      console.error('Error fetching admins:', error);
     }
   }
 
@@ -47,50 +66,49 @@ export class TeamComponent {
     this.openDropdownIndex = null;
   }
 
-  editMember(member: account): void {
-    this.selectedMember = { ...member }; // Clone to avoid direct mutation
+  editMember(member: AccountWithStatus): void {
+    this.selectedMember = { ...member };
   }
 
   viewMember(uid: string): void {
-    if (!uid) {
-      console.warn('Member ID not found');
-      return;
+    const found = this.filteredMembers.find((m) => m.uid === uid);
+    if (found) {
+      this.viewedMember = found;
     }
+  }
 
-    this.router.navigate(['superAdmin/Team-Details'], {
-      queryParams: { uid: uid },
-    });
+  closeViewModal(): void {
+    this.isClosing = true;
+
+    setTimeout(() => {
+      this.viewedMember = null;
+      this.isClosing = false;
+    }, 300);
   }
 
   closeModal(): void {
     this.selectedMember = null;
   }
-  deleteMember(member: account): void {
-    this.selectedMember = { ...member }; // Clone to avoid direct mutation
+
+  deleteMember(member: AccountWithStatus): void {
+    this.selectedMember = { ...member };
   }
 
   async updateMember(): Promise<void> {
-    if (!this.selectedMember?.uid) {
-      console.warn('No selectedMember or uid to update!');
-      return;
-    }
+    if (!this.selectedMember?.uid) return;
 
     try {
-      console.log('Updating member:', this.selectedMember);
       await this.userService.updateUser(
         this.selectedMember.uid,
         this.selectedMember
       );
       console.log('Update successful');
 
-      // Update the local teamMembers array
       this.teamMembers = this.teamMembers.map((member) =>
         member.uid === this.selectedMember!.uid
           ? { ...this.selectedMember! }
           : member
       );
-
-      // Sync filteredMembers to reflect updates
       this.filteredMembers = [...this.teamMembers];
 
       this.closeModal();
@@ -101,16 +119,14 @@ export class TeamComponent {
     }
   }
 
-  confirmDeleteMember(member: account): void {
+  confirmDeleteMember(member: AccountWithStatus): void {
     this.deleteMemberToConfirm = member;
   }
 
-  // Cancel delete modal
   cancelDelete(): void {
     this.deleteMemberToConfirm = null;
   }
 
-  // Confirm delete action from modal
   async confirmDelete(): Promise<void> {
     if (!this.deleteMemberToConfirm?.uid) {
       console.warn('No member selected to delete');
@@ -122,7 +138,6 @@ export class TeamComponent {
       await this.userService.deleteUser(this.deleteMemberToConfirm.uid);
       console.log('Delete successful');
 
-      // Remove deleted member from local arrays
       this.teamMembers = this.teamMembers.filter(
         (m) => m.uid !== this.deleteMemberToConfirm!.uid
       );
@@ -135,16 +150,17 @@ export class TeamComponent {
       console.error('Error deleting member:', error);
       alert('Failed to delete member.');
     } finally {
-      this.deleteMemberToConfirm = null; // Close modal regardless of success/fail
+      this.deleteMemberToConfirm = null;
     }
   }
 
   onSearchChange(): void {
-    const term = this.searchTerm.toLowerCase();
-    this.filteredMembers = this.teamMembers.filter(
-      (member) =>
-        member.fullName?.toLowerCase().includes(term) ||
-        member.email?.toLowerCase().includes(term)
-    );
+    const term = this.searchTerm.toLowerCase().trim();
+
+    this.filteredMembers = this.teamMembers.filter((member) => {
+      const fullName = member.fullName?.toLowerCase() || '';
+      const email = member.email?.toLowerCase() || '';
+      return fullName.includes(term) || email.includes(term);
+    });
   }
 }

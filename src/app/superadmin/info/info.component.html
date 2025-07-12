@@ -1,1 +1,142 @@
-<p>info works!</p>
+<div class="content-body">
+  <div class="content_1">
+    <h4>Information Management</h4>
+    <p>List of Barangay and Incidents</p>
+
+    <ul class="nav custom-tabs">
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          [class.active]="activeTab === 'barangay'"
+          (click)="setTab('barangay')"
+        >
+          <i class="bx bx-home"></i> Barangay
+        </a>
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          [class.active]="activeTab === 'event'"
+          (click)="setTab('event')"
+        >
+          <i class="bx bx-calendar"></i> Incidents
+        </a>
+      </li>
+    </ul>
+
+    <div *ngIf="activeTab === 'barangay'" class="tab-content">
+      <button class="add_baranggay" (click)="openAddModal()">
+        Add Barangay
+      </button>
+
+      <div class="grid-item">
+        <div
+          *ngFor="let barangay of allBaranggay; let i = index"
+          class="content-container"
+        >
+          <div class="info">
+            <div class="header">
+              <i class="bx bx-dots-vertical-rounded"></i>
+            </div>
+            <div class="info-body">
+              <div class="image">
+                <img [src]="barangay.baranggay_img" />
+              </div>
+              <h2 style="text-align: start" class="tittle">
+                {{ barangay.baranggay }}
+              </h2>
+              <p>{{ barangay.captain_name }}</p>
+              <span>{{ barangay.barangay_contact }}</span>
+              <p *ngIf="barangay.latLng">📍 {{ barangay.latLng }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="activeTab === 'event'" class="tab-content">
+      <button class="add_baranggay" (click)="openAddModal()">
+        Add Incident
+      </button>
+      <div class="content-container">
+        <div class="info">
+          <div class="header">
+            <i class="bx bx-dots-vertical-rounded"></i>
+          </div>
+          <div class="info-body">
+            <div class="icon">
+              <i class="bx bxs-car-crash"></i>
+            </div>
+            <h2 class="tittle">Car Accident</h2>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add barangay Modal -->
+<div class="modal" [class.show]="showAddModal">
+  <div class="modal-content">
+    <h2>Add Barangay</h2>
+    <form (ngSubmit)="submitBarangay()" #barangayForm="ngForm">
+      <label>Barangay Name</label>
+      <input
+        type="text"
+        required
+        [(ngModel)]="newBarangay.baranggay"
+        name="baranggay"
+      />
+
+      <label>Captain Name</label>
+      <input
+        type="text"
+        required
+        [(ngModel)]="newBarangay.captain_name"
+        name="captain_name"
+      />
+
+      <label>Contact</label>
+      <input
+        type="text"
+        required
+        [(ngModel)]="newBarangay.barangay_contact"
+        name="contact"
+      />
+
+      <label>Image URL</label>
+      <input type="text" [(ngModel)]="newBarangay.baranggay_img" name="image" />
+
+      <div id="map" style="height: 300px; margin: 10px 0"></div>
+
+      <p>Latitude: {{ newBarangay.latitude }}</p>
+      <p>Longitude: {{ newBarangay.longitude }}</p>
+
+      <button type="submit">Save</button>
+      <button type="button" (click)="closeModal()">Cancel</button>
+    </form>
+  </div>
+</div>
+
+<!-- modal -->
+<div class="modal-backdrop" *ngIf="isSubmitting">
+  <div class="modal submitting-modal">
+    <img src="../../../assets/loading.gif" alt="Loading" />
+    <p>Submitting barangay data...</p>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal-success" *ngIf="showSuccessModal">
+  <p>✅ Barangay submitted successfully!</p>
+</div>
+
+<div class="mobile-message">
+  <div class="mobile-content-message">
+    <img src="../../../assets/formobile.gif" alt="" />
+    <h1>Mobile View Not Supported</h1>
+    <p>
+      This dashboard is not optimized for mobile devices. Please access it from
+      a desktop or laptop for the best experience.
+    </p>
+  </div>
+</div>

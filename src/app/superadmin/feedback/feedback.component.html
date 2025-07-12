@@ -1,1 +1,90 @@
-<p>feedback works!</p>
+<div class="content-body">
+  <div class="content_1">
+    <h4>Information Management</h4>
+    <p>List of Barangay and Event</p>
+
+    <ul class="nav custom-tabs">
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          [class.active]="activeTab === 'barangay'"
+          (click)="setTab('barangay')"
+        >
+          <i class="bx bx-home"></i> User Feedback
+        </a>
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          [class.active]="activeTab === 'event'"
+          (click)="setTab('event')"
+        >
+          <i class="bx bx-calendar"></i> Blocked Comments
+        </a>
+      </li>
+    </ul>
+
+    <div *ngIf="activeTab === 'barangay'" class="tab-content">
+      <div class="toolbar" *ngIf="feedbackList.length">
+        <input
+          type="checkbox"
+          [checked]="isAllSelected()"
+          (change)="toggleSelectAll($event)"
+        />
+        <span>Select All</span>
+
+        <button
+          class="delete-btn"
+          *ngIf="selectedIds.length"
+          (click)="deleteSelected()"
+        >
+          Delete ({{ selectedIds.length }})
+        </button>
+      </div>
+
+      <div class="user-feedback-container">
+        <div class="feedback-item" *ngFor="let feedback of feedbackList">
+          <input
+            type="checkbox"
+            class="item-checkbox"
+            [checked]="isSelected(feedback.id)"
+            (change)="toggleSelection(feedback.id, $event)"
+          />
+
+          <div class="feedback-content">
+            <div class="feedback-header">
+              <img
+                [src]="feedback.profilePic || defaultProfile"
+                alt="Profile"
+                class="profile-pic"
+              />
+              <div class="user-info">
+                <h4>{{ feedback.name }}</h4>
+                <div class="stars">
+                  <ng-container
+                    *ngFor="let star of [1, 2, 3, 4, 5]; let i = index"
+                  >
+                    <i
+                      class="bx"
+                      [class.bxs-star]="i < feedback.rating"
+                      [class.bx-star]="i >= feedback.rating"
+                    ></i>
+                  </ng-container>
+                  <span class="rating-text">{{ feedback.rating }}/5</span>
+                </div>
+              </div>
+            </div>
+            <p class="comment-text">{{ feedback.comment }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="activeTab === 'event'" class="tab-content">
+      <p>Blocked Comments content goes here...</p>
+    </div>
+  </div>
+</div>
+<div class="notification" *ngIf="showDeleteNotification">
+  <span>🗑️ Deleted successfully!</span>
+</div>

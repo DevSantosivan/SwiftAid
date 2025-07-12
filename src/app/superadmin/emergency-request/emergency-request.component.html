@@ -65,11 +65,11 @@
                 <span class="resolved">{{ req.status }}</span>
               </p>
               }
-
-              <div class="staff-info">
+              <div class="staff-info" *ngIf="getStaffFullName(req.staffId)">
                 <img [src]="req.image" alt="Staff Photo" />
                 <span
-                  >Assisted by: <strong>{{ req.name }}</strong></span
+                  >Assisted by:
+                  <strong>{{ getStaffFullName(req.staffId) }}</strong></span
                 >
               </div>
 
@@ -113,5 +113,16 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="mobile-message">
+  <div class="mobile-content-message">
+    <img src="../../../assets/formobile.gif" alt="" />
+    <h1>Mobile View Not Supported</h1>
+    <p>
+      This dashboard is not optimized for mobile devices. Please access it from
+      a desktop or laptop for the best experience.
+    </p>
   </div>
 </div>

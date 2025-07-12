@@ -33,7 +33,10 @@
   </div>
 </div>
 @if(showSideBar){
-<div class="user-details-hover">
+<div
+  class="user-details-hover"
+  [ngClass]="{ 'user-details-hover': true, 'exit-animate': isExiting }"
+>
   <div class="exit"><i class="bx bx-left-arrow-alt" (click)="exit()"></i></div>
   <div class="user-pic"></div>
   <ul>

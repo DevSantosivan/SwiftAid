@@ -18,8 +18,8 @@
         >
         <span
           class="filter-box"
-          [class.active]="activeFilter === 'In Progress'"
-          (click)="applyFilter('In Progress')"
+          [class.active]="activeFilter === 'Responding'"
+          (click)="applyFilter('Responding')"
           >In Progress</span
         >
         <span
@@ -35,6 +35,11 @@
       </div>
     </div>
     <div class="flex-request">
+      <div *ngIf="loadingRequests" class="spinner-container">
+        <div class="spinner"></div>
+        <p>Loading requests...</p>
+      </div>
+
       <div class="list-request">
         <div
           *ngFor="let req of filteredRequests"
@@ -49,7 +54,7 @@
 
             <div class="details">
               <h5>{{ req.name }}</h5>
-              <p>Emergency Type: <strong>{{ req.description }}</strong></p>
+              <p>Emergency Type: <strong>{{ req.event }}</strong></p>
               @if (req.status === 'Pending') {
               <p>
                 <span class="pending">{{ req.status }}</span>
@@ -58,9 +63,9 @@
               <p>
                 <span class="In-progress">{{ req.status }}</span>
               </p>
-              } @if (req.status === 'resolved') {
+              } @if (req.status === 'Resolved') {
               <p>
-                <span class="resolved">{{ req.status }}</span>
+                <span class="Resolved">{{ req.status }}</span>
               </p>
               }
 
@@ -72,7 +77,9 @@
               >
 
               <div class="request-actions">
-                <button class="view">View Details</button>
+                <button class="view" (click)="ViewRequest(req)">
+                  View Details
+                </button>
                 <button
                   class="view"
                   (click)="$event.stopPropagation(); acceptRequest(req)"
@@ -82,6 +89,15 @@
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+        <div
+          *ngIf="!loadingRequests && filteredRequests.length === 0"
+          class="no-request"
+        >
+          <div class="empty-box">
+            <img src="./../../../assets/notfound.gif" alt="No data" />
+            <p>No <strong>{{ activeFilter }}</strong> requests found.</p>
           </div>
         </div>
       </div>

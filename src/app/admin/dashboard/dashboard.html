@@ -60,7 +60,7 @@
   <!-- end of content 1 -->
   <div class="content_2">
     <div class="btn-flex">
-      @if(!isAdmin) {
+      @if(currentUserRole === 'superAdmin') {
       <div class="btn">
         <i class="bx bx-printer"></i>
         <h3>Print</h3>
