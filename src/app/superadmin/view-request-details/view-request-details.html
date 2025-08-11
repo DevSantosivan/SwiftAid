@@ -1,9 +1,15 @@
+<p>view-request-details works!</p>
 <div class="content-body">
   <div class="content_1">
     <div class="content-header">
-      <i class="bx bx-left-arrow-alt"></i>
+      <i
+        (click)="navigateToEmergencyRequest()"
+        style="font-size: 25px"
+        class="bx bx-left-arrow-alt"
+      ></i>
       <span>Back To Emergency Request List</span>
     </div>
+    <br />
     <h4>Emergency Response Panel</h4>
     <p>Details for Emergency Request Review</p>
 
@@ -222,26 +228,8 @@
 
           <!-- Accept Button: Show only if status is Pending -->
           <!-- ✅ Accept Button: Show only when Pending -->
-          <button
-            class="dispatch-btn"
-            *ngIf="request?.status === 'Pending'"
-            [disabled]="isSubmitting"
-            (click)="acceptRequest(request)"
-          >
-            <i class="bx bx-user-check"></i>
-            Accept Request
-          </button>
 
           <!-- ✅ Mark as Resolved: Show only when Responding -->
-          <button
-            class="dispatch-btn"
-            *ngIf="request?.status === 'Responding'"
-            [disabled]="isSubmitting || submitSuccess"
-            (click)="markAsResolved()"
-          >
-            <i class="bx bx-check-shield"></i>
-            Confirm Arrival & Mark as Resolved
-          </button>
         </div>
       </div>
     </div>

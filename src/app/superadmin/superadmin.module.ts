@@ -39,7 +39,7 @@ import { TimeDiffPipe } from '../../pipe/time-diff.pipe';
     FeedbackComponent,
     InfoComponent,
     TeamStaffComponent,
-    TimeDiffPipe, // Idagdag dito
+    TimeDiffPipe,
   ],
 })
 export class SuperAdminModule {}

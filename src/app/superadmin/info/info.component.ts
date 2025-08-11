@@ -1,9 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 import 'leaflet-control-geocoder';
-
 import { Barangay } from '../../model/baranggay';
 import { BarangayService } from '../../core/barangay.service';
 
@@ -19,6 +18,7 @@ export class InfoComponent implements OnInit {
   showAddModal = false;
   isSubmitting = false;
   showSuccessModal = false;
+  editingBarangayId: string | null = null;
 
   allBaranggay: Barangay[] = [];
   newBarangay: Barangay = this.getEmptyBarangay();
@@ -27,21 +27,38 @@ export class InfoComponent implements OnInit {
   constructor(private barangayService: BarangayService) {}
 
   ngOnInit(): void {
-    this.allBaranggay = this.barangayService.getAll();
+    this.fetchBarangays();
   }
 
   setTab(tabName: string): void {
     this.activeTab = tabName;
   }
 
-  openAddModal() {
+  async fetchBarangays() {
+    this.allBaranggay = await this.barangayService.getAll(); // async support
+  }
+  openAddIncident() {
+    alert('Add Incident clicked! Implement your logic here.');
+  }
+
+  openAddModal(barangayToEdit?: Barangay) {
     this.showAddModal = true;
+
+    if (barangayToEdit) {
+      this.newBarangay = { ...barangayToEdit };
+      this.editingBarangayId = barangayToEdit.id ?? null;
+    } else {
+      this.newBarangay = this.getEmptyBarangay();
+      this.editingBarangayId = null;
+    }
+
     setTimeout(() => this.initMap(), 100);
   }
 
   closeModal() {
     this.showAddModal = false;
     this.newBarangay = this.getEmptyBarangay();
+    this.editingBarangayId = null;
     if (this.map) this.map.remove();
   }
 
@@ -59,14 +76,18 @@ export class InfoComponent implements OnInit {
   }
 
   initMap() {
-    this.map = L.map('map').setView([14.5995, 120.9842], 13);
+    this.map = L.map('map').setView(
+      [this.newBarangay.latitude!, this.newBarangay.longitude!],
+      13
+    );
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: 'Map data © OpenStreetMap contributors',
     }).addTo(this.map);
 
-    const marker = L.marker([14.5995, 120.9842], { draggable: true }).addTo(
-      this.map
-    );
+    const marker = L.marker(
+      [this.newBarangay.latitude!, this.newBarangay.longitude!],
+      { draggable: true }
+    ).addTo(this.map);
 
     marker.on('dragend', () => {
       const pos = marker.getLatLng();
@@ -87,8 +108,6 @@ export class InfoComponent implements OnInit {
         this.setLatLng(center.lat, center.lng);
       })
       .addTo(this.map);
-
-    this.setLatLng(14.5995, 120.9842);
   }
 
   setLatLng(lat: number, lng: number) {
@@ -106,25 +125,54 @@ export class InfoComponent implements OnInit {
       this.isSubmitting = true;
 
       try {
-        // Simulate async service with a Promise (replace this with `await` if using real backend)
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (this.editingBarangayId) {
+          await this.barangayService.update(
+            this.editingBarangayId,
+            this.newBarangay
+          );
+        } else {
+          await this.barangayService.add(this.newBarangay);
+        }
 
-        this.barangayService.add(this.newBarangay);
-        this.allBaranggay = this.barangayService.getAll();
-
+        await this.fetchBarangays();
         this.closeModal();
         this.showSuccessModal = true;
 
-        // Automatically hide success modal after 2s
-        setTimeout(() => {
-          this.showSuccessModal = false;
-        }, 2000);
+        setTimeout(() => (this.showSuccessModal = false), 2000);
       } catch (error) {
         console.error('Error submitting barangay:', error);
-        // Optional: Show error modal here
       } finally {
         this.isSubmitting = false;
       }
     }
+  }
+
+  editBarangay(barangay: Barangay) {
+    this.openAddModal(barangay);
+  }
+
+  async deleteBarangay(id: string | undefined) {
+    if (id && confirm('Are you sure you want to delete this barangay?')) {
+      await this.barangayService.delete(id);
+      await this.fetchBarangays();
+    }
+  }
+
+  openDropdownIndex: string | null = null;
+
+  toggleDropdown(id: string | undefined, event: MouseEvent) {
+    event.stopPropagation();
+    if (!id) return; // safety check
+
+    if (this.openDropdownIndex === id) {
+      this.openDropdownIndex = null;
+    } else {
+      this.openDropdownIndex = id;
+    }
+  }
+
+  @HostListener('document:click')
+  closeDropdown() {
+    this.openDropdownIndex = null;
   }
 }

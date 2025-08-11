@@ -58,7 +58,7 @@ export class MapRequest implements AfterViewInit, OnDestroy {
     this.initializeMap();
 
     this.loadingRequests = true;
-    this.cdr.detectChanges(); // notify Angular immediately about loading start
+    this.cdr.detectChanges();
 
     await this.loadCurrentStaff();
 
@@ -70,7 +70,7 @@ export class MapRequest implements AfterViewInit, OnDestroy {
             this.requests = requests;
             this.applyFilter(this.activeFilter || 'All');
             this.loadingRequests = false;
-            this.cdr.detectChanges(); // update bindings
+            this.cdr.detectChanges();
           });
         },
         error: (error) => {
@@ -120,6 +120,9 @@ export class MapRequest implements AfterViewInit, OnDestroy {
       .addTo(this.map)
       .bindPopup('<strong>Staff Location</strong>');
 
+    // 🔥 Center the map on the actual staff location
+    this.map.setView(this.staffLocation, 14);
+
     this.trackStaffLocation();
   }
 
@@ -160,6 +163,9 @@ export class MapRequest implements AfterViewInit, OnDestroy {
             position.coords.longitude,
           ];
           this.staffMarker?.setLatLng(this.staffLocation);
+
+          // Optional: Uncomment to follow staff as they move
+          // this.map.setView(this.staffLocation, this.map.getZoom());
 
           if (this.currentRequestId && this.currentStaff) {
             try {

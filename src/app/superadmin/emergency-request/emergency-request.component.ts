@@ -12,6 +12,7 @@ import * as L from 'leaflet';
 import { CommonModule } from '@angular/common';
 import { Firestore, doc, getDoc } from '@angular/fire/firestore';
 import { Subscription } from 'rxjs';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-emergency-request',
@@ -42,7 +43,8 @@ export class EmergencyRequestComponent implements AfterViewInit, OnDestroy {
   constructor(
     private requestService: EmergencyRequestService,
     private firestore: Firestore,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private router: Router
   ) {}
 
   ngAfterViewInit(): void {
@@ -114,6 +116,9 @@ export class EmergencyRequestComponent implements AfterViewInit, OnDestroy {
           console.error('Error receiving realtime emergency requests:', error);
         },
       });
+  }
+  async ViewRequest(req: EmergencyRequest) {
+    this.router.navigate(['/superAdmin/EmergencyRequest', req.id]);
   }
 
   getStaffFullName(staffId?: string): string {

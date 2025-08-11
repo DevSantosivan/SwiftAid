@@ -3,30 +3,20 @@ import { Router } from '@angular/router';
 import {
   FormControl,
   FormGroup,
-  FormsModule,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
 
 import { AuthService } from '../../core/auth.service';
-// import { LoaderComponent } from '../../loader/loader.component';
-
 import { CommonModule } from '@angular/common';
 import { LoadingScreenComponent } from '../loading-screen/loading-screen.component';
-import { NavbarComponent } from '../navbar/navbar.component';
-import { PresenceService } from '../../core/presence.service';
 
-declare const gapi: any;
 @Component({
   selector: 'app-login',
-  imports: [
-    FormsModule,
-    ReactiveFormsModule,
-    CommonModule,
-    LoadingScreenComponent,
-  ],
+  standalone: true,
+  imports: [ReactiveFormsModule, CommonModule, LoadingScreenComponent],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.scss',
+  styleUrls: ['./login.component.scss'],
 })
 export class LoginComponent implements OnInit {
   valid: boolean = false;
@@ -38,24 +28,16 @@ export class LoginComponent implements OnInit {
   isLoading: boolean = false;
 
   errorMessage: string = '';
-  phoneNumber: string = '';
-  otp: string = '';
-  showOtpForm: boolean = false;
-  showOtpInput: boolean = false;
-  verificationCode: any;
 
   loginForm = new FormGroup({
-    email: new FormControl('', Validators.required),
+    email: new FormControl('', [Validators.required, Validators.email]),
     password: new FormControl('', Validators.required),
   });
 
-  constructor(
-    private authService: AuthService,
-    private router: Router,
-    private presence: PresenceService
-  ) {}
+  constructor(private authService: AuthService, private router: Router) {}
 
   ngOnInit(): void {
+    // Initialize your flags from AuthService if you want
     this.isLoggedIn = this.authService.getErrorValidation();
     this.isProgressIn = this.authService.getErrorValidation();
   }
@@ -65,13 +47,13 @@ export class LoginComponent implements OnInit {
       const { email, password } = this.loginForm.value;
 
       this.isLoading = true;
+      this.email_pass = false;
+      this.errorMessage = '';
 
       try {
         const uid = await this.authService.login(email!, password!);
         console.log('Logged in user UID:', uid);
-
         this.success = true;
-        this.email_pass = false;
       } catch (err: any) {
         console.error('Login failed:', err);
         this.errorMessage =

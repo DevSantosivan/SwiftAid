@@ -25,7 +25,7 @@ export class AdminGuard implements CanActivate {
               const claims = token.claims;
               this.authService.userDataSubject.next(user);
               if (claims['role'] === expectedRole) {
-                const role = claims['role'];
+                const role = token.claims['role'] as string | null;
                 this.authService.userRole$.next(role);
                 observer.next(true);
               } else {

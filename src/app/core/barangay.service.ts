@@ -1,26 +1,47 @@
 import { Injectable } from '@angular/core';
+import {
+  Firestore,
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  getDocs,
+  CollectionReference,
+} from '@angular/fire/firestore';
 import { Barangay } from '../model/baranggay';
+import { collectionData } from '@angular/fire/firestore';
+import { firstValueFrom } from 'rxjs';
 
-const STORAGE_KEY = 'barangay_data';
-
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root',
+})
 export class BarangayService {
-  getAll(): Barangay[] {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+  private barangayCollection: CollectionReference;
+
+  constructor(private firestore: Firestore) {
+    this.barangayCollection = collection(this.firestore, 'barangay');
   }
 
-  saveAll(barangays: Barangay[]): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(barangays));
+  async getAll(): Promise<Barangay[]> {
+    const snapshot = await getDocs(this.barangayCollection);
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Barangay[];
   }
 
-  add(barangay: Barangay): void {
-    const current = this.getAll();
-    current.push(barangay);
-    this.saveAll(current);
+  async add(barangay: Barangay) {
+    return await addDoc(this.barangayCollection, barangay);
   }
 
-  clear(): void {
-    localStorage.removeItem(STORAGE_KEY);
+  async update(id: string, barangay: Barangay) {
+    const docRef = doc(this.barangayCollection, id);
+    return await updateDoc(docRef, barangay as any);
+  }
+
+  async delete(id: string) {
+    const docRef = doc(this.barangayCollection, id);
+    return await deleteDoc(docRef);
   }
 }

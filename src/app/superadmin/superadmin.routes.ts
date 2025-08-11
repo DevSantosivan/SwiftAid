@@ -7,6 +7,7 @@ import { AccountComponent } from './account/account.component';
 import { FeedbackComponent } from './feedback/feedback.component';
 import { InfoComponent } from './info/info.component';
 import { TeamStaffComponent } from './team-staff/team-staff.component';
+import { ViewRequestDetails } from './view-request-details/view-request-details';
 
 export const SuperAdminRoutes: Routes = [
   {
@@ -21,6 +22,13 @@ export const SuperAdminRoutes: Routes = [
       { path: 'Account', component: AccountComponent },
       { path: 'Feedback', component: FeedbackComponent },
       { path: 'Info', component: InfoComponent },
+      {
+        path: 'EmergencyRequest/:id',
+        loadComponent: () =>
+          import('./view-request-details/view-request-details').then(
+            (m) => m.ViewRequestDetails
+          ),
+      },
     ],
   },
 ];

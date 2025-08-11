@@ -6,6 +6,8 @@ import {
   orderBy,
   onSnapshot,
   Timestamp,
+  getDocs,
+  limit,
 } from '@angular/fire/firestore';
 import { Messaging, getToken, onMessage } from '@angular/fire/messaging';
 import { EmergencyRequest } from '../model/emergency';
@@ -18,74 +20,128 @@ export class NotificationService {
 
   constructor(private firestore: Firestore, private messaging: Messaging) {}
 
-  // Request permission and get FCM token
-  async requestNotificationPermission() {
-    if ('Notification' in window && Notification.permission !== 'granted') {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        try {
-          const token = await getToken(this.messaging, {
-            vapidKey: this.vapidKey,
-          });
-          if (token) {
-            console.log('✅ FCM Token:', token);
-            // Save the token to your backend if needed
-          } else {
-            console.warn('No registration token available.');
-          }
-        } catch (err) {
-          console.error('Error getting FCM token', err);
+  async requestNotificationPermission(): Promise<NotificationPermission> {
+    if (!('Notification' in window)) {
+      console.warn('Browser does not support notifications.');
+      return 'denied';
+    }
+
+    if (Notification.permission === 'granted') {
+      return 'granted';
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      try {
+        const token = await getToken(this.messaging, {
+          vapidKey: this.vapidKey,
+        });
+        if (token) {
+          console.log('✅ FCM Token:', token);
+          // Optionally send token to your backend here
+        } else {
+          console.warn('No registration token available.');
         }
-      } else {
-        console.warn('Notification permission denied');
+      } catch (error) {
+        console.error('Error getting FCM token', error);
       }
+    } else {
+      console.warn('Notification permission denied');
+    }
+
+    return permission;
+  }
+
+  async initializeLatestTimestamp(): Promise<void> {
+    try {
+      const emergencyRef = collection(this.firestore, 'EmergencyRequest');
+      const q = query(emergencyRef, orderBy('timestamp', 'desc'), limit(1));
+      const snapshot = await getDocs(q);
+
+      if (!snapshot.empty) {
+        const data = snapshot.docs[0].data() as EmergencyRequest;
+        this.latestRequestTimestamp = data.timestamp;
+        console.log(
+          '🕒 Initialized latest timestamp:',
+          this.latestRequestTimestamp
+        );
+      } else {
+        console.log('No existing emergency requests found.');
+      }
+    } catch (error) {
+      console.error('Error initializing latest timestamp:', error);
     }
   }
 
-  // Listen to Firestore emergency requests and show notifications if app is open
   listenToEmergencyRequests(): void {
     const emergencyRef = collection(this.firestore, 'EmergencyRequest');
     const q = query(emergencyRef, orderBy('timestamp', 'desc'));
 
-    onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const latestDoc = snapshot.docs[0];
-        const data = latestDoc.data() as EmergencyRequest;
-        const newTimestamp: Timestamp = data.timestamp;
+    onSnapshot(
+      q,
+      (snapshot) => {
+        console.log('📥 Firestore snapshot listener triggered');
 
-        if (!this.latestRequestTimestamp) {
-          this.latestRequestTimestamp = newTimestamp;
-          return;
+        if (!snapshot.empty) {
+          const latestDoc = snapshot.docs[0];
+          const data = latestDoc.data() as EmergencyRequest;
+          const newTimestamp: Timestamp = data.timestamp;
+
+          if (!this.latestRequestTimestamp) {
+            this.latestRequestTimestamp = newTimestamp;
+            return;
+          }
+
+          if (newTimestamp?.seconds > this.latestRequestTimestamp.seconds) {
+            this.latestRequestTimestamp = newTimestamp;
+
+            const event = data.event || 'Unknown Event';
+            const location = data.address || 'Unknown Location';
+            const name = data.name || 'Unknown Reporter';
+
+            const message = `🚨 ${event} at ${location} reported by ${name}`;
+            this.showForegroundNotification('New Emergency Request', message);
+          }
         }
-
-        if (newTimestamp?.seconds > this.latestRequestTimestamp.seconds) {
-          this.latestRequestTimestamp = newTimestamp;
-
-          const event = data.needs || 'Unknown Event';
-          const location = data.address || 'Unknown Location';
-          const name = data.name || 'Unknown Reporter';
-
-          const message = `🚨 ${event} at ${location} reported by ${name}`;
-          this.showForegroundNotification('New Emergency Request', message);
-        }
+      },
+      (error) => {
+        console.error('❌ Firestore listener error:', error);
       }
-    });
+    );
   }
 
-  // Show notifications only when app is open (foreground)
-  private showForegroundNotification(title: string, message: string): void {
+  private showForegroundNotification(
+    title: string,
+    message: string,
+    requestId?: string
+  ): void {
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, {
+      console.log('🔔 Showing foreground notification:', title, message);
+
+      const notification = new Notification(title, {
         body: message,
         icon: 'assets/logo22.png',
+        data: { requestId }, // Pass requestId here
       });
+
+      notification.onclick = () => {
+        const targetUrl = requestId
+          ? `/admin/EmergencyRequest/${requestId}`
+          : '/admin/EmergencyRequest';
+
+        window.focus();
+        window.location.href = targetUrl; // Use full reload approach
+      };
+    } else {
+      console.warn(
+        'Notification not shown - permission not granted or not supported.'
+      );
     }
   }
 
-  // Listen for messages received when app is in foreground (from FCM)
-  listenForFCMMessages() {
+  listenForFCMMessages(): void {
     onMessage(this.messaging, (payload) => {
-      console.log('Message received in foreground: ', payload);
+      console.log('📡 Message received in foreground:', payload);
       if (payload.notification) {
         this.showForegroundNotification(
           payload.notification.title || 'Notification',

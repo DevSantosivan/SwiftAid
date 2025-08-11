@@ -1,12 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import {
-  Auth,
-  getAuth,
-  signInWithEmailAndPassword,
-  User,
-  signInWithPopup,
-  GoogleAuthProvider,
-} from '@angular/fire/auth';
+import { Auth, signInWithEmailAndPassword, User } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 import { getFirestore, Firestore, doc, getDoc } from 'firebase/firestore';
@@ -18,58 +11,62 @@ import { initializeApp } from 'firebase/app';
 })
 export class AuthService {
   auth = inject(Auth);
-  public userDataSubject = new BehaviorSubject<User>(<User>{});
-  public userRole$ = new BehaviorSubject<string | unknown>(null);
-  public users$ = this.userDataSubject.asObservable();
-  private failed = false;
-  private progress = false;
-  user: any;
   private firestore: Firestore;
+
+  public userDataSubject = new BehaviorSubject<User | null>(null);
+  public userRole$ = new BehaviorSubject<string | null>(null);
+
+  // Flags for UI state (error/progress)
+  private failed = false;
 
   constructor(private router: Router) {
     const firebaseApp = initializeApp(environment.firebaseConfig);
     this.firestore = getFirestore(firebaseApp);
 
-    // ✅ Auto-redirect if user is already logged in
+    // Listen to Firebase auth state changes once app starts
     this.auth.onAuthStateChanged(async (user) => {
       if (user) {
-        try {
-          this.userDataSubject.next(user);
-          const userRef = doc(this.firestore, 'users', user.uid);
-          const userDoc = await getDoc(userRef);
+        this.userDataSubject.next(user);
+        const role = await this.fetchUserRole(user.uid);
+        this.userRole$.next(role);
 
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            const role = userData?.['role'];
-
-            this.userRole$.next(role); // Optional: if you use this elsewhere
-
-            // Redirect based on role
-            if (role === 'admin') {
-              this.router.navigate(['/admin']);
-            } else if (role === 'superAdmin') {
-              this.router.navigate(['/superAdmin']);
-            } else {
-              this.router.navigate(['/home']);
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching user data on init:', error);
-        }
+        // Optional: auto-redirect on page reload if already logged in
+        this.redirectUserByRole(role);
+      } else {
+        this.userDataSubject.next(null);
+        this.userRole$.next(null);
       }
     });
-
-    this.getBearerToken();
   }
 
-  getBearerToken(): Promise<string> | null {
-    return this.auth.currentUser?.getIdToken() ?? null;
+  getCurrentUser(): User | null {
+    return this.auth.currentUser;
   }
 
-  async logout() {
-    this.auth.signOut();
-    this.router.navigate(['/home']);
+  private async fetchUserRole(uid: string): Promise<string | null> {
+    try {
+      const userRef = doc(this.firestore, 'users', uid);
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        return userDoc.data()?.['role'] ?? null;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+      return null;
+    }
   }
+
+  private redirectUserByRole(role: string | null) {
+    if (role === 'admin') {
+      this.router.navigate(['/admin']);
+    } else if (role === 'superAdmin') {
+      this.router.navigate(['/superAdmin']);
+    } else if (role) {
+      this.router.navigate(['/home']);
+    }
+  }
+
   async login(email: string, password: string): Promise<string> {
     try {
       const userCredential = await signInWithEmailAndPassword(
@@ -79,31 +76,26 @@ export class AuthService {
       );
       const user = userCredential.user;
 
-      const userRef = doc(this.firestore, 'users', user.uid);
-      const userDoc = await getDoc(userRef);
+      this.userDataSubject.next(user);
 
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const role = userData?.['role'];
+      const role = await this.fetchUserRole(user.uid);
+      this.userRole$.next(role);
 
-        // Redirect base sa role
-        if (role === 'admin') {
-          this.router.navigate(['/admin']);
-        } else if (role === 'superAdmin') {
-          this.router.navigate(['/superAdmin']);
-        } else {
-          this.router.navigate(['/home']);
-        }
+      this.redirectUserByRole(role);
 
-        // Return UID para magamit sa caller
-        return user.uid;
-      } else {
-        throw new Error('User data not found in Firestore.');
-      }
+      this.failed = false;
+      return user.uid;
     } catch (error) {
-      console.error('Login failed:', error);
-      throw new Error('Invalid email or password. Please try again.');
+      this.failed = true;
+      throw error;
     }
+  }
+
+  async logout() {
+    await this.auth.signOut();
+    this.userDataSubject.next(null);
+    this.userRole$.next(null);
+    this.router.navigate(['/home']);
   }
 
   getErrorValidation(): boolean {
@@ -112,34 +104,5 @@ export class AuthService {
 
   setErrorValidation(status: boolean): void {
     this.failed = status;
-  }
-
-  loginWithGoogle() {
-    const provider = new GoogleAuthProvider();
-
-    signInWithPopup(this.auth, provider)
-      .then(async (result) => {
-        const user = result.user;
-        const userRef = doc(this.firestore, 'users', user.uid);
-        const userDoc = await getDoc(userRef);
-
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          const role = userData?.['role'];
-
-          if (role === 'admin') {
-            this.router.navigate(['/admin']);
-          } else if (role === 'superAdmin') {
-            this.router.navigate(['/superAdmin']);
-          } else {
-            this.router.navigate(['/home']);
-          }
-        } else {
-          console.error('No user data found after Google login.');
-        }
-      })
-      .catch((error) => {
-        console.error('Error during Google sign in:', error);
-      });
   }
 }

@@ -176,13 +176,13 @@ export class HomeComponent implements OnInit {
     try {
       // Fetch user count
       const userCount = await this.userService.getUserCount();
-      console.log('Total users fetched:', userCount);
+
       this.userCount = userCount;
 
       // Fetch emergency request count
       const registeredAccount =
         await this.EmergencyRequestService.getRequestCount();
-      console.log('Total emergency requests fetched:', registeredAccount);
+
       this.EmergencyRequest = registeredAccount;
 
       // Fetch accident category data for pie chart
@@ -190,10 +190,6 @@ export class HomeComponent implements OnInit {
 
       // Fetch yearly accident data for line chart
       await this.getYearlyAccidentData();
-
-      this.notificationService.requestNotificationPermission();
-      this.notificationService.listenToEmergencyRequests();
-      this.notificationService.listenForFCMMessages();
     } catch (error) {
       console.error('Error fetching data:', error);
     }
