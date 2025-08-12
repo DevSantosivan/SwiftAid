@@ -1,36 +1,59 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Auth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
 import { UserService } from '../../core/user.service';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { NotificationService } from '../../core/notification.service';
-import { OnInit } from '@angular/core';
-import {
-  Firestore,
-  collection,
-  getDocs,
-  DocumentData,
-} from '@angular/fire/firestore';
+import { Firestore } from '@angular/fire/firestore';
 import { DashboardChartService } from '../../core/dashboard-chart.service';
+import { CommonModule } from '@angular/common';
+import { EmergencyRequest } from '../../model/emergency';
 
 Chart.register(...registerables);
+
 @Component({
   selector: 'app-dashboard',
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './dashboard.component.html',
-  styleUrl: './dashboard.component.scss',
+  styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements OnInit {
   chart: any;
-  pieChart: any; // Declare the pie chart variable
-  yearlyChart: any; // Declare the yearly chart variable
+  pieChart: any;
+  yearlyChart: any;
   isAdmin: boolean = false;
   currentUserId: string = '';
   isloader: boolean = false;
   userCount: number = 0;
   EmergencyRequest: number = 0;
-  // Line Chart Configuration (Monthly)
+  recentRequests: EmergencyRequest[] = [];
+  isSuperAdmin: boolean = false;
+
+  pieChartLegend: { label: string; color: string }[] = [];
+
+  private RED_PALETTE = [
+    '#b71c1c',
+    '#d32f2f',
+    '#f44336',
+    '#ef5350',
+    '#c62828',
+    '#212121',
+    '#424242',
+    '#e0e0e0',
+    '#ffffff',
+  ];
+
+  constructor(
+    private authentication: Auth,
+    private route: Router,
+    private userService: UserService,
+    private EmergencyRequestService: EmergencyRequestService,
+    private firestore: Firestore,
+    private notificationService: NotificationService,
+    private dashboardChartService: DashboardChartService
+  ) {}
+
   getMonthLabels(monthCount: number): string[] {
     const monthNames = [
       'Jan',
@@ -46,7 +69,6 @@ export class DashboardComponent implements OnInit {
       'Nov',
       'Dec',
     ];
-
     const labels = [];
     const today = new Date();
     let month = today.getMonth();
@@ -66,16 +88,21 @@ export class DashboardComponent implements OnInit {
     }
     return years;
   }
+
+  generateThemedColor(index: number): string {
+    return this.RED_PALETTE[index % this.RED_PALETTE.length];
+  }
+
   public lineChartConfig: any = {
     type: 'bar',
     data: {
-      labels: this.getMonthLabels(7), // Keeps monthly data as per your original request
+      labels: this.getMonthLabels(7),
       datasets: [
         {
           label: 'Police',
           data: [120, 140, 100, 180, 150, 160, 130],
-          borderColor: 'red',
-          backgroundColor: 'rgba(255, 0, 0, 0.8)',
+          borderColor: '#b71c1c',
+          backgroundColor: 'rgba(183, 28, 28, 0.8)',
           fill: true,
           borderWidth: 1,
           pointBorderRadius: 5,
@@ -83,8 +110,8 @@ export class DashboardComponent implements OnInit {
         {
           label: 'Ambulance',
           data: [60, 70, 50, 90, 85, 80, 75],
-          borderColor: 'red',
-          backgroundColor: 'rgba(255, 0, 0, 0.6)',
+          borderColor: '#d32f2f',
+          backgroundColor: 'rgba(211, 47, 47, 0.6)',
           fill: true,
           borderWidth: 1,
           pointBorderRadius: 5,
@@ -92,8 +119,8 @@ export class DashboardComponent implements OnInit {
         {
           label: 'Fire',
           data: [30, 45, 50, 40, 60, 55, 48],
-          borderColor: 'red',
-          backgroundColor: 'rgba(255, 0, 0, 0.4)',
+          borderColor: '#f44336',
+          backgroundColor: 'rgba(244, 67, 54, 0.4)',
           fill: true,
           borderWidth: 1,
           pointBorderRadius: 5,
@@ -103,49 +130,20 @@ export class DashboardComponent implements OnInit {
     options: {
       responsive: true,
       scales: {
-        y: {
-          beginAtZero: true,
-        },
+        y: { beginAtZero: true },
       },
     },
   };
 
-  // Pie Chart Configuration (Accident Categories)
   public pieChartConfig: any = {
     type: 'pie',
     data: {
-      labels: [
-        'Assault',
-        'Break-in',
-        'Vandalism',
-        'Theft',
-        'Accident',
-        'Heart Attack',
-        'Stroke',
-        'Breathing Issues',
-        'Fire',
-        'Explosion',
-        'Gas Leak',
-        'Flood',
-      ],
+      labels: [],
       datasets: [
         {
           label: 'Accident Categories',
-          data: [5, 3, 25, 12, 10, 7, 6, 4, 8, 5, 9, 6], // Example data for each category
-          backgroundColor: [
-            'rgb(245, 18, 75)', // Assault
-            'rgb(241, 69, 69)', // Break-in
-            'rgb(255, 102, 102)', // Vandalism
-            'rgb(255, 77, 77)', // Theft
-            'rgb(204, 0, 0)', // Accident
-            'rgb(255, 87, 34)', // Heart Attack
-            'rgb(255, 153, 153)', // Stroke
-            'rgb(255, 128, 128)', // Breathing Issues
-            'rgb(255, 69, 0)', // Fire
-            'rgb(255, 85, 85)', // Explosion
-            'rgb(204, 51, 51)', // Gas Leak
-            'rgb(255, 102, 85)', // Flood
-          ],
+          data: [],
+          backgroundColor: [],
           borderWidth: 1,
         },
       ],
@@ -153,24 +151,21 @@ export class DashboardComponent implements OnInit {
     options: {
       responsive: true,
       plugins: {
-        legend: {
-          position: 'top',
-        },
+        legend: { display: false },
       },
     },
   };
 
-  // Yearly Chart Configuration (Accident Data)
   public yearlyChartConfig: any = {
     type: 'line',
     data: {
-      labels: this.getYearLabels(5), // Get the last 5 years for example
+      labels: this.getYearLabels(5),
       datasets: [
         {
           label: 'Accident Data',
-          data: [20, 30, 40, 25, 50], // Sample data (replace with actual data)
+          data: [20, 30, 40, 25, 50],
           fill: false,
-          borderColor: 'rgb(255, 8, 0)', // Blue line color
+          borderColor: '#b71c1c',
           tension: 0.1,
         },
       ],
@@ -178,50 +173,53 @@ export class DashboardComponent implements OnInit {
     options: {
       responsive: true,
       scales: {
-        y: {
-          beginAtZero: true,
-        },
+        y: { beginAtZero: true },
       },
     },
   };
 
-  constructor(
-    private authentication: Auth,
-    private route: Router,
-    private userService: UserService,
-    private EmergencyRequestService: EmergencyRequestService,
-    private firestore: Firestore,
-    private notificationService: NotificationService,
-    private dashboardChartService: DashboardChartService
-  ) {}
-
   async ngOnInit() {
+    const user = this.authentication.currentUser;
+    this.currentUserId = user?.uid || '';
+
+    const role = await this.userService.getCurrentUserRole(this.currentUserId);
+    this.isSuperAdmin = role === 'superAdmin';
     const admins = await this.userService.getAdmins();
     this.isAdmin = admins.some((admin) => admin.uid === this.currentUserId);
-    console.log('Is current user an admin?', this.isAdmin);
 
-    // Initialize the charts
     this.chart = new Chart('MyLineChart', this.lineChartConfig);
     this.pieChart = new Chart('MyPieChart', this.pieChartConfig);
     this.yearlyChart = new Chart('MyYearlyChart', this.yearlyChartConfig);
 
     try {
-      const userCount = await this.userService.getUserCount();
-      console.log('Total users fetched:', userCount);
-      this.userCount = userCount;
-
-      // Fetch emergency request count
-      const registeredAccount =
+      this.userCount = await this.userService.getUserCount();
+      this.EmergencyRequest =
         await this.EmergencyRequestService.getRequestCount();
-      console.log('Total emergency requests fetched:', registeredAccount);
-      this.EmergencyRequest = registeredAccount;
 
-      // Use DashboardChartService to fetch data for charts
       const accidentCategoryCounts =
         await this.dashboardChartService.fetchAccidentCategoryCounts();
-      this.pieChartConfig.data.datasets[0].data = Object.values(
-        accidentCategoryCounts
-      );
+
+      const filteredLabels: string[] = [];
+      const filteredData: number[] = [];
+      const filteredColors: string[] = [];
+
+      for (const [category, count] of Object.entries(accidentCategoryCounts)) {
+        if (count > 0) {
+          filteredLabels.push(category);
+          filteredData.push(count);
+          filteredColors.push(this.generateThemedColor(filteredColors.length));
+        }
+      }
+
+      this.pieChartConfig.data.labels = filteredLabels;
+      this.pieChartConfig.data.datasets[0].data = filteredData;
+      this.pieChartConfig.data.datasets[0].backgroundColor = filteredColors;
+
+      this.pieChartLegend = filteredLabels.map((label, i) => ({
+        label,
+        color: filteredColors[i],
+      }));
+
       this.pieChart.update();
 
       const yearlyData =
@@ -230,19 +228,29 @@ export class DashboardComponent implements OnInit {
       this.yearlyChartConfig.data.datasets[0].data = yearlyData.counts;
       this.yearlyChart.update();
 
-      // Continue with other data fetching as needed
-      // ...
+      // ✅ Fetch recent requests
+      this.EmergencyRequestService.getRequestRealtime().subscribe(
+        (requests) => {
+          this.recentRequests = requests
+            .sort((a, b) => {
+              const dateA = a.timestamp?.toMillis?.() || 0;
+              const dateB = b.timestamp?.toMillis?.() || 0;
+              return dateB - dateA;
+            })
+            .slice(0, 5);
+        }
+      );
     } catch (error) {
-      console.error('Error fetching chart data:', error);
+      console.error('Error fetching dashboard data:', error);
     }
   }
 
   signout() {
     return this.authentication.signOut().then(() => {
+      this.isloader = true;
       setTimeout(() => {
         this.route.navigate(['/login']);
       }, 3000);
-      this.isloader = true;
     });
   }
 
@@ -311,14 +319,10 @@ export class DashboardComponent implements OnInit {
         <head>
           <title>Emergency Dashboard Report</title>
           <style>
-            body {
-              font-family: Arial, sans-serif;
-              padding: 30px;
-              color: #000;
-            }
+            body { font-family: Arial, sans-serif; padding: 30px; color: #000; background: #fff;}
             .header { text-align: center; margin-bottom: 40px; }
             .logo { width: 100px; height: auto; }
-            .report-title { font-size: 24px; font-weight: bold; color: #d32f2f; margin-top: 10px; }
+            .report-title { font-size: 24px; font-weight: bold; color: #b71c1c; margin-top: 10px; }
             .report-date { font-size: 14px; color: #666; }
             .box, .chart, .list {
               border: 1px solid #ccc;

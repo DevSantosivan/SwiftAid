@@ -21,6 +21,7 @@ export class EmergencyRequestService {
   private firestore: Firestore = inject(Firestore);
   private ngZone: NgZone = inject(NgZone);
   private collectionName = 'EmergencyRequest';
+  auth: any;
 
   async getRequestCount(): Promise<number> {
     try {
@@ -156,5 +157,44 @@ export class EmergencyRequestService {
       })
     );
     console.log(`Request ${requestId} marked as Resolved.`);
+  }
+
+  async getMyEmergencyRequestsById(): Promise<EmergencyRequest[]> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      throw new Error('User not logged in');
+    }
+
+    const uid = currentUser.uid;
+    const ref = collection(this.firestore, this.collectionName);
+    const q = query(ref, where('userId', '==', uid)); // or 'staffId' if that's what you need
+
+    const snap = await getDocs(q);
+    return snap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as EmergencyRequest[];
+  }
+
+  async fetchAccidentCategoryCounts(): Promise<{ [event: string]: number }> {
+    const ref = collection(this.firestore, 'EmergencyRequest');
+    const snap = await getDocs(ref);
+
+    const eventCount: { [event: string]: number } = {};
+
+    snap.forEach((docSnap) => {
+      const data = docSnap.data();
+      const event = data['event'];
+
+      if (event) {
+        if (eventCount[event]) {
+          eventCount[event]++;
+        } else {
+          eventCount[event] = 1;
+        }
+      }
+    });
+
+    return eventCount;
   }
 }

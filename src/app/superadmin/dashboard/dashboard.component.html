@@ -48,6 +48,22 @@
         <p>Chart</p>
         <div class="pie-chart">
           <canvas id="MyPieChart"> </canvas>
+
+          <div class="pie-chart-legend">
+            <div *ngFor="let item of pieChartLegend" class="legend-item">
+              <span
+                class="legend-color"
+                [style.backgroundColor]="item.color"
+              ></span>
+              <span
+                class="legend-label"
+                [style.backgroundColor]="item.color"
+                style="color: white; padding: 3px 8px; border-radius: 4px"
+              >
+                {{ item.label }}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -60,44 +76,33 @@
   <!-- end of content 1 -->
   <div class="content_2">
     <div class="btn-flex">
-      @if(!isAdmin) {
+      @if(isSuperAdmin) {
       <div class="btn" (click)="printDashboard()">
         <i class="bx bx-printer"></i>
         <h3>Print</h3>
       </div>
       }
+
       <div class="post-details-alert">
         <i class="bx bx-alert-shield"></i>
       </div>
       <div class="pie-content">
-        <h3>Recent Request</h3>
+        <h3>Recent Requests</h3>
         <p>Recent</p>
         <div class="recent-list">
-          <div class="list">
+          <div class="list" *ngFor="let request of recentRequests">
             <div class="profile">
               <div class="img">
                 <i class="bx bxs-user-circle"></i>
               </div>
-              <span>Carlos Salvador</span>
+              <span>{{ request.name || "Unknown" }}</span>
             </div>
 
             <div class="description">
-              <h4>Event</h4>
-              <p>Flood</p>
-            </div>
-          </div>
-
-          <div class="list">
-            <div class="profile">
-              <div class="img">
-                <i class="bx bxs-user-circle"></i>
-              </div>
-              <span>Ivan Santos</span>
-            </div>
-
-            <div class="description">
-              <h4>Event</h4>
-              <p>Assult</p>
+              <h4>{{ request.event }}</h4>
+              <p class="timestamp">
+                {{ request.timestamp?.toDate() | date : "short" }}
+              </p>
             </div>
           </div>
         </div>

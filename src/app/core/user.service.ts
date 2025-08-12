@@ -114,6 +114,16 @@ export class UserService {
     }));
   }
 
+  async getCurrentUserRole(uid: string): Promise<string | null> {
+    const docRef = doc(this.db, 'users', uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return data['role'] || null;
+    }
+    return null;
+  }
+
   async getUserById(uid: string): Promise<account | null> {
     try {
       const userRef = doc(this.db, 'users', uid);

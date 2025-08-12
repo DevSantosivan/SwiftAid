@@ -4,6 +4,7 @@ import { HomeComponent } from './home/home.component';
 import { MapRequest } from './map-request/map-request';
 import { Dashboard } from './dashboard/dashboard';
 import { MapRequestDetails } from './map-request-details/map-request-details';
+import { DashboardComponent } from '../superadmin/dashboard/dashboard.component';
 
 // {
 //     path: '',
@@ -26,7 +27,7 @@ export const AdminRoutes: Routes = [
     component: HomeComponent,
     children: [
       { path: '', redirectTo: 'Dashboard', pathMatch: 'full' },
-      { path: 'Dashboard', component: Dashboard },
+      { path: 'Dashboard', component: DashboardComponent },
       { path: 'EmergencyRequest', component: MapRequest },
       {
         path: 'EmergencyRequest/:id',
