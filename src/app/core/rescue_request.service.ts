@@ -10,6 +10,7 @@ import {
   query,
   where,
   DocumentSnapshot,
+  arrayUnion,
 } from '@angular/fire/firestore';
 import { EmergencyRequest } from '../model/emergency';
 import { Observable } from 'rxjs';
@@ -21,8 +22,9 @@ export class EmergencyRequestService {
   private firestore: Firestore = inject(Firestore);
   private ngZone: NgZone = inject(NgZone);
   private collectionName = 'EmergencyRequest';
-  auth: any;
+  auth: any; // You may want to properly inject your auth service here
 
+  // === EMERGENCY REQUEST METHODS ===
   async getRequestCount(): Promise<number> {
     try {
       const ref = collection(this.firestore, this.collectionName);
@@ -160,14 +162,14 @@ export class EmergencyRequestService {
   }
 
   async getMyEmergencyRequestsById(): Promise<EmergencyRequest[]> {
-    const currentUser = this.auth.currentUser;
+    const currentUser = this.auth?.currentUser;
     if (!currentUser) {
       throw new Error('User not logged in');
     }
 
     const uid = currentUser.uid;
     const ref = collection(this.firestore, this.collectionName);
-    const q = query(ref, where('userId', '==', uid)); // or 'staffId' if that's what you need
+    const q = query(ref, where('staffId', '==', uid)); // Use staffId to get accepted by current user
 
     const snap = await getDocs(q);
     return snap.docs.map((doc) => ({
@@ -196,5 +198,103 @@ export class EmergencyRequestService {
     });
 
     return eventCount;
+  }
+
+  // === NOTIFICATIONS ===
+
+  // Get all notifications with emergency request details, including if read by user
+  async getNotificationsWithRequestDetailsForUser(
+    userId: string
+  ): Promise<any[]> {
+    const notifRef = collection(this.firestore, 'Notifications');
+    const notifSnap = await getDocs(notifRef);
+
+    const notifications = await Promise.all(
+      notifSnap.docs.map(async (notifDoc) => {
+        const notifData = notifDoc.data();
+        const requestId = notifData['requestId'];
+
+        let requestData = null;
+        try {
+          const requestDocRef = doc(
+            this.firestore,
+            'EmergencyRequest',
+            requestId
+          );
+          const requestSnap = await getDoc(requestDocRef);
+          if (requestSnap.exists()) {
+            requestData = {
+              id: requestSnap.id, // ✅ Include the request ID here
+              ...requestSnap.data(),
+            };
+          }
+        } catch (error) {
+          console.warn(
+            `Error fetching EmergencyRequest for requestId: ${requestId}`,
+            error
+          );
+        }
+
+        return {
+          id: notifDoc.id, // notification ID
+          ...notifData,
+          request: requestData, // now includes request.id
+          isReadByCurrentUser: notifData['readBy']?.includes(userId) ?? false,
+        };
+      })
+    );
+
+    return notifications;
+  }
+
+  // Mark all notifications as read by the given user (adds userId to readBy array)
+  async markAllNotificationsAsReadForUser(userId: string): Promise<void> {
+    try {
+      const notifRef = collection(this.firestore, `Notifications`);
+      const snap = await getDocs(notifRef);
+
+      const updatePromises = snap.docs.map((docSnap) =>
+        updateDoc(docSnap.ref, {
+          readBy: arrayUnion(userId),
+        })
+      );
+
+      await Promise.all(updatePromises);
+      console.log(`All notifications marked as read for user ${userId}.`);
+    } catch (error) {
+      console.error('Error marking notifications as read:', error);
+      throw error;
+    }
+  }
+
+  // Mark a single notification as read by user
+  async markNotificationAsRead(
+    notificationId: string,
+    userId: string
+  ): Promise<void> {
+    try {
+      const notifDocRef = doc(this.firestore, 'Notifications', notificationId);
+      await updateDoc(notifDocRef, {
+        readBy: arrayUnion(userId),
+      });
+      console.log(
+        `Notification ${notificationId} marked as read by user ${userId}.`
+      );
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  }
+
+  // Get count of unread notifications for a specific user
+  async getUnreadNotificationCountForUser(userId: string): Promise<number> {
+    const notifRef = collection(this.firestore, 'Notifications');
+    const snap = await getDocs(notifRef);
+    const unread = snap.docs.filter((docSnap) => {
+      const data = docSnap.data();
+      return !data['readBy']?.includes(userId);
+    });
+
+    return unread.length;
   }
 }

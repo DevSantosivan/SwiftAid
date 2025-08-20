@@ -1,16 +1,14 @@
-// presence.service.ts
 import { Injectable } from '@angular/core';
 import {
   getDatabase,
   ref,
-  push,
   onDisconnect,
   onValue,
   set,
   serverTimestamp,
 } from 'firebase/database';
 import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { environment } from '../model/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -20,22 +18,40 @@ export class PresenceService {
 
   constructor() {
     onAuthStateChanged(this.auth, (user) => {
-      if (user) this.setupPresence(user.uid);
+      if (user) {
+        this.setupPresence(user.uid);
+      }
     });
   }
 
   private setupPresence(uid: string) {
-    const connsRef = ref(this.db, `status/${uid}/connections`);
-    const lastRef = ref(this.db, `status/${uid}/lastOnline`);
+    const statusRef = ref(this.db, `status/${uid}`);
     const connectedRef = ref(this.db, '.info/connected');
 
     onValue(connectedRef, (snap) => {
-      if (!snap.val()) return;
+      if (!snap.val()) {
+        // If disconnected, set user status to offline with timestamp
+        set(statusRef, {
+          state: 'offline',
+          lastOnline: Date.now(),
+          last_changed: Date.now(),
+        });
+        return;
+      }
 
-      const con = push(connsRef);
-      onDisconnect(con).remove();
-      onDisconnect(lastRef).set(serverTimestamp());
-      set(con, true);
+      // When connected, set state to online and update last_changed
+      set(statusRef, {
+        state: 'online',
+        lastOnline: null,
+        last_changed: Date.now(),
+      });
+
+      // When disconnected, set state to offline with lastOnline timestamp
+      onDisconnect(statusRef).set({
+        state: 'offline',
+        lastOnline: Date.now(),
+        last_changed: Date.now(),
+      });
     });
   }
 }

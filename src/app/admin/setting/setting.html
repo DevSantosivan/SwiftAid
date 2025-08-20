@@ -1,0 +1,262 @@
+<div class="container mt-4">
+  <div class="mb-4">
+    <h4 class="fw-bold"><i class="bx bx-cog"></i> Settings</h4>
+    <p class="text-muted">
+      Manage your account preferences, privacy, and notifications.
+    </p>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <ul class="nav nav-tabs">
+    <li class="nav-item">
+      <a
+        class="nav-link"
+        [class.active]="activeTab === 'profile'"
+        (click)="setTab('profile')"
+      >
+        <i class="bx bx-user"></i> Personal Profile
+      </a>
+    </li>
+    <!-- <li class="nav-item">
+      <a
+        class="nav-link"
+        [class.active]="activeTab === 'system'"
+        (click)="setTab('system')"
+      >
+        <i class="bx bx-cog"></i> System Preferences
+      </a>
+    </li> -->
+    <!-- <li class="nav-item">
+      <a
+        class="nav-link"
+        [class.active]="activeTab === 'privacy'"
+        (click)="setTab('privacy')"
+      >
+        <i class="bx bx-shield-quarter"></i> Privacy
+      </a>
+    </li> -->
+    <li class="nav-item">
+      <a
+        class="nav-link"
+        [class.active]="activeTab === 'notifications'"
+        (click)="setTab('notifications')"
+      >
+        <i class="bx bx-bell"></i> Notifications
+      </a>
+    </li>
+  </ul>
+
+  <!-- Tab Content -->
+  <div
+    [ngSwitch]="activeTab"
+    class="p-4 border border-top-0 bg-white shadow-sm"
+  >
+    <!-- Personal Profile Tab -->
+    <div *ngSwitchCase="'profile'">
+      <h5>Update Profile</h5>
+      <form (ngSubmit)="updateProfile()" #profileForm="ngForm">
+        <div class="mb-3">
+          <label class="form-label">Profile Picture</label>
+
+          <!-- Hidden file input -->
+          <input
+            type="file"
+            id="profilePicture"
+            accept="image/*"
+            (change)="onFileSelected($event)"
+            class="d-none"
+            #fileInput
+          />
+
+          <!-- Clickable circular profile picture -->
+          <div
+            class="profile-pic-wrapper"
+            (click)="fileInput.click()"
+            role="button"
+            tabindex="0"
+            (keydown.enter)="fileInput.click()"
+          >
+            <img
+              *ngIf="profilePicture; else placeholder"
+              [src]="profilePicture"
+              alt="Profile Picture Preview"
+              class="profile-pic"
+            />
+            <ng-template #placeholder>
+              <div class="profile-pic placeholder">
+                <i class="bx bx-camera"></i>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="fullName" class="form-label">Full Name</label>
+          <input
+            id="fullName"
+            type="text"
+            class="form-control"
+            [(ngModel)]="fullName"
+            name="fullName"
+            required
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="email" class="form-label">Email Address</label>
+          <input
+            id="email"
+            type="email"
+            class="form-control"
+            [(ngModel)]="email"
+            name="email"
+            required
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="contactNumber" class="form-label">Contact Number</label>
+          <input
+            id="contactNumber"
+            type="text"
+            class="form-control"
+            [(ngModel)]="contactNumber"
+            name="contactNumber"
+            required
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="address" class="form-label">Address</label>
+          <input
+            id="address"
+            type="text"
+            class="form-control"
+            [(ngModel)]="address"
+            name="address"
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="officeId" class="form-label">Office ID</label>
+          <input
+            id="officeId"
+            type="text"
+            class="form-control"
+            [(ngModel)]="office_id"
+            name="office_id"
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="charge" class="form-label">Charge</label>
+          <input
+            id="charge"
+            type="text"
+            class="form-control"
+            [(ngModel)]="charge"
+            name="charge"
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">Change Password</label>
+          <input
+            id="password"
+            type="password"
+            class="form-control"
+            [(ngModel)]="password"
+            name="password"
+            placeholder="Leave blank to keep current"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="!profileForm.form.valid"
+        >
+          Save Changes
+        </button>
+      </form>
+    </div>
+
+    <!-- System Preferences -->
+    <!-- <div *ngSwitchCase="'system'">
+      <h5>System Preferences</h5>
+      <form>
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="darkMode" />
+          <label class="form-check-label" for="darkMode"
+            >Enable Dark Mode</label
+          >
+        </div>
+        <div class="mb-3">
+          <label for="language" class="form-label">Language</label>
+          <select class="form-control" id="language">
+            <option>English</option>
+            <option>Filipino</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="timeFormat" class="form-label">Time Format</label>
+          <select class="form-control" id="timeFormat">
+            <option>12-Hour</option>
+            <option>24-Hour</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary">Apply Preferences</button>
+      </form>
+    </div> -->
+
+    <!-- Privacy
+    <div *ngSwitchCase="'privacy'">
+      <h5>Privacy Settings</h5>
+      <div class="form-check form-switch mb-3">
+        <input class="form-check-input" type="checkbox" id="2fa" />
+        <label class="form-check-label" for="2fa"
+          >Enable 2-Factor Authentication</label
+        >
+      </div>
+      <button type="button" class="btn btn-secondary">
+        View Login History
+      </button>
+    </div> -->
+
+    <!-- Notifications -->
+    <div *ngSwitchCase="'notifications'">
+      <h5>Notification Settings</h5>
+      <div class="form-check form-switch mb-3">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="pushNotif"
+          [(ngModel)]="pushNotif"
+          (change)="onPushNotifChange()"
+        />
+        <label class="form-check-label" for="pushNotif"
+          >Enable Push Notifications</label
+        >
+      </div>
+      <div class="form-check form-switch mb-3">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="soundAlert"
+          [(ngModel)]="soundAlert"
+          (change)="toggleSoundAlert()"
+        />
+        <label class="form-check-label" for="soundAlert"
+          >Enable Sound Alerts</label
+        >
+      </div>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="saveNotificationSettings()"
+      >
+        Save Notification Settings
+      </button>
+    </div>
+  </div>
+</div>

@@ -23,4 +23,5 @@ export interface EmergencyRequest {
   staffLng?: number;
   staffUpdatedAt?: any;
   staffFullName?: string;
+  readBy?: string[];
 }

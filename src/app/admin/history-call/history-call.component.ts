@@ -1,179 +1,374 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
-import { EmergencyRequestService } from '../../core/rescue_request.service';
-import { EmergencyRequest } from '../../model/emergency';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Firestore, collection, query, onSnapshot, doc, deleteDoc } from '@angular/fire/firestore'; // Import necessary Firestore methods
-import { AdminNavbarComponent } from '../admin-navbar/admin-navbar.component';
+
+import { EmergencyRequest } from '../../model/emergency';
+import { EmergencyRequestService } from '../../core/rescue_request.service';
+import { AuthService } from '../../core/auth.service';
+
+import { Chart, registerables } from 'chart.js';
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-history-call',
-  imports: [CommonModule, FormsModule, AdminNavbarComponent],
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './history-call.component.html',
-  styleUrls: ['./history-call.component.scss']
+  styleUrls: ['./history-call.component.scss'],
 })
-export class HistoryCallComponent {
-  request: EmergencyRequest[] = [];
-  currentPage: number = 1;
-  totalPages: number = 1;
-  currentPageRequests: EmergencyRequest[] = [];
-  itemsPerPageOptions: number[] = [5, 10, 15, 20];  // Available options for items per page
-  itemsPerPage: number = 10;  // Default items per page
+export class HistoryCallComponent implements OnInit, OnDestroy {
+  activeTab: 'all' | 'accepted' | 'completed' | 'cancelled' = 'all';
+
+  allRequests: EmergencyRequest[] = [];
+  acceptedRequests: EmergencyRequest[] = [];
+  completedRequests: EmergencyRequest[] = [];
+  cancelledRequests: EmergencyRequest[] = [];
+
+  filteredAllRequests: EmergencyRequest[] = [];
+  filteredAcceptedRequests: EmergencyRequest[] = [];
+  filteredCompletedRequests: EmergencyRequest[] = [];
+  filteredCancelledRequests: EmergencyRequest[] = [];
+
+  searchTerm: string = '';
+  selectedRequests: EmergencyRequest[] = [];
+  showBulkMenu = false;
+
+  requestToView?: EmergencyRequest;
+
+  // ✅ Separate Chart.js instances
+  requestStatusChart?: Chart;
+  requestEventBarChart?: Chart;
 
   constructor(
-    private route: Router,
-    private emergencyRequest: EmergencyRequestService,
-    private firestore: Firestore  // Inject Firestore
+    private emergencyRequestService: EmergencyRequestService,
+    private authService: AuthService
   ) {}
 
-  async ngOnInit(): Promise<void> {
+  async ngOnInit() {
+    await this.loadRequests();
+  }
+
+  ngOnDestroy() {
+    this.requestStatusChart?.destroy();
+    this.requestEventBarChart?.destroy();
+  }
+
+  async loadRequests() {
     try {
-      // Setup real-time listener for the Firestore collection
-      const requestsRef = collection(this.firestore, 'EmergencyRequest');
-      const q = query(requestsRef);
-      
-      // Listen to changes in the Firestore collection
-      onSnapshot(q, (querySnapshot) => {
-        // Map Firestore documents to your request array and add `id` field
-        this.request = querySnapshot.docs.map(doc => ({
-          id: doc.id, // Attach Firestore document ID here
-          ...doc.data() as EmergencyRequest
-        }));
-  
-        // Calculate total pages and load the first page's requests
-        this.totalPages = Math.ceil(this.request.length / this.itemsPerPage);
-        this.loadCurrentPageRequests();
-  
-        // Update the currentLocation based on latitude/longitude for each request
-        this.updateCurrentLocationForRequests();
+      this.allRequests = await this.emergencyRequestService.getRequest();
+
+      const currentUser = await this.authService.getCurrentUser();
+      if (!currentUser) {
+        console.error('No logged-in user');
+        return;
+      }
+
+      const currentUserId = currentUser.uid;
+
+      this.acceptedRequests = this.allRequests.filter(
+        (r) =>
+          r.status.toLowerCase() === 'responding' && r.staffId === currentUserId
+      );
+
+      this.completedRequests = this.allRequests.filter((r) =>
+        ['resolved', 'completed'].includes(r.status.toLowerCase())
+      );
+
+      this.cancelledRequests = this.allRequests.filter(
+        (r) => r.status.toLowerCase() === 'cancelled'
+      );
+
+      this.applyFilters();
+
+      // Draw bar chart from all requests initially
+      this.updateMonthlyEventBarChart(this.allRequests);
+    } catch (error) {
+      console.error('Error loading requests:', error);
+    }
+  }
+
+  applyFilters() {
+    const term = this.searchTerm.trim().toLowerCase();
+
+    this.filteredAllRequests = this.filterBySearch(this.allRequests, term);
+    this.filteredAcceptedRequests = this.filterBySearch(
+      this.acceptedRequests,
+      term
+    );
+    this.filteredCompletedRequests = this.filterBySearch(
+      this.completedRequests,
+      term
+    );
+    this.filteredCancelledRequests = this.filterBySearch(
+      this.cancelledRequests,
+      term
+    );
+
+    this.selectedRequests = this.selectedRequests.filter((selected) =>
+      this.getCurrentFilteredRequests().some((r) => r.id === selected.id)
+    );
+
+    const currentRequests = this.getCurrentFilteredRequests();
+    this.updateRequestStatusPieChart(currentRequests);
+    this.updateMonthlyEventBarChart(currentRequests);
+  }
+
+  filterBySearch(
+    requests: EmergencyRequest[],
+    term: string
+  ): EmergencyRequest[] {
+    if (!term) return requests;
+
+    return requests.filter(
+      (req) =>
+        (req.name?.toLowerCase().includes(term) ?? false) ||
+        (req.description?.toLowerCase().includes(term) ?? false) ||
+        (req.status?.toLowerCase().includes(term) ?? false)
+    );
+  }
+
+  setTab(tab: 'all' | 'accepted' | 'completed' | 'cancelled') {
+    this.activeTab = tab;
+    this.selectedRequests = [];
+    this.applyFilters();
+  }
+
+  getCurrentFilteredRequests(): EmergencyRequest[] {
+    switch (this.activeTab) {
+      case 'accepted':
+        return this.filteredAcceptedRequests;
+      case 'completed':
+        return this.filteredCompletedRequests;
+      case 'cancelled':
+        return this.filteredCancelledRequests;
+      default:
+        return this.filteredAllRequests;
+    }
+  }
+
+  isChecked(req: EmergencyRequest): boolean {
+    return this.selectedRequests.some((selected) => selected.id === req.id);
+  }
+
+  setChecked(req: EmergencyRequest, event: any) {
+    if (event.target.checked) {
+      if (!this.isChecked(req)) {
+        this.selectedRequests.push(req);
+      }
+    } else {
+      this.selectedRequests = this.selectedRequests.filter(
+        (selected) => selected.id !== req.id
+      );
+    }
+  }
+
+  isAllSelected(): boolean {
+    const currentRequests = this.getCurrentFilteredRequests();
+    return (
+      currentRequests.length > 0 &&
+      currentRequests.every((r) => this.isChecked(r))
+    );
+  }
+
+  toggleSelectAllRequests(event: any) {
+    const checked = event.target.checked;
+    const currentRequests = this.getCurrentFilteredRequests();
+
+    if (checked) {
+      this.selectedRequests = [
+        ...this.selectedRequests,
+        ...currentRequests.filter(
+          (r) => !this.selectedRequests.some((sel) => sel.id === r.id)
+        ),
+      ];
+    } else {
+      this.selectedRequests = this.selectedRequests.filter(
+        (sel) => !currentRequests.some((r) => r.id === sel.id)
+      );
+    }
+  }
+
+  toggleBulkMenu(event: MouseEvent) {
+    event.stopPropagation();
+    this.showBulkMenu = !this.showBulkMenu;
+  }
+
+  selectBy(criteria: 'all' | 'none' | 'accepted' | 'completed') {
+    switch (criteria) {
+      case 'all':
+        this.selectedRequests = [...this.allRequests];
+        break;
+      case 'none':
+        this.selectedRequests = [];
+        break;
+      case 'accepted':
+        this.selectedRequests = [...this.acceptedRequests];
+        break;
+      case 'completed':
+        this.selectedRequests = [...this.completedRequests];
+        break;
+    }
+    this.showBulkMenu = false;
+  }
+
+  viewRequest(req: EmergencyRequest) {
+    this.requestToView = req;
+  }
+
+  closeView() {
+    this.requestToView = undefined;
+  }
+
+  deleteSelectedRequests() {
+    console.log('Deleting:', this.selectedRequests);
+    this.selectedRequests = [];
+  }
+
+  updateMonthlyEventBarChart(requests: EmergencyRequest[]) {
+    const monthLabels: string[] = [];
+    const monthMap: Map<string, number> = new Map();
+
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = d.toLocaleString('default', {
+        month: 'short',
+        year: 'numeric',
       });
-    
-    } catch (error) {
-      console.error('Error fetching requests:', error);
+      monthLabels.push(label);
+      monthMap.set(label, monthLabels.length - 1);
     }
-  }
-  
 
-  // Update currentLocation for requests based on latitude and longitude
-  async updateCurrentLocationForRequests() {
-    for (let user of this.request) {
-      if (user.latitude && user.longitude) {
-        const currentLocation = await this.getAddressFromCoordinates(user.latitude, user.longitude);
-        user.currentLocation = currentLocation || user.address; // Fallback to address if no location found
+    const eventSet = new Set<string>();
+    requests.forEach((req) => {
+      if (req.event) eventSet.add(req.event);
+    });
+
+    const events = Array.from(eventSet);
+    const countsPerEvent: { [event: string]: number[] } = {};
+
+    events.forEach((event) => {
+      countsPerEvent[event] = new Array(monthLabels.length).fill(0);
+    });
+
+    requests.forEach((req) => {
+      if (!req.timestamp || !req.event) return;
+      const date = req.timestamp.toDate
+        ? req.timestamp.toDate()
+        : new Date(req.timestamp);
+      const label = date.toLocaleString('default', {
+        month: 'short',
+        year: 'numeric',
+      });
+
+      const index = monthMap.get(label);
+      if (index !== undefined) {
+        countsPerEvent[req.event][index]++;
+      }
+    });
+
+    const colors = [
+      '#FF6384',
+      '#36A2EB',
+      '#6d6b65ff',
+      '#4BC0C0',
+      '#9966FF',
+      '#FF9F40',
+      '#C9CBCF',
+      '#8E44AD',
+    ];
+
+    const datasets = events.map((event, i) => ({
+      label: event,
+      data: countsPerEvent[event],
+      backgroundColor: colors[i % colors.length],
+    }));
+
+    if (this.requestEventBarChart) {
+      this.requestEventBarChart.destroy();
+    }
+
+    this.requestEventBarChart = new Chart('requestStatusBarChart', {
+      type: 'bar',
+      data: {
+        labels: monthLabels,
+        datasets: datasets,
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { mode: 'index', intersect: false },
+        },
+        scales: {
+          x: { stacked: true, title: { display: true, text: 'Month' } },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            title: { display: true, text: 'Number of Requests' },
+            ticks: { stepSize: 1 },
+          },
+        },
+      },
+    });
+  }
+
+  updateRequestStatusPieChart(requests: EmergencyRequest[]) {
+    let inProgress = 0,
+      completed = 0,
+      cancelled = 0,
+      others = 0;
+
+    requests.forEach((req) => {
+      const status = req.status?.toLowerCase() || '';
+      if (['responding', 'inprogress', 'in progress'].includes(status)) {
+        inProgress++;
+      } else if (['completed', 'resolved'].includes(status)) {
+        completed++;
+      } else if (status === 'cancelled') {
+        cancelled++;
       } else {
-        user.currentLocation = user.address; // If no latitude/longitude, fallback to address
+        others++;
       }
-    }
-  }
+    });
 
-  // Function to load requests for the current page
-  loadCurrentPageRequests() {
-    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-    const endIndex = startIndex + this.itemsPerPage;
-    this.currentPageRequests = this.request.slice(startIndex, endIndex);
-  }
-
-  // Function to handle pagination change
-  changePage(direction: 'previous' | 'next') {
-    if (direction === 'previous' && this.currentPage > 1) {
-      this.currentPage--;
-    } else if (direction === 'next' && this.currentPage < this.totalPages) {
-      this.currentPage++;
+    if (this.requestStatusChart) {
+      this.requestStatusChart.destroy();
     }
 
-    this.loadCurrentPageRequests();  // Reload the requests for the new page
-  }
-
-  // Function to handle change in the number of items per page
-  changeItemsPerPage(event: any) {
-    this.itemsPerPage = +event.target.value;  // Convert selected value to number
-    this.totalPages = Math.ceil(this.request.length / this.itemsPerPage);  // Recalculate total pages
-    this.currentPage = 1;  // Reset to the first page
-    this.loadCurrentPageRequests();  // Reload the requests for the new page
-  }
-
-  // Function to search requests based on input
-  searchRequest(event: any) {
-    const query = event.target.value.toLowerCase();
-    this.request = this.request.filter((req) => req.name.toLowerCase().includes(query));
-    this.totalPages = Math.ceil(this.request.length / this.itemsPerPage);
-    this.currentPage = 1;  // Reset to first page after search
-    this.loadCurrentPageRequests(); // Reload the requests after filtering
-  }
-
-  async deleteRequest(requestId: string) {
-    console.log('Delete button clicked for request ID:', requestId); // Debugging log
-  
-    if (!requestId) {
-      console.error('Invalid request ID');
-      return;
-    }
-  
-    try {
-      const requestDocRef = doc(this.firestore, 'EmergencyRequest', requestId);
-      console.log('Attempting to delete document from Firestore:', requestId); // Debugging log
-  
-      await deleteDoc(requestDocRef); // Delete the document from Firestore
-  
-      console.log('Request deleted successfully from Firestore');
-      this.request = this.request.filter(req => req.id !== requestId);  // Remove it from the local list
-      this.totalPages = Math.ceil(this.request.length / this.itemsPerPage);  // Recalculate total pages
-      this.loadCurrentPageRequests();  // Reload the requests after deletion
-    } catch (error) {
-      console.error('Error deleting request:', error); // Log the error if something goes wrong
-    }
-  }
-  
-  
-  
-  
-
-  private async getAddressFromCoordinates(lat: number, lon: number): Promise<string> {
-    const apiUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
-    try {
-      const response = await fetch(apiUrl);
-      const data = await response.json();
-      
-      if (data && data.address) {
-        const road = data.address.road || '';
-        const suburb = data.address.suburb || '';
-        const city = data.address.city || data.address.town || data.address.village || '';
-        const neighborhood = data.address.neighbourhood || '';
-
-        let address = road ? `${road}` : 'Near ';
-        if (!road && suburb) address += `${suburb}`;
-        else if (!road && city) address += `${city}`;
-        else if (!road && neighborhood) address += `near ${neighborhood}`;
-
-        if (suburb && road) address += `, ${suburb}`;
-        if (city) address += `, ${city}`;
-        if (neighborhood) address += ` (Near ${neighborhood})`;
-
-        return address.trim() || 'Address not found';
-      }
-
-      return 'Address not found';
-    } catch (error) {
-      console.error('Error fetching address:', error);
-      return 'Unable to fetch address at this time.';
-    }
-  }
-
-  // Navigation methods
-  navigateToDashboard() {
-    this.route.navigate(['/admin']);
-  }
-
-  navigateToMap() {
-    this.route.navigate(['/admin/map']);
-  }
-
-  navigateToHistoryCall() {
-    this.route.navigate(['/admin/history-call']);
-  }
-
-  navigateToUserList() {
-    this.route.navigate(['/admin/user-list']);
+    this.requestStatusChart = new Chart('requestStatusChart', {
+      type: 'pie',
+      data: {
+        labels: ['In Progress', 'Completed', 'Cancelled', 'Other'],
+        datasets: [
+          {
+            data: [inProgress, completed, cancelled, others],
+            backgroundColor: ['#FFC107', '#4CAF50', '#F44336', '#9E9E9E'],
+            hoverOffset: 14,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              boxWidth: 14,
+              padding: 16,
+            },
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const label = context.label || '';
+                const value = context.parsed || 0;
+                return `${label}: ${value}`;
+              },
+            },
+          },
+        },
+      },
+    });
   }
 }

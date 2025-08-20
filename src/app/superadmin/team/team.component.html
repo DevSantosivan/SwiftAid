@@ -53,7 +53,7 @@
           <h5>{{ member.email }}</h5>
           <p>
             {{ member.fullName }}
-            <span
+            <!-- <span
               class="status-dot"
               [class.online]="member.status.online"
               [class.offline]="!member.status.online"
@@ -74,8 +74,10 @@
                 ? "Active " + (member.status.last | timeDiff)
                 : "Offline"
             }}
-          </span>
+          </span> -->
+          </p>
         </div>
+
         <p class="staff-label">{{ member.role }}</p>
       </div>
     </div>

@@ -44,15 +44,15 @@ export class AdminNavbarComponent implements OnInit {
   }
 
   showSide() {
-    this.showSideBar = true;
     this.isExiting = false;
+    this.showSideBar = !this.showSideBar; // toggle open/close on click
   }
 
   exit() {
     this.isExiting = true;
     setTimeout(() => {
       this.showSideBar = false;
-    }, 300); // duration matches CSS
+    }, 300);
   }
 
   logout() {

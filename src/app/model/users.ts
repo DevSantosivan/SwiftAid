@@ -1,4 +1,6 @@
 export interface account {
+  twoFactorEnabled?: boolean;
+  twoFactorSecret?: string | null;
   id: string;
   uid: string;
   profilePicture: string;

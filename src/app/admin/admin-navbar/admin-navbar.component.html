@@ -1,48 +1,51 @@
-<div class="navbar">
-  <div class="search-bar-container"></div>
-  <div
-    class="notification"
-    style="
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      position: relative;
-    "
-  >
-    <i class="bx bx-bell" style="position: relative">
-      <span
-        style="
-          position: absolute;
-          top: -6px;
-          right: -6px;
-          width: 15px;
-          height: 15px;
-          background: red;
-          border-radius: 50%;
-          display: inline-block;
-          border: 2px solid white;
-        "
-      ></span>
-    </i>
-    <span class="notification-name" style="margin-left: 8px">{{
-      currentUser?.email || "User Name"
-    }}</span>
-  </div>
-  <div class="users" (click)="showSide()">
-    <div class="user-name"></div>
+<!-- Navbar -->
+<div class="navbar-mobile">
+  <div class="logo">SwiftAid</div>
+
+  <div class="user-info" (click)="showSide()">
+    <span class="user-email">{{ currentUser?.email || "User Name" }}</span>
+    <img
+      *ngIf="currentUser?.profilePicture"
+      [src]="currentUser?.profilePicture"
+      alt="Profile Picture"
+      class="user-img"
+    />
+    <i
+      *ngIf="!currentUser?.profilePicture"
+      class="bx bx-user-circle user-icon-large"
+    ></i>
   </div>
 </div>
-@if(showSideBar){
+
+<!-- Profile Sidebar (toggle) -->
+<!-- Profile Sidebar (toggle) -->
 <div
+  *ngIf="showSideBar"
   class="user-details-hover"
-  [ngClass]="{ 'user-details-hover': true, 'exit-animate': isExiting }"
+  [ngClass]="{ 'exit-animate': isExiting }"
 >
-  <div class="exit"><i class="bx bx-left-arrow-alt" (click)="exit()"></i></div>
-  <div class="user-pic"></div>
+  <div class="exit" (click)="exit()">
+    <i class="bx bx-left-arrow-alt"></i>
+  </div>
+
+  <div class="user-pic-name">
+    <img
+      *ngIf="currentUser?.profilePicture; else placeholder"
+      [src]="currentUser?.profilePicture"
+      alt="Profile Picture"
+      class="user-icon-image"
+    />
+
+    <ng-template #placeholder>
+      <i class="bx bx-user-circle user-icon-large"></i>
+    </ng-template>
+
+    <span class="user-name">{{ currentUser?.fullName || "User Name" }}</span>
+  </div>
+
   <ul>
-    <li></li>
-    <li>Setting</li>
+    <h3 class="email">{{ currentUser?.email || "User Email" }}</h3>
+
     <li (click)="logout()">Logout</li>
   </ul>
 </div>
-}

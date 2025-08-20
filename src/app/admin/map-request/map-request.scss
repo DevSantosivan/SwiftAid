@@ -2,6 +2,12 @@
   width: 100%;
   height: 100%;
 }
+
+body {
+  position: relative;
+  z-index: 0;
+}
+
 .loading-request {
   display: flex;
   flex-direction: column;
@@ -23,14 +29,19 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg);}
-  100% { transform: rotate(360deg);}
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 p {
   font-size: 13px;
   color: #666;
 }
+
 .pending {
   color: #ff9800;
   border: 1px solid #ff9800;
@@ -38,6 +49,7 @@ p {
   border-radius: 3px;
   font-weight: 500;
 }
+
 .In-progress {
   color: #2196f3;
   border: 1px solid #2196f3;
@@ -45,6 +57,7 @@ p {
   border-radius: 3px;
   font-weight: 500;
 }
+
 .Resolved {
   color: #4caf50;
   border: 1px solid #4caf50;
@@ -52,26 +65,26 @@ p {
   border-radius: 3px;
   font-weight: 500;
 }
-.no-request{
+
+.no-request {
   width: 100%;
   text-align: center;
-
-  
 }
+
 .content_1 {
   width: 100%;
-
   padding: 0px 20px;
   overflow: hidden;
 }
+
 .flex-filter {
   width: 100%;
   display: flex;
-
   align-items: center;
   position: relative;
-  top: 20px;
+  top: 10px;
 }
+
 .flex-filter-request {
   display: flex;
 }
@@ -85,14 +98,17 @@ p {
   cursor: pointer;
   margin: 0px 5px;
 }
+
 .map-title {
   display: flex;
   flex-direction: column;
   margin: 0px 10px;
-  h3 {
-    font-size: 14px;
-  }
 }
+
+.map-title h3 {
+  font-size: 14px;
+}
+
 .filter-box.active {
   background-color: rgba(255, 0, 0, 0.644);
   color: white;
@@ -104,6 +120,9 @@ p {
   overflow: visible;
 }
 
+/* ========================
+   DESKTOP DEFAULT STYLES
+=========================== */
 .flex-request {
   width: 100%;
   display: flex;
@@ -117,29 +136,23 @@ p {
   max-width: 25%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 10px;
+  padding: 8px 10px 8px 0;
   scroll-behavior: smooth;
-  padding: 8px;
-  /* Firefox Scrollbar Support */
+
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
 }
 
-/* WebKit Browsers Scrollbar */
 .list-request::-webkit-scrollbar {
   width: 8px;
 }
-
 .list-request::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: 4px;
 }
-
 .list-request::-webkit-scrollbar-thumb {
   background: rgba(255, 0, 0, 0.438);
   border-radius: 4px;
 }
-
 .list-request::-webkit-scrollbar-thumb:hover {
   background: darkred;
 }
@@ -149,10 +162,12 @@ p {
   height: 80%;
   overflow: hidden;
 }
+
 .map {
   width: 100%;
   height: 100%;
   position: relative;
+  z-index: 0;
 }
 
 /* Request Item Container */
@@ -163,6 +178,7 @@ p {
   background-color: #fff;
   border: 1px solid #ccc;
 }
+
 .request-item:hover {
   background-color: #b6b4b44d;
   transition: 0.3s ease-in;
@@ -255,4 +271,92 @@ p {
 
 .request-actions button:hover {
   background-color: #e0e0e0;
+}
+
+/* ========================
+   MOBILE RESPONSIVE STYLES
+=========================== */
+@media (max-width: 768px) {
+  .content-body {
+    padding: 0px 0px;
+  }
+  .content_1 {
+    width: 100%;
+    padding: 0px 0px;
+    overflow: hidden;
+  }
+  .flex-request {
+    padding: 10px 0px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  /* Map goes on top */
+  .map-request {
+    order: 1;
+    width: 100%;
+    height: 40vh;
+    margin-top: 10px;
+  }
+  .flex-filter {
+    width: 100%;
+  }
+  .flex-filter span {
+    font-size: 15px;
+  }
+
+  .map {
+    height: 100% !important;
+    width: 100% !important;
+  }
+
+  .map-header {
+    height: 100%;
+  }
+
+  /* List below map, scroll horizontally */
+  .list-request {
+    order: 2;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    width: 100%;
+    max-width: 100%;
+    scroll-snap-type: x mandatory;
+    gap: 10px;
+  }
+
+  .list-request::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .list-request::-webkit-scrollbar-thumb {
+    background: rgba(255, 0, 0, 0.5);
+    border-radius: 4px;
+  }
+
+  .request-item {
+    min-width: 280px;
+    max-width: 320px;
+    flex: 0 0 auto;
+    margin-bottom: 0;
+    padding: 10px;
+    scroll-snap-align: start;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+  }
+
+  .request-item:hover {
+    background-color: #f8f8f8;
+    transform: scale(1.03);
+  }
+
+  /* Optional: hide map title on mobile */
+  .map-title {
+    display: none;
+  }
 }

@@ -5,6 +5,10 @@ import { MapRequest } from './map-request/map-request';
 import { Dashboard } from './dashboard/dashboard';
 import { MapRequestDetails } from './map-request-details/map-request-details';
 import { DashboardComponent } from '../superadmin/dashboard/dashboard.component';
+import { HistoryCallComponent } from './history-call/history-call.component';
+import { Resident } from './resident/resident';
+import { Notification } from './notification/notification';
+import { Setting } from './setting/setting';
 
 // {
 //     path: '',
@@ -29,6 +33,13 @@ export const AdminRoutes: Routes = [
       { path: '', redirectTo: 'Dashboard', pathMatch: 'full' },
       { path: 'Dashboard', component: DashboardComponent },
       { path: 'EmergencyRequest', component: MapRequest },
+      { path: 'History', component: HistoryCallComponent },
+      {
+        path: 'Resident',
+        component: Resident,
+      },
+      { path: 'Notification', component: Notification },
+      { path: 'Settings', component: Setting },
       {
         path: 'EmergencyRequest/:id',
         loadComponent: () =>

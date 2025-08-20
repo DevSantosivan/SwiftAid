@@ -1,42 +1,24 @@
-<!-- <div class="container-admin" style="background-color: #fff">
-  <div class="right-side-navbar">
-    <div class="header">
-      <h3 class="flex-logo">
-        <img src="assets/logo.jpg" alt="" class="logo" />SwiftAid
-      </h3>
+<!-- DESKTOP & TABLET VIEW -->
+<div
+  class="container-admin"
+  style="background-color: #fff"
+  *ngIf="!isMobileView"
+>
+  <div class="right-side-navbar" [class.collapsed]="isCollapsed">
+    <!-- Toggle button -->
+    <div class="toggle-btn" (click)="toggleSidebar()">
+      <i class="bx" [ngClass]="isCollapsed ? 'bx bx-menu' : 'bx bx-menu'"></i>
     </div>
-    <div class="navlinks">
-      <ul>
-        <li class="active"><i class="bx bxs-dashboard"></i> Dashboard</li>
-        <li (click)="navigateToMap()"><i class="bx bxs-map"></i> Map</li>
-        <li (click)="navigateToHistoryCall()">
-          <i class="bx bx-history"></i> History
-        </li>
-        <li (click)="navigateToUserList()">
-          <i class="bx bxs-user-detail"></i>Resident
-        </li>
-      </ul>
-    </div>
-  </div>
 
-  <div class="left-side-container">
-    <div class="content-container">
-      <div class="separator">
-        <app-admin-navbar></app-admin-navbar>
-      </div>
-      <div class="body-container">
-        <app-dashboard></app-dashboard>
-      </div>
-    </div>
-  </div>
-</div> -->
-<div class="container-admin" style="background-color: #fff">
-  <div class="right-side-navbar">
     <div class="header">
-      <h3 class="flex-logo">
+      <h3 class="flex-logo" *ngIf="!isCollapsed">
         <img src="assets/logo.jpg" alt="" class="logo" />SwiftAid
       </h3>
+      <h3 class="icon-logo" *ngIf="isCollapsed">
+        <img src="assets/logo.jpg" alt="" class="logo" />
+      </h3>
     </div>
+
     <div class="navlinks">
       <ul>
         <li
@@ -44,49 +26,128 @@
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
         >
-          <i class="bx bxs-dashboard"></i> Dashboard
-        </li>
-        <li
-          [routerLink]="['Team']"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: false }"
-        >
-          <i class="bx bx-group"></i> Team
+          <i class="bx bxs-dashboard"></i>
+          <span *ngIf="!isCollapsed">Dashboard</span>
         </li>
         <li
           [routerLink]="'EmergencyRequest'"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
         >
-          <i class="bx bxs-ambulance"></i>Emergency Request
+          <i class="bx bxs-ambulance"></i>
+          <span *ngIf="!isCollapsed">Emergency Request</span>
         </li>
         <li
-          [routerLink]="'EmergencyRequest'"
+          [routerLink]="'History'"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
         >
-          <i class="bx bx-history"></i>History
+          <i class="bx bx-history"></i>
+          <span *ngIf="!isCollapsed">History</span>
         </li>
-
         <li
-          [routerLink]="'Info'"
+          [routerLink]="'Resident'"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
         >
-          <i class="bx bx-line-chart"></i> Statistics
+          <i class="bx bx-group"></i>
+          <span *ngIf="!isCollapsed">Resident</span>
+        </li>
+        <li
+          [routerLink]="'Notification'"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="notification-link"
+        >
+          <i class="bx bxs-bell"></i>
+          <span *ngIf="!isCollapsed">Notification</span>
+          <span
+            *ngIf="hasUnreadNotifications"
+            class="notification-dot"
+            [class.collapsed]="isCollapsed"
+          >
+            {{ unreadNotificationCount }}
+          </span>
+        </li>
+        <li
+          [routerLink]="'Settings'"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <i class="bx bx-cog"></i>
+          <span *ngIf="!isCollapsed">Settings</span>
         </li>
       </ul>
     </div>
   </div>
 
-  <div class="left-side-container">
+  <div class="left-side-container" [class.collapsed]="isCollapsed">
     <div class="content-container">
+      <!-- APP BAR ONLY ON DESKTOP -->
       <div class="separator">
         <app-admin-navbar></app-admin-navbar>
       </div>
+
       <div class="body-container">
         <router-outlet></router-outlet>
       </div>
     </div>
   </div>
+</div>
+
+<!-- MOBILE VIEW -->
+<!-- MOBILE VIEW -->
+<div *ngIf="isMobileView" class="mobile-admin-container">
+  <!-- APP BAR ONLY ON MOBILE -->
+  <div class="separator-mobile">
+    <app-admin-navbar></app-admin-navbar>
+  </div>
+
+  <div class="body-container-mobile">
+    <router-outlet></router-outlet>
+  </div>
+
+  <ul class="bottom-mobile-nav">
+    <li
+      [routerLink]="'Dashboard'"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="Dashboard"
+    >
+      <i class="bx bxs-dashboard"></i>
+      <!-- no text span here -->
+    </li>
+    <li
+      [routerLink]="'EmergencyRequest'"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="Emergency Request"
+    >
+      <i class="bx bxs-ambulance"></i>
+    </li>
+    <li
+      [routerLink]="'History'"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="History"
+    >
+      <i class="bx bx-history"></i>
+    </li>
+    <li
+      [routerLink]="'Resident'"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="Resident"
+    >
+      <i class="bx bx-group"></i>
+    </li>
+    <li
+      [routerLink]="'Settings'"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      title="Settings"
+    >
+      <i class="bx bx-cog"></i>
+    </li>
+  </ul>
 </div>

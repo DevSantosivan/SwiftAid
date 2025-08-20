@@ -5,9 +5,14 @@ import { UserService } from '../../core/user.service';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TimeDiffPipe } from '../../../pipe/time-diff.pipe';
-
+import { NgZone } from '@angular/core';
+// Updated interface to match your service output exactly
 interface AccountWithStatus extends account {
-  isOnline?: boolean; // Add online status here
+  uid: string;
+  status: {
+    online: boolean;
+    last: number | null;
+  };
 }
 
 @Component({
@@ -15,15 +20,13 @@ interface AccountWithStatus extends account {
   standalone: true,
   imports: [CommonModule, FormsModule, TimeDiffPipe],
   templateUrl: './team.component.html',
-  styleUrl: './team.component.scss',
+  styleUrls: ['./team.component.scss'], // fixed from styleUrl to styleUrls
 })
 export class TeamComponent {
-  isValidNumber(arg0: number | null): any {
-    throw new Error('Method not implemented.');
-  }
   private userService = inject(UserService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private ngZone = inject(NgZone);
 
   teamMembers: AccountWithStatus[] = [];
   filteredMembers: AccountWithStatus[] = [];
@@ -45,11 +48,10 @@ export class TeamComponent {
       this.teamMembers = await this.userService.getAdmins();
       this.filteredMembers = [...this.teamMembers];
 
-      // Subscribe for status updates (optional)
-      this.teamMembers.forEach((m) => {
-        this.userService.subscribeUserStatus(m.uid, (online, last) => {
-          m.status = { online, last };
-          this.filteredMembers = [...this.filteredMembers];
+      this.teamMembers.forEach((member) => {
+        this.userService.subscribeUserStatus(member.uid, (online, last) => {
+          member.status = { online, last };
+          this.filteredMembers = [...this.filteredMembers]; // trigger UI update
         });
       });
     } catch (error) {

@@ -81,26 +81,35 @@ export class UserService {
     }
   }
 
+  async unblockUsers(uids: string[]): Promise<void> {
+    try {
+      await Promise.all(
+        uids.map((uid) =>
+          this.updateUser(uid, { blocked: false, blockReason: '' })
+        )
+      );
+    } catch (error) {
+      console.error('Error unblocking users:', error);
+      throw error;
+    }
+  }
+
   subscribeUserStatus(
     uid: string,
     cb: (online: boolean, last: number | null) => void
   ) {
     const db_rt = getDatabase();
-    const connsRef = ref(db_rt, `status/${uid}/connections`);
-    const lastRef = ref(db_rt, `status/${uid}/lastOnline`);
+    const statusRef = ref(db_rt, `status/${uid}`);
 
-    onValue(connsRef, (snap) => {
-      if (snap.exists() && Object.keys(snap.val()).length > 0) {
-        cb(true, null);
-      } else {
-        onValue(
-          lastRef,
-          (lastSnap) => {
-            cb(false, lastSnap.exists() ? (lastSnap.val() as number) : null);
-          },
-          { onlyOnce: true }
-        );
+    onValue(statusRef, (snap) => {
+      if (!snap.exists()) {
+        cb(false, null);
+        return;
       }
+      const data = snap.val();
+      const online = data.state === 'online';
+      const lastOnline = data.lastOnline ?? null;
+      cb(online, lastOnline);
     });
   }
 

@@ -7,10 +7,9 @@
   justify-content: space-between;
   align-items: center;
   padding: 18px 10%;
-  background-color: #ffffffac;
+  background-color: #fff;
   backdrop-filter: blur(10px);
-  z-index: 1000;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+  z-index: 999;
 
   ul {
     display: inline-flex;
@@ -20,7 +19,7 @@
     li {
       margin: 0px 10px;
       font-size: 11px;
-      color: #2c2929;
+      color: #121212;
       font-weight: 700;
       letter-spacing: 0.3px;
       cursor: pointer;

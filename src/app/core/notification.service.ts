@@ -18,7 +18,21 @@ export class NotificationService {
   private vapidKey =
     'BLDvoUhhQC6EF4KBrEWuLm3rftMwl96vyT0KC4xiOEd66BgtiHFeUFDJCF4Rd6GMqaSX-bT5e2QGuuQsMMsyRKU';
 
+  // Flag for enabling/disabling sound alerts
+  public soundAlertEnabled = false;
+
   constructor(private firestore: Firestore, private messaging: Messaging) {}
+
+  // Method to toggle sound alert from outside (e.g., UI)
+  setSoundAlert(enabled: boolean) {
+    this.soundAlertEnabled = enabled;
+  }
+
+  // Play notification sound
+  private playSoundAlert() {
+    const audio = new Audio('assets/999-social-credit-siren.mp3'); // place your sound here
+    audio.play();
+  }
 
   async requestNotificationPermission(): Promise<NotificationPermission> {
     if (!('Notification' in window)) {
@@ -124,13 +138,17 @@ export class NotificationService {
         data: { requestId }, // Pass requestId here
       });
 
+      if (this.soundAlertEnabled) {
+        this.playSoundAlert(); // Play sound alert if enabled
+      }
+
       notification.onclick = () => {
         const targetUrl = requestId
           ? `/admin/EmergencyRequest/${requestId}`
           : '/admin/EmergencyRequest';
 
         window.focus();
-        window.location.href = targetUrl; // Use full reload approach
+        window.location.href = targetUrl;
       };
     } else {
       console.warn(

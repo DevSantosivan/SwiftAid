@@ -1,9 +1,10 @@
 <div class="content-body">
   <div class="content_1">
-    <div class="content-header">
+    <div class="content-header" (click)="goBack()" style="cursor: pointer">
       <i class="bx bx-left-arrow-alt"></i>
-      <span>Back To Emergency Request List</span>
+      <span>{{ backLabel }}</span>
     </div>
+    <br />
     <h4>Emergency Response Panel</h4>
     <p>Details for Emergency Request Review</p>
 

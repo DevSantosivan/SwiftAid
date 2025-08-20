@@ -40,7 +40,7 @@
         <h3>Monthly Request</h3>
         <p>Chart</p>
         <div class="pie-chart">
-          <canvas id="MyLineChart"> </canvas>
+          <canvas id="requestStatusBarChart"></canvas>
         </div>
       </div>
       <div class="chart">
@@ -89,6 +89,7 @@
       <div class="pie-content">
         <h3>Recent Requests</h3>
         <p>Recent</p>
+
         <div class="recent-list">
           <div class="list" *ngFor="let request of recentRequests">
             <div class="profile">
@@ -99,6 +100,9 @@
             </div>
 
             <div class="description">
+              <p class="status" [ngClass]="getStatusClass(request.status)">
+                {{ getStatusLabel(request.status) }}
+              </p>
               <h4>{{ request.event }}</h4>
               <p class="timestamp">
                 {{ request.timestamp?.toDate() | date : "short" }}
@@ -111,7 +115,7 @@
   </div>
 </div>
 
-<div class="mobile-message">
+<!-- <div class="mobile-message">
   <div class="mobile-content-message">
     <img src="../../../assets/formobile.gif" alt="" />
     <h1>Mobile View Not Supported</h1>
@@ -120,4 +124,4 @@
       a desktop or laptop for the best experience.
     </p>
   </div>
-</div>
+</div> -->

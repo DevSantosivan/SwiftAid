@@ -1,0 +1,328 @@
+<div class="content-body">
+  <div class="content_1">
+    <h4>Account Management</h4>
+    <p>List of accounts</p>
+
+    <!-- Bulk Selection UI -->
+    <div class="bulk-select-dropdown">
+      <input
+        type="checkbox"
+        [checked]="isAllSelected()"
+        (change)="toggleSelectAllResident($event)"
+      />
+      <div class="dropdown">
+        <button class="dropdown-toggle" (click)="toggleBulkMenu($event)">
+          ▾
+        </button>
+        <div class="dropdown-list" *ngIf="showBulkMenu">
+          <button (click)="selectBy('all')">Select All</button>
+          <button (click)="selectBy('none')">Select None</button>
+          <button (click)="selectBy('resident')">Residents Only</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="search-bar">
+      <input
+        type="text"
+        placeholder="Search residents..."
+        [(ngModel)]="searchTerm"
+      />
+      <button type="button">
+        <i class="bx bx-search"></i>
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <!-- Tabs -->
+    <ul class="nav nav-tabs">
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          [class.active]="activeTab === 'all'"
+          (click)="setTab('all')"
+        >
+          <i class="bx bx-user"></i> All Accounts
+        </a>
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          [class.active]="activeTab === 'registered'"
+          (click)="setTab('registered')"
+        >
+          <i class="bx bx-check-circle"></i> Registered
+        </a>
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          [class.active]="activeTab === 'blocked'"
+          (click)="setTab('blocked')"
+        >
+          <i class="bx bx-block"></i> Blocked
+        </a>
+      </li>
+    </ul>
+
+    <!-- Top Action Bar -->
+    <!-- Top Action Bar -->
+    <div class="top-action-bar" *ngIf="selectedResidents.length > 0">
+      <span>{{ selectedResidents.length }} selected</span>
+
+      <!-- Show "Block" for registered tab -->
+      <button
+        *ngIf="activeTab === 'registered'"
+        (click)="blockSelectedResidents()"
+      >
+        <i class="bx bx-block"></i> Block
+      </button>
+
+      <!-- Show "Unblock" for blocked tab -->
+      <button
+        *ngIf="activeTab === 'blocked'"
+        (click)="unblockSelectedResidents()"
+      >
+        <i class="bx bx-check-circle"></i> Unblock
+      </button>
+    </div>
+
+    <!-- All Accounts -->
+    <div *ngIf="activeTab === 'all'">
+      <div class="account-header">
+        <span></span>
+        <span class="col-name">Name</span>
+        <span class="col-email">Email</span>
+        <span class="col-contact">Contact</span>
+        <span class="col-extra">Address</span>
+        <span class="col-role">Status</span>
+        <span class="col-action"></span>
+      </div>
+      <div class="account-list">
+        <div
+          class="account-row"
+          *ngFor="let acc of filteredAllAccounts"
+          (click)="$event.stopPropagation()"
+        >
+          <input
+            type="checkbox"
+            [checked]="isChecked(acc)"
+            (change)="setChecked(acc, $event)"
+          />
+          <span class="col-name">{{ acc.fullName }}</span>
+          <span class="col-email">{{ acc.email }}</span>
+          <span class="col-contact">{{ acc.contactNumber }}</span>
+          <span class="col-extra">{{ acc.address }}</span>
+          <span class="col-role">
+            <span *ngIf="acc.blocked" style="color: red">Blocked</span>
+            <span *ngIf="!acc.blocked" style="color: green">Registered</span>
+          </span>
+          <span class="col-action action-buttons">
+            <button title="View" (click)="viewAccount(acc)">
+              <i class="bx bx-show"></i>
+            </button>
+            <!-- <button title="Edit" (click)="editAccount(acc)">
+              <i class="bx bx-edit"></i>
+            </button>
+            <button title="Delete" (click)="deleteAccount(acc)">
+              <i class="bx bx-trash"></i>
+            </button> -->
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Registered Residents -->
+    <div *ngIf="activeTab === 'registered'">
+      <div class="account-header">
+        <span></span>
+        <span class="col-name">Name</span>
+        <span class="col-email">Email</span>
+        <span class="col-contact">Contact</span>
+        <span class="col-extra">Address</span>
+        <span class="col-role">Status</span>
+        <span class="col-action"></span>
+      </div>
+      <div class="account-list">
+        <div
+          class="account-row"
+          *ngFor="let acc of filteredResidents"
+          (click)="$event.stopPropagation()"
+        >
+          <input
+            type="checkbox"
+            [checked]="isChecked(acc)"
+            (change)="setChecked(acc, $event)"
+          />
+          <span class="col-name">{{ acc.fullName }}</span>
+          <span class="col-email">{{ acc.email }}</span>
+          <span class="col-contact">{{ acc.contactNumber }}</span>
+          <span class="col-extra">{{ acc.address }}</span>
+          <span class="col-role" style="color: green">Registered</span>
+          <span class="col-action action-buttons">
+            <button title="View" (click)="viewAccount(acc)">
+              <i class="bx bx-show"></i>
+            </button>
+            <button title="Edit" (click)="editAccount(acc)">
+              <i class="bx bx-edit"></i>
+            </button>
+            <button title="Delete" (click)="deleteAccount(acc)">
+              <i class="bx bx-trash"></i>
+            </button>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Blocked Accounts -->
+    <div *ngIf="activeTab === 'blocked'">
+      <div class="account-header">
+        <span></span>
+        <span class="col-name">Name</span>
+        <span class="col-email">Email</span>
+        <span class="col-contact">Contact</span>
+        <span class="col-extra">Address</span>
+        <span class="col-role">Status</span>
+        <span class="col-action"></span>
+      </div>
+      <div class="account-list">
+        <div
+          class="account-row"
+          *ngFor="let acc of filteredBlocked"
+          (click)="$event.stopPropagation()"
+        >
+          <input
+            type="checkbox"
+            [checked]="isChecked(acc)"
+            (change)="setChecked(acc, $event)"
+          />
+          <span class="col-name">{{ acc.fullName }}</span>
+          <span class="col-email">{{ acc.email }}</span>
+          <span class="col-contact">{{ acc.contactNumber }}</span>
+          <span class="col-extra">{{ acc.address }}</span>
+          <span class="col-role" style="color: red">Blocked</span>
+          <span class="col-action action-buttons">
+            <button title="View" (click)="viewAccount(acc)">
+              <i class="bx bx-show"></i>
+            </button>
+            <button title="Edit" (click)="editAccount(acc)">
+              <i class="bx bx-edit"></i>
+            </button>
+            <button title="Delete" (click)="deleteAccount(acc)">
+              <i class="bx bx-trash"></i>
+            </button>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Data Messages -->
+    <div
+      *ngIf="activeTab === 'all' && filteredAllAccounts.length === 0"
+      class="no-data"
+    >
+      <img src="../../../assets/Empty Box.gif" alt="No Accounts" />
+      <p>No accounts available.</p>
+    </div>
+    <div
+      *ngIf="activeTab === 'registered' && filteredResidents.length === 0"
+      class="no-data"
+    >
+      <img src="../../../assets/Empty Box.gif" alt="No Registered" />
+      <p>No registered residents found.</p>
+    </div>
+    <div
+      *ngIf="activeTab === 'blocked' && filteredBlocked.length === 0"
+      class="no-data"
+    >
+      <img src="../../../assets/Empty Box.gif" alt="No Blocked" />
+      <p>No blocked residents found.</p>
+    </div>
+
+    <!-- Block Modal -->
+    <div class="modal-backdrop" *ngIf="showBlockModal">
+      <div class="modal">
+        <h3>Block Account</h3>
+        <p class="warning">
+          ⚠ Are you sure you want to block the selected accounts?
+        </p>
+        <textarea
+          [(ngModel)]="blockReason"
+          placeholder="Enter reason for blocking..."
+        ></textarea>
+        <div class="modal-actions">
+          <button class="cancel-btn" (click)="closeBlockModal()">Cancel</button>
+          <button class="confirm-btn" (click)="confirmBlock()">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Notification -->
+    <div class="modal-success" *ngIf="showSuccessModal">
+      <p>{{ successMessage }}</p>
+    </div>
+
+    <!-- View & Edit modals omitted here for brevity -->
+    <!-- View Profile Modal -->
+    <div class="isProfilemodal" *ngIf="accountToView">
+      <div class="modal-content view-member-modal">
+        <span class="close" (click)="closeView()">&times;</span>
+        <div class="profile-header">
+          <img
+            class="profile-img"
+            [src]="accountToView.profilePicture || defaultAvatar"
+            alt="Avatar"
+          />
+          <div class="profile-info">
+            <h3>{{ accountToView.fullName }}</h3>
+            <p>{{ accountToView.email }}</p>
+            <span class="status-dot" [ngClass]="{ online: true }"></span>
+          </div>
+        </div>
+
+        <div class="member-card">
+          <div class="member-info-row">
+            <span class="label">Contact:</span>
+            <span class="value">{{ accountToView.contactNumber }}</span>
+          </div>
+
+          <div
+            class="member-info-row"
+            *ngIf="accountToView.role === 'resident'"
+          >
+            <span class="label">Address:</span>
+            <span class="value">{{ accountToView.address }}</span>
+          </div>
+
+          <div class="member-info-row" *ngIf="accountToView.role === 'admin'">
+            <span class="label">Office ID:</span>
+            <span class="value">{{ accountToView.office_id }}</span>
+          </div>
+
+          <div class="member-info-row">
+            <span class="label">Role:</span>
+            <span class="value">{{ accountToView.role | titlecase }}</span>
+          </div>
+
+          <div class="member-info-row">
+            <span class="label">Status:</span>
+            <span
+              class="value"
+              [ngStyle]="{
+            color: accountToView.blocked ? 'red' : 'green'
+          }"
+            >
+              {{ accountToView.blocked ? 'Blocked' : 'Registered' }}
+            </span>
+          </div>
+
+          <div class="member-info-row" *ngIf="accountToView.blocked">
+            <span class="label">Reason:</span>
+            <span class="value">{{ accountToView.blockReason }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

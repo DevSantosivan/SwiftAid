@@ -1,0 +1,127 @@
+<div class="notification-panel">
+  <h4>Notification</h4>
+  <p>
+    Stay updated with real-time alerts and status updates for all emergency
+    requests.
+  </p>
+  <br />
+
+  <!-- Filter Buttons -->
+  <div class="notification-filters">
+    <div>
+      <button
+        class="filter-btn"
+        [class.active]="filterType === 'all'"
+        (click)="setFilter('all')"
+      >
+        All
+      </button>
+      <button
+        class="filter-btn"
+        [class.active]="filterType === 'unread'"
+        (click)="setFilter('unread')"
+      >
+        Unread
+      </button>
+      <button
+        class="filter-btn"
+        [class.active]="filterType === 'mentions'"
+        (click)="setFilter('mentions')"
+      >
+        Mentions
+      </button>
+    </div>
+    <div class="mark-all">
+      <button (click)="markAllAsRead()" class="mark-all-btn">
+        Mark All as Read
+      </button>
+    </div>
+  </div>
+
+  <!-- No notifications for All -->
+  <div
+    *ngIf="filterType === 'all' && filteredRequests.length === 0"
+    class="no-notifications"
+  >
+    <img
+      src="assets/Empty Box.gif"
+      alt="No notifications"
+      class="no-notifications-gif"
+    />
+    <p>No notifications available for All.</p>
+  </div>
+
+  <!-- No notifications for Unread -->
+  <div
+    *ngIf="filterType === 'unread' && filteredRequests.length === 0"
+    class="no-notifications"
+  >
+    <img
+      src="assets/Empty Box.gif"
+      alt="No unread notifications"
+      class="no-notifications-gif"
+    />
+    <p>You have no unread notifications.</p>
+  </div>
+
+  <!-- No notifications for Mentions -->
+  <div
+    *ngIf="filterType === 'mentions' && filteredRequests.length === 0"
+    class="no-notifications"
+  >
+    <img
+      src="assets/Empty Box.gif"
+      alt="No mentions"
+      class="no-notifications-gif"
+    />
+    <p>No notifications mentioning you.</p>
+  </div>
+
+  <!-- Notification Items -->
+  <div *ngFor="let notif of filteredRequests" class="notification-item">
+    <div class="avatar">
+      <img
+        [src]="notif.request?.profilePicture || 'https://i.pravatar.cc/40?u=' + notif.request?.email"
+        alt="profile"
+      />
+    </div>
+
+    <div class="notification-content">
+      <p>
+        <strong>{{ notif.request?.name || 'Someone' }}</strong>
+        reported an <strong>{{ notif.request?.event }}</strong> at
+        <strong>{{ notif.request?.address }}</strong>
+      </p>
+
+      <p class="description">
+        {{ notif.request?.description || 'No description available.' }}
+      </p>
+
+      <div class="meta-info">
+        <span class="timestamp">
+          {{ notif.request?.timestamp?.toDate() | date: 'short' }}
+        </span>
+        <span
+          class="status-tag"
+          [ngClass]="notif.request?.status?.toLowerCase()"
+        >
+          {{ notif.request?.status }}
+        </span>
+      </div>
+
+      <div *ngIf="notif.request?.staffFullName" class="assigned-staff">
+        Assigned to: {{ notif.request?.staffFullName }}
+      </div>
+
+      <div class="action-bar">
+        <button
+          class="reply-btn"
+          (click)="ViewRequest(notif)"
+          [disabled]="!notif.request?.id"
+        >
+          View Details
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

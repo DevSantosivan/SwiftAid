@@ -1,86 +1,189 @@
-<div class="container-admin">
-    <div class="right-side-navbar">
-      <div class="header">
-        <h3 class="flex-logo"><img src="assets/logo.jpg" alt="" class="logo">SwiftAid</h3>
-      </div>
-      <div class="navlinks">
-        <ul>
-          <li (click)="navigateToDashboard()"><i class='bx bxs-dashboard'></i> Dashboard</li>
-          <li (click)="navigateToMap()"><i class='bx bxs-map'></i> Map</li>
-          <li class="active" (click)="navigateToHistoryCall()"><i class='bx bx-history'></i> History</li>
-          <li (click)="navigateToUserList()"><i class='bx bxs-user-detail'></i> Resident</li>
-        </ul>
-      </div>
-    </div>
-  
-    <div class="left-side-container">
-      <app-admin-navbar></app-admin-navbar>
-  
-      <div class="left-side-container_content">
-        <h3>History Request</h3>
-        <p>Recent requests</p>
-  
-        <div class="resident-container">
-          <div class="resident-header">
-            <div class="btn-container"></div>
-            <div class="add-user-container">
-              <div class="search">
-                <i class='bx bx-search'></i>
-                <input type="text" placeholder="Search" (input)="searchRequest($event)">
-              </div>
-            </div>
-          </div>
-  
-          <div class="table">
-            <table>
-              <thead>
-                <tr>
-                  <td><input type="checkbox" name="" id=""></td>
-                  <td>Full Name</td>
-                  <td>Rescue Need</td>
-                  <td>Email</td>
-                  <td>Contact</td>
-                  <td>Address</td>
-                  <td>Event</td>
-                  <td>Location</td>
-                  <td>Time</td>
-                  <td>Action</td>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- Loop through the current page's requests -->
-                <tr *ngFor="let request of currentPageRequests">
-                  <td><input type="checkbox" name="" id=""></td>
-                  <td>{{ request.name }}</td>
-                  <td>{{ request.needs }}</td>
-                  <td>{{ request.email }}</td>
-                  <td>{{ request.contactNumber }}</td>
-                  <td>{{ request.address }}</td>
-          
-                  <td>{{ request.currentLocation }}</td>
-                  <td>{{ request.timestamp?.toDate().toLocaleString() }}</td>
-                  <i class='bx bxs-trash' (click)="deleteRequest(request.id || '')"></i>
-                </tr>
-              </tbody>
-            </table>
-  
-            <!-- Pagination Controls -->
-            <div class="pagination-controls">
-              <button (click)="changePage('previous')" [disabled]="currentPage <= 1">Previous</button>
-              <span>Page {{ currentPage }} of {{ totalPages }}</span>
-              <button (click)="changePage('next')" [disabled]="currentPage >= totalPages">Next</button>
-            </div>
-  
-            <!-- Items per Page Selection -->
-            <div>
-              <label for="itemsPerPage">Items per Page:</label>
-              <select id="itemsPerPage" (change)="changeItemsPerPage($event)">
-                <option *ngFor="let option of itemsPerPageOptions" [value]="option">{{ option }}</option>
-              </select>
-            </div>
-          </div>
+<div class="content-body">
+  <div class="content_1">
+    <h4>Emergency Request History</h4>
+    <p>List of past emergency requests</p>
+
+    <!-- Bulk Select Dropdown -->
+    <div class="bulk-select-dropdown">
+      <input
+        type="checkbox"
+        [checked]="isAllSelected()"
+        (change)="toggleSelectAllRequests($event)"
+      />
+      <div class="dropdown">
+        <button class="dropdown-toggle" (click)="toggleBulkMenu($event)">
+          ▾
+        </button>
+        <div class="dropdown-list" *ngIf="showBulkMenu">
+          <button (click)="selectBy('all')">Select All</button>
+          <button (click)="selectBy('none')">Select None</button>
+          <button (click)="selectBy('accepted')">Accepted by Me</button>
+          <button (click)="selectBy('completed')">Completed</button>
         </div>
       </div>
     </div>
+
+    <!-- Search Bar -->
+    <div class="search-bar">
+      <input
+        type="text"
+        placeholder="Search requests..."
+        [(ngModel)]="searchTerm"
+        (input)="applyFilters()"
+      />
+      <button type="button"><i class="bx bx-search"></i></button>
+    </div>
+    <div class="chart-container">
+      <div class="chart-wrapper">
+        <canvas id="requestStatusChart"></canvas>
+        <p class="chart-label">Request Status Distribution</p>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="requestStatusBarChart"></canvas>
+        <p class="chart-label">Monthly Requests by Event</p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs">
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          [class.active]="activeTab === 'all'"
+          (click)="setTab('all')"
+        >
+          <i class="bx bx-list-ul"></i> All Requests</a
+        >
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          [class.active]="activeTab === 'accepted'"
+          (click)="setTab('accepted')"
+        >
+          <i class="bx bx-check-circle"></i> Accepted by Me</a
+        >
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          [class.active]="activeTab === 'completed'"
+          (click)="setTab('completed')"
+        >
+          <i class="bx bx-check-double"></i> Completed</a
+        >
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          [class.active]="activeTab === 'cancelled'"
+          (click)="setTab('cancelled')"
+        >
+          <i class="bx bx-x-circle"></i> Cancelled</a
+        >
+      </li>
+    </ul>
+
+    <!-- Top Action Bar -->
+    <div class="top-action-bar" *ngIf="selectedRequests.length > 0">
+      <span>{{ selectedRequests.length }} selected</span>
+      <button (click)="deleteSelectedRequests()">
+        <i class="bx bx-trash"></i> Delete
+      </button>
+    </div>
+
+    <!-- Requests List -->
+    <ng-container
+      *ngIf="getCurrentFilteredRequests().length > 0; else noDataTemplate"
+    >
+      <ng-container
+        *ngTemplateOutlet="
+          requestListTemplate;
+          context: { requests: getCurrentFilteredRequests() }
+        "
+      ></ng-container>
+    </ng-container>
+
+    <!-- No Data -->
+    <ng-template #noDataTemplate>
+      <div class="no-data">
+        <img src="assets/Empty Box.gif" alt="No Data" />
+        <p>No requests available.</p>
+      </div>
+    </ng-template>
   </div>
-  
+</div>
+
+<!-- Request List Template -->
+<ng-template #requestListTemplate let-requests="requests">
+  <div class="account-header">
+    <span></span>
+    <span class="col-request-id">Request ID</span>
+    <span class="col-date">Date</span>
+    <span class="col-event">Event</span>
+    <span class="col-status">Status</span>
+    <span class="col-accepted-by">Accepted By</span>
+    <span class="col-action"></span>
+  </div>
+  <div class="account-list">
+    <div
+      class="account-row"
+      *ngFor="let req of requests"
+      (click)="$event.stopPropagation()"
+    >
+      <input
+        type="checkbox"
+        [checked]="isChecked(req)"
+        (change)="setChecked(req, $event)"
+      />
+      <span class="col-request-id">{{ req.id }}</span>
+      <span class="col-date">{{
+        req.timestamp?.toDate() | date : "short"
+      }}</span>
+      <!-- Add this for event -->
+      <span class="col-event">{{ req.event || "-" }}</span>
+      <span
+        class="col-status"
+        [ngClass]="{
+          pending: req.status.toLowerCase() === 'pending',
+          accepted:
+            req.status.toLowerCase() === 'accepted' ||
+            req.status.toLowerCase() === 'responding',
+          completed:
+            req.status.toLowerCase() === 'completed' ||
+            req.status.toLowerCase() === 'resolved',
+          cancelled: req.status.toLowerCase() === 'cancelled'
+        }"
+      >
+        {{ req.status | titlecase }}
+      </span>
+      <span class="col-accepted-by">{{ req.staffFullName || "-" }}</span>
+      <span class="col-action action-buttons">
+        <button title="View" (click)="viewRequest(req)">
+          <i class="bx bx-show"></i>
+        </button>
+      </span>
+    </div>
+  </div>
+</ng-template>
+
+<!-- View Request Modal -->
+<div class="isProfilemodal" *ngIf="requestToView">
+  <div class="modal-content view-member-modal">
+    <span class="close" (click)="closeView()">&times;</span>
+    <h3>Request Details</h3>
+    <div>
+      <p><strong>Request ID:</strong> {{ requestToView.id }}</p>
+      <p>
+        <strong>Date:</strong>
+        {{ requestToView.timestamp?.toDate() | date : "fullDate" }}
+      </p>
+      <p><strong>Status:</strong> {{ requestToView.status | titlecase }}</p>
+      <p><strong>Event Incident</strong> {{ requestToView.event }}</p>
+      <p>
+        <strong>Accepted By:</strong> {{ requestToView.staffFullName || "-" }}
+      </p>
+      <p><strong>Description:</strong> {{ requestToView.description }}</p>
+    </div>
+  </div>
+</div>

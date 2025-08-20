@@ -1,15 +1,24 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global Styles */
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: "Montserrat", sans-serif;
+}
+
+/* Content Body */
 .content-body {
   margin-top: 5%;
   width: 100%;
   display: flex;
-  z-index: -1;
-  .content_1 {
-    padding: 10px;
-    width: 77%;
-    height: 100%;
-  }
 }
+.content-body .content_1 {
+  padding: 10px;
+  width: 77%;
+  height: 100%;
+}
+
+/* Logo Styles */
 .logo {
   width: 50px;
   height: 50px;
@@ -21,119 +30,185 @@
   font-size: 18px;
   font-weight: 900;
 }
-* {
-  padding: 0;
-  box-sizing: border-box;
-  margin: 0;
-  font-family: "Montserrat", sans-serif;
-}
+
+/* Container Admin */
 .container-admin {
   display: flex;
   width: 100%;
   background-color: #f2f4f7;
-  .right-side-navbar {
-    width: 40%;
-    max-width: 200px;
-    height: 100vh;
-    background-color: #fff;
-    border-right: 1px solid #e0e0e0;
-    padding: 20px 0px;
-    display: flex;
-    flex-direction: column;
-    position: sticky;
-    z-index: 1000;
-    top: 0;
-    left: 0;
-    .header {
-      margin-bottom: 20px;
-      padding: 0px 10px;
-
-      i {
-        color: red;
-      }
-    }
-    .navlinks {
-      margin-top: 40px;
-      width: 100%;
-      ul {
-        list-style: none;
-        padding-right: 10px;
-        li {
-          margin: 10px 0px;
-          padding: 8px 30px;
-          width: 100%;
-          border-end-end-radius: 20px;
-          font-size: 10px;
-          font-weight: 600;
-          color: #282727;
-          i {
-            margin-right: 10px;
-          }
-        }
-        li.active,
-        li:hover {
-          background-color: #fff;
-          color: red;
-          cursor: pointer;
-        }
-      }
-    }
-  }
-  .left-side-container {
-    width: 100%;
-    overflow: hidden;
-
-    .navbar {
-      width: 100%;
-      height: 50px;
-      background-color: #fff;
-      display: flex;
-      justify-content: right;
-      align-items: center;
-      padding: 0px 20px;
-      position: sticky;
-      top: 0;
-      right: 0;
-      overflow: hidden;
-      z-index: 1000;
-      .search-bar-container {
-        height: 45px;
-        display: flex;
-        align-items: center;
-
-        max-width: 700px;
-        background-color: #fff;
-        margin: 0px 20px;
-
-        .search-bar {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          i {
-            font-size: 24px;
-            text-align: center;
-            margin: 0px 8px;
-          }
-          input {
-            width: 650px;
-            height: 40px;
-            outline: none;
-            border: none;
-            padding: 0px 8px;
-            background-color: transparent;
-          }
-        }
-      }
-      .users {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: black;
-      }
-    }
-  }
 }
 
+/* Sidebar */
+.container-admin .right-side-navbar {
+  width: 250px;
+  max-width: 250px;
+  height: 100vh;
+  background-color: #fff;
+  border-right: 1px solid #e0e0e0;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+/* Sidebar Collapsed State */
+.container-admin .right-side-navbar.collapsed {
+  width: 70px;
+  padding: 20px 10px;
+}
+
+/* Sidebar Header */
+.right-side-navbar .header {
+  margin-bottom: 20px;
+  padding: 0 10px;
+}
+
+/* Hide text logo when collapsed */
+.container-admin .right-side-navbar.collapsed .flex-logo {
+  opacity: 0;
+  pointer-events: none;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Show icon logo when collapsed */
+.right-side-navbar .icon-logo {
+  display: none;
+  justify-content: center;
+}
+.container-admin .right-side-navbar.collapsed .icon-logo {
+  display: flex;
+}
+
+/* Nav Links */
+.right-side-navbar .navlinks {
+  margin-top: 40px;
+  width: 100%;
+}
+
+.right-side-navbar .navlinks ul {
+  list-style: none;
+  padding-right: 10px;
+}
+
+.right-side-navbar .navlinks ul li {
+  margin: 10px 0;
+  padding: 8px 30px;
+  width: 100%;
+  border-bottom-right-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #282727;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  transition: padding 0.3s ease;
+}
+
+.right-side-navbar .navlinks ul li i {
+  margin-right: 10px;
+  font-size: 18px;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* Nav text hidden when collapsed */
+.container-admin .right-side-navbar.collapsed .navlinks ul li {
+  padding-left: 15px;
+  justify-content: center;
+  margin: 0px 10px;
+}
+.container-admin .right-side-navbar.collapsed .navlinks ul li i {
+  font-size: 30px;
+  margin: 10px 0px;
+}
+
+.container-admin .right-side-navbar.collapsed .navlinks ul li span {
+  display: none;
+}
+
+/* Active and Hover States */
+.right-side-navbar .navlinks ul li.active,
+.right-side-navbar .navlinks ul li:hover {
+  background-color: #fff;
+  color: red;
+}
+
+/* Left Side Container */
+.container-admin .left-side-container {
+  width: calc(100% - 250px);
+  overflow: hidden;
+  transition: width 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Expand content when sidebar collapsed */
+.container-admin .left-side-container.collapsed {
+  width: calc(100% - 70px);
+}
+
+/* Navbar inside left container */
+.left-side-container .navbar {
+  width: 100%;
+  height: 50px;
+  background-color: #fff;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  right: 0;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.left-side-container .search-bar-container {
+  height: 45px;
+  display: flex;
+  align-items: center;
+  max-width: 700px;
+  background-color: #fff;
+  margin: 0 20px;
+}
+
+.left-side-container .search-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.left-side-container .search-bar i {
+  font-size: 24px;
+  text-align: center;
+  margin: 0 8px;
+}
+
+.left-side-container .search-bar input {
+  width: 650px;
+  height: 40px;
+  outline: none;
+  border: none;
+  padding: 0 8px;
+  background-color: transparent;
+}
+
+.left-side-container .users {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: black;
+}
+
+/* Content inside left side container */
 .left-side-container_content {
   width: 99%;
   background-color: #fff;
@@ -142,25 +217,30 @@
   border-radius: 3px;
   position: relative;
   left: 5px;
-  h3 {
-    font-size: 25px;
-    color: red;
-  }
-  P {
-    margin-bottom: 10px;
-    font-size: 13px;
-  }
-  .map {
-    width: 100%;
-  }
 }
 
+.left-side-container_content h3 {
+  font-size: 25px;
+  color: red;
+}
+
+.left-side-container_content p {
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.left-side-container_content .map {
+  width: 100%;
+}
+
+/* Main Container */
 .main-container {
   width: 100%;
   height: 100vh;
   padding: 10px;
 }
-/* Fade-in animation */
+
+/* Animations */
 .fade-in {
   opacity: 0;
   transform: translateY(20px);
@@ -172,7 +252,6 @@
   transform: translateY(0);
 }
 
-/* Slide-in animation */
 .slide-in {
   opacity: 0;
   transform: translateX(-20px);
@@ -184,20 +263,23 @@
   transform: translateX(0);
 }
 
+/* Responsive */
 @media (max-width: 767px) {
-  .content-body {
-    display: none; /* Hide dashboard on mobile */
-  }
-  .mobile-message {
-    display: flex; /* Show mobile warning */
-  }
+  // .content-body {
+  //   display: none; /* Hide dashboard on mobile */
+  // }
+  // .mobile-message {
+  //   display: flex; /* Show mobile warning */
+  // }
 }
+
 @media (min-width: 768px) {
   .mobile-message {
     display: none; /* Hide mobile warning on larger screens */
   }
 }
 
+/* Mobile Message */
 .mobile-message {
   width: 100%;
   height: 100vh;
@@ -217,7 +299,6 @@
   background: white;
   border-radius: 8px;
   padding: 30px;
-
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -237,4 +318,12 @@
   color: #333;
 }
 
-// loading for state
+/* Optional: Toggle Button Style */
+.toggle-btn {
+  align-self: flex-end;
+  margin-right: 10px;
+  cursor: pointer;
+  font-size: 24px;
+  color: red;
+  user-select: none;
+}

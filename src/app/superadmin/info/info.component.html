@@ -24,6 +24,7 @@
       </li>
     </ul>
 
+    <!-- Barangay Tab -->
     <div *ngIf="activeTab === 'barangay'" class="tab-content">
       <button class="add_baranggay" (click)="openAddModal()">
         Add Barangay
@@ -53,10 +54,6 @@
                 (click)="$event.stopPropagation()"
               >
                 <ul>
-                  <!-- Uncomment if you want a View option -->
-                  <!-- <li (click)="viewBarangay(barangay)">
-        <i class="bx bx-show"></i> View
-      </li> -->
                   <li (click)="editBarangay(barangay)">
                     <i class="bx bx-edit-alt"></i> Edit
                   </li>
@@ -80,20 +77,63 @@
         </div>
       </div>
     </div>
+
+    <!-- Incident Tab -->
     <div *ngIf="activeTab === 'event'" class="tab-content">
-      <button class="add_baranggay" (click)="openAddModal()">
+      <button class="add_baranggay" (click)="openIncidentModal()">
         Add Incident
       </button>
-      <div class="content-container">
-        <div class="info">
-          <div class="header">
-            <i class="bx bx-dots-vertical-rounded"></i>
-          </div>
-          <div class="info-body">
-            <div class="icon">
-              <i class="bx bxs-car-crash"></i>
+
+      <div class="grid-item">
+        <div *ngFor="let incident of allIncidents" class="content-container">
+          <div class="info">
+            <div class="header" (click)="$event.stopPropagation()">
+              <button
+                style="border: none; cursor: pointer"
+                class="dropdown-toggle"
+                (click)="toggleIncidentDropdown(incident.id, $event)"
+              >
+                <i
+                  style="background-color: white; border: none; font-size: 15px"
+                  class="bx bx-dots-vertical-rounded"
+                ></i>
+              </button>
+
+              <div
+                class="dropdown-menu"
+                *ngIf="openIncidentDropdownIndex === incident.id"
+                (click)="$event.stopPropagation()"
+              >
+                <ul>
+                  <li (click)="viewIncident(incident)">
+                    <i class="bx bx-show"></i> View
+                  </li>
+                  <li (click)="editIncident(incident)">
+                    <i class="bx bx-edit-alt"></i> Edit
+                  </li>
+                  <li (click)="deleteIncident(incident.id)">
+                    <i class="bx bx-trash-alt"></i> Delete
+                  </li>
+                </ul>
+              </div>
             </div>
-            <h2 class="tittle">Car Accident</h2>
+
+            <div class="info-body">
+              <div class="icon">
+                <i [class]="incident.icon"></i>
+              </div>
+              <h2 class="tittle">{{ incident.name }}</h2>
+
+              <div
+                class="tips"
+                *ngIf="incident.tips && incident.tips.length > 0"
+              >
+                <h4>Tips:</h4>
+                <ul>
+                  <li *ngFor="let tip of incident.tips">{{ tip }}</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -101,7 +141,59 @@
   </div>
 </div>
 
-<!-- Add barangay Modal -->
+<!-- Incident Modal -->
+<div class="modal" [class.show]="showAddIncidentModal">
+  <div class="modal-content">
+    <h2>{{ isEditingIncident ? "Edit Incident" : "Add Incident" }}</h2>
+    <form (ngSubmit)="submitIncident()" #incidentForm="ngForm">
+      <label>Incident Name</label>
+      <input type="text" required [(ngModel)]="newIncident.name" name="name" />
+
+      <label>Icon Class Name</label>
+      <input
+        type="text"
+        required
+        [(ngModel)]="newIncident.icon"
+        name="icon"
+        placeholder="e.g. bx bxs-car-crash"
+      />
+
+      <label>Tips for this Incident</label>
+      <div
+        style="width: 100%"
+        *ngFor="let tip of newIncident.tips; let i = index"
+      >
+        <p style="width: 100%">
+          {{ tip }}
+          <button
+            style="background-color: white"
+            type="button"
+            (click)="removeTip(i)"
+          >
+            <i class="bx bx-x"></i>
+          </button>
+        </p>
+      </div>
+
+      <input
+        type="text"
+        [(ngModel)]="newTip"
+        name="newTip"
+        placeholder="Enter a tip"
+      />
+      <button type="button" (click)="addTip()">Add Tip</button>
+
+      <div style="margin-top: 20px">
+        <button type="submit">
+          {{ isEditingIncident ? "Update" : "Save" }}
+        </button>
+        <button type="button" (click)="closeIncidentModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Barangay Modal -->
 <div class="modal" [class.show]="showAddModal">
   <div class="modal-content">
     <h2>Add Barangay</h2>

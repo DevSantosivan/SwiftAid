@@ -6,6 +6,10 @@
   justify-content: center;
   background-color: #ffffff96;
   backdrop-filter: blur(5px);
+  z-index: 999999;
+  position: fixed;
+  left: 0;
+  top: 0;
 }
 
 /* From Uiverse.io by cosnametv */

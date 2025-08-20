@@ -15,30 +15,61 @@ import { BarangayService } from '../../core/barangay.service';
 })
 export class InfoComponent implements OnInit {
   activeTab: string = 'barangay';
+
+  // Modals and states
   showAddModal = false;
+  showAddIncidentModal = false;
   isSubmitting = false;
   showSuccessModal = false;
   editingBarangayId: string | null = null;
+  editingIncidentId: string | null = null; // to track which incident is being edited
+  isEditingIncident: boolean = false; // optional flag to toggle edit mode
 
+  // Barangay data
   allBaranggay: Barangay[] = [];
   newBarangay: Barangay = this.getEmptyBarangay();
   map: any;
+
+  // Incident data
+  allIncidents: { id: string; name: string; icon: string; tips: string[] }[] =
+    [];
+  newIncident = { id: '', name: '', icon: '', tips: [] as string[] };
+  newTip = '';
+
+  // Dropdown states
+  openDropdownIndex: string | null = null;
+  openIncidentDropdownIndex: string | null = null;
 
   constructor(private barangayService: BarangayService) {}
 
   ngOnInit(): void {
     this.fetchBarangays();
+
+    // Example incidents with IDs for managing dropdown
+    this.allIncidents = [
+      {
+        id: '1',
+        name: 'Fire',
+        icon: 'bx bxs-hot',
+        tips: ['Call fire department', 'Evacuate area'],
+      },
+      {
+        id: '2',
+        name: 'Flood',
+        icon: 'bx bx-water',
+        tips: ['Move to higher ground', 'Avoid water currents'],
+      },
+    ];
   }
 
   setTab(tabName: string): void {
     this.activeTab = tabName;
   }
 
+  // ===== BARANGAY LOGIC =====
+
   async fetchBarangays() {
-    this.allBaranggay = await this.barangayService.getAll(); // async support
-  }
-  openAddIncident() {
-    alert('Add Incident clicked! Implement your logic here.');
+    this.allBaranggay = await this.barangayService.getAll();
   }
 
   openAddModal(barangayToEdit?: Barangay) {
@@ -158,21 +189,98 @@ export class InfoComponent implements OnInit {
     }
   }
 
-  openDropdownIndex: string | null = null;
-
   toggleDropdown(id: string | undefined, event: MouseEvent) {
     event.stopPropagation();
-    if (!id) return; // safety check
-
-    if (this.openDropdownIndex === id) {
-      this.openDropdownIndex = null;
-    } else {
-      this.openDropdownIndex = id;
-    }
+    if (!id) return;
+    this.openDropdownIndex = this.openDropdownIndex === id ? null : id;
   }
 
+  // Close barangay dropdown on outside click
   @HostListener('document:click')
   closeDropdown() {
     this.openDropdownIndex = null;
+  }
+
+  // ===== INCIDENT LOGIC =====
+
+  openIncidentModal() {
+    this.showAddIncidentModal = true;
+  }
+
+  closeIncidentModal() {
+    this.showAddIncidentModal = false;
+    this.newIncident = { id: '', name: '', icon: '', tips: [] };
+    this.newTip = '';
+  }
+
+  addTip() {
+    if (this.newTip.trim()) {
+      this.newIncident.tips.push(this.newTip.trim());
+      this.newTip = '';
+    }
+  }
+
+  removeTip(index: number) {
+    this.newIncident.tips.splice(index, 1);
+  }
+
+  submitIncident() {
+    if (this.newIncident.name && this.newIncident.icon) {
+      if (this.newIncident.id) {
+        // Edit existing incident
+        const index = this.allIncidents.findIndex(
+          (inc) => inc.id === this.newIncident.id
+        );
+        if (index !== -1) {
+          this.allIncidents[index] = { ...this.newIncident };
+        }
+      } else {
+        // Add new incident with generated ID
+        this.newIncident.id = Date.now().toString();
+        this.allIncidents.push({ ...this.newIncident });
+      }
+      this.closeIncidentModal();
+    }
+  }
+
+  toggleIncidentDropdown(id: string | undefined, event: MouseEvent) {
+    event.stopPropagation();
+    if (!id) return;
+    this.openIncidentDropdownIndex =
+      this.openIncidentDropdownIndex === id ? null : id;
+  }
+
+  // Close incident dropdown on outside click
+  @HostListener('document:click')
+  closeIncidentDropdown() {
+    this.openIncidentDropdownIndex = null;
+  }
+
+  viewIncident(incident: {
+    id: string;
+    name: string;
+    icon: string;
+    tips: string[];
+  }) {
+    alert(`Viewing Incident: ${incident.name}`);
+    this.openIncidentDropdownIndex = null;
+  }
+
+  editIncident(incident: {
+    id: string;
+    name: string;
+    icon: string;
+    tips: string[];
+  }) {
+    this.newIncident = { ...incident };
+    this.showAddIncidentModal = true;
+    this.openIncidentDropdownIndex = null;
+  }
+
+  deleteIncident(id: string | undefined) {
+    if (id && confirm('Are you sure you want to delete this incident?')) {
+      this.allIncidents = this.allIncidents.filter((inc) => inc.id !== id);
+      this.openIncidentDropdownIndex = null;
+    }
   }
 }

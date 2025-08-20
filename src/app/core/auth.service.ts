@@ -6,31 +6,37 @@ import { getFirestore, Firestore, doc, getDoc } from 'firebase/firestore';
 import { environment } from '../model/environment';
 import { initializeApp } from 'firebase/app';
 
+import {
+  getDatabase,
+  ref,
+  set,
+  serverTimestamp,
+  remove,
+} from 'firebase/database';
+
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
   auth = inject(Auth);
   private firestore: Firestore;
+  private db_rt = getDatabase(initializeApp(environment.firebaseConfig));
 
   public userDataSubject = new BehaviorSubject<User | null>(null);
   public userRole$ = new BehaviorSubject<string | null>(null);
 
-  // Flags for UI state (error/progress)
   private failed = false;
 
   constructor(private router: Router) {
     const firebaseApp = initializeApp(environment.firebaseConfig);
     this.firestore = getFirestore(firebaseApp);
 
-    // Listen to Firebase auth state changes once app starts
     this.auth.onAuthStateChanged(async (user) => {
       if (user) {
         this.userDataSubject.next(user);
         const role = await this.fetchUserRole(user.uid);
         this.userRole$.next(role);
 
-        // Optional: auto-redirect on page reload if already logged in
         this.redirectUserByRole(role);
       } else {
         this.userDataSubject.next(null);
@@ -92,10 +98,25 @@ export class AuthService {
   }
 
   async logout() {
+    const currentUser = this.getCurrentUser();
+    if (currentUser) {
+      await this.clearPresence(currentUser.uid);
+    }
+
     await this.auth.signOut();
     this.userDataSubject.next(null);
     this.userRole$.next(null);
     this.router.navigate(['/home']);
+  }
+  private async clearPresence(uid: string): Promise<void> {
+    const statusRef = ref(this.db_rt, `status/${uid}`);
+
+    // Set the user state as offline, update lastOnline and last_changed
+    await set(statusRef, {
+      state: 'offline',
+      lastOnline: Date.now(),
+      last_changed: Date.now(),
+    });
   }
 
   getErrorValidation(): boolean {

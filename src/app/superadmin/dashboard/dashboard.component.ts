@@ -19,9 +19,9 @@ Chart.register(...registerables);
   styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements OnInit {
-  chart: any;
   pieChart: any;
   yearlyChart: any;
+  requestEventBarChart: any; // <-- new for stacked bar chart
   isAdmin: boolean = false;
   currentUserId: string = '';
   isloader: boolean = false;
@@ -93,48 +93,6 @@ export class DashboardComponent implements OnInit {
     return this.RED_PALETTE[index % this.RED_PALETTE.length];
   }
 
-  public lineChartConfig: any = {
-    type: 'bar',
-    data: {
-      labels: this.getMonthLabels(7),
-      datasets: [
-        {
-          label: 'Police',
-          data: [120, 140, 100, 180, 150, 160, 130],
-          borderColor: '#b71c1c',
-          backgroundColor: 'rgba(183, 28, 28, 0.8)',
-          fill: true,
-          borderWidth: 1,
-          pointBorderRadius: 5,
-        },
-        {
-          label: 'Ambulance',
-          data: [60, 70, 50, 90, 85, 80, 75],
-          borderColor: '#d32f2f',
-          backgroundColor: 'rgba(211, 47, 47, 0.6)',
-          fill: true,
-          borderWidth: 1,
-          pointBorderRadius: 5,
-        },
-        {
-          label: 'Fire',
-          data: [30, 45, 50, 40, 60, 55, 48],
-          borderColor: '#f44336',
-          backgroundColor: 'rgba(244, 67, 54, 0.4)',
-          fill: true,
-          borderWidth: 1,
-          pointBorderRadius: 5,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: { beginAtZero: true },
-      },
-    },
-  };
-
   public pieChartConfig: any = {
     type: 'pie',
     data: {
@@ -178,6 +136,142 @@ export class DashboardComponent implements OnInit {
     },
   };
 
+  getStatusLabel(status: string | undefined): string {
+    if (!status) return 'Unknown';
+
+    switch (status.toLowerCase()) {
+      case 'pending':
+      case 'requesting':
+        return 'Requesting';
+      case 'responding':
+        return 'In Progress';
+      case 'completed':
+      case 'resolved':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return status;
+    }
+  }
+
+  getStatusClass(status: string | undefined): string {
+    if (!status) return 'unknown';
+
+    switch (status.toLowerCase()) {
+      case 'pending':
+      case 'requesting':
+        return 'requesting';
+      case 'responding':
+        return 'in-progress';
+      case 'completed':
+      case 'resolved':
+        return 'completed';
+      case 'cancelled':
+        return 'cancelled';
+      default:
+        return 'other';
+    }
+  }
+
+  updateMonthlyEventBarChart(requests: EmergencyRequest[]) {
+    const monthLabels: string[] = [];
+    const monthMap: Map<string, number> = new Map();
+
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = d.toLocaleString('default', {
+        month: 'short',
+        year: 'numeric',
+      });
+      monthLabels.push(label);
+      monthMap.set(label, monthLabels.length - 1);
+    }
+
+    const eventSet = new Set<string>();
+    requests.forEach((req) => {
+      if (req.event) eventSet.add(req.event);
+    });
+
+    const events = Array.from(eventSet);
+    const countsPerEvent: { [event: string]: number[] } = {};
+
+    events.forEach((event) => {
+      countsPerEvent[event] = new Array(monthLabels.length).fill(0);
+    });
+
+    requests.forEach((req) => {
+      if (!req.timestamp || !req.event) return;
+      const date = req.timestamp.toDate
+        ? req.timestamp.toDate()
+        : new Date(req.timestamp);
+      const label = date.toLocaleString('default', {
+        month: 'short',
+        year: 'numeric',
+      });
+
+      const index = monthMap.get(label);
+      if (index !== undefined) {
+        countsPerEvent[req.event][index]++;
+      }
+    });
+
+    const colors = [
+      '#b71c1c', // Dark Red
+      '#d32f2f', // Medium Red
+      '#ef5350', // Light Red
+      '#f44336', // Classic Red
+      '#e57373', // Pale Red
+      '#ff8a80', // Soft Pinkish Red
+      '#ad1457', // Dark Pink-Red (Berry)
+      '#c62828', // Deep Red
+      '#f06292', // Pinkish
+      '#ba000d', // Very Dark Red
+      '#ff5252', // Bright Red
+      '#880e4f', // Dark Magenta-Red
+      '#ff1744', // Vivid Red
+      '#ff7961', // Light Coral
+      '#4a148c', // Dark Purple (works well near red)
+      '#e53935', // Red Shade
+      '#d81b60', // Pink-Red
+    ];
+
+    const datasets = events.map((event, i) => ({
+      label: event,
+      data: countsPerEvent[event],
+      backgroundColor: colors[i % colors.length],
+    }));
+
+    if (this.requestEventBarChart) {
+      this.requestEventBarChart.destroy();
+    }
+
+    this.requestEventBarChart = new Chart('requestStatusBarChart', {
+      type: 'bar',
+      data: {
+        labels: monthLabels,
+        datasets: datasets,
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { mode: 'index', intersect: false },
+        },
+        scales: {
+          x: { stacked: true, title: { display: true, text: 'Month' } },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            title: { display: true, text: 'Number of Requests' },
+            ticks: { stepSize: 1 },
+          },
+        },
+      },
+    });
+  }
+
   async ngOnInit() {
     const user = this.authentication.currentUser;
     this.currentUserId = user?.uid || '';
@@ -187,8 +281,10 @@ export class DashboardComponent implements OnInit {
     const admins = await this.userService.getAdmins();
     this.isAdmin = admins.some((admin) => admin.uid === this.currentUserId);
 
-    this.chart = new Chart('MyLineChart', this.lineChartConfig);
+    // Initialize Pie Chart
     this.pieChart = new Chart('MyPieChart', this.pieChartConfig);
+
+    // Initialize Yearly Chart
     this.yearlyChart = new Chart('MyYearlyChart', this.yearlyChartConfig);
 
     try {
@@ -228,7 +324,7 @@ export class DashboardComponent implements OnInit {
       this.yearlyChartConfig.data.datasets[0].data = yearlyData.counts;
       this.yearlyChart.update();
 
-      // ✅ Fetch recent requests
+      // Subscribe to realtime requests and update bar chart + recentRequests
       this.EmergencyRequestService.getRequestRealtime().subscribe(
         (requests) => {
           this.recentRequests = requests
@@ -238,6 +334,8 @@ export class DashboardComponent implements OnInit {
               return dateB - dateA;
             })
             .slice(0, 5);
+
+          this.updateMonthlyEventBarChart(requests);
         }
       );
     } catch (error) {
@@ -276,78 +374,105 @@ export class DashboardComponent implements OnInit {
 
     const currentDate = new Date().toLocaleString();
     const monthLabels = this.getMonthLabels(7);
-    const policeData = this.lineChartConfig.data.datasets[0].data;
+    const policeData = this.requestEventBarChart
+      ? this.requestEventBarChart.data.datasets.find((d: any) =>
+          d.label.toLowerCase().includes('police')
+        )?.data || []
+      : [];
     const pieLabels = this.pieChartConfig.data.labels;
     const pieData = this.pieChartConfig.data.datasets[0].data;
     const yearlyYears = this.yearlyChartConfig.data.labels;
     const yearlyCounts = this.yearlyChartConfig.data.datasets[0].data;
 
-    const peakPoliceIndex = policeData.indexOf(Math.max(...policeData));
-    const peakPoliceMonth = monthLabels[peakPoliceIndex];
-    const peakPoliceValue = policeData[peakPoliceIndex];
+    const peakPoliceIndex = policeData.length
+      ? policeData.indexOf(Math.max(...policeData))
+      : -1;
+    const peakPoliceMonth =
+      peakPoliceIndex >= 0 && peakPoliceIndex < monthLabels.length
+        ? monthLabels[peakPoliceIndex]
+        : 'N/A';
+    const peakPoliceValue =
+      peakPoliceIndex >= 0 ? policeData[peakPoliceIndex] : 0;
 
-    const maxPieIndex = pieData.indexOf(Math.max(...pieData));
-    const topCategory = pieLabels[maxPieIndex];
-    const topCategoryCount = pieData[maxPieIndex];
+    const peakPieIndex = pieData.length
+      ? pieData.indexOf(Math.max(...pieData))
+      : -1;
+    const peakPieLabel =
+      peakPieIndex >= 0 && peakPieIndex < pieLabels.length
+        ? pieLabels[peakPieIndex]
+        : 'N/A';
 
-    const summary = `
-      <h2>📌SwiftAid Dashboard Report</h2>
-      <p><strong>🗓️ Generated on:</strong> ${currentDate}</p>
-      <p><strong>🧍 Total Registered Users:</strong> ${this.userCount}</p>
-      <p><strong>🚨 Total Emergency Rescue Requests:</strong> ${
-        this.EmergencyRequest
-      }</p>
-      <h3>📊 Monthly Rescue Insights</h3>
-      <p>Highest number of Police-related interventions occurred in <strong>${peakPoliceMonth}</strong> with <strong>${peakPoliceValue}</strong> reports.</p>
-      <h3>🍰 Top Incident Category</h3>
-      <p>Most common incident reported: "<strong>${topCategory}</strong>" with <strong>${topCategoryCount}</strong> cases.</p>
-      <h3>📈 Yearly Trends</h3>
-      <p>Incidents increased from <strong>${
-        yearlyCounts[0]
-      }</strong> in <strong>${yearlyYears[0]}</strong> to <strong>${
-      yearlyCounts[yearlyCounts.length - 1]
-    }</strong> in <strong>${yearlyYears[yearlyYears.length - 1]}</strong>.</p>
-      <hr>
-      <h3>📉 Charts Overview</h3>
-    `;
+    const peakYearlyIndex = yearlyCounts.length
+      ? yearlyCounts.indexOf(Math.max(...yearlyCounts))
+      : -1;
+    const peakYearlyYear =
+      peakYearlyIndex >= 0 && peakYearlyIndex < yearlyYears.length
+        ? yearlyYears[peakYearlyIndex]
+        : 'N/A';
 
-    const printWindow = window.open('', '_blank', 'width=1000,height=900');
+    const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const htmlContent = `
+    printWindow.document.write(`
       <html>
         <head>
-          <title>Emergency Dashboard Report</title>
+          <title>Dashboard Report</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 30px; color: #000; background: #fff;}
-            .header { text-align: center; margin-bottom: 40px; }
-            .logo { width: 100px; height: auto; }
-            .report-title { font-size: 24px; font-weight: bold; color: #b71c1c; margin-top: 10px; }
-            .report-date { font-size: 14px; color: #666; }
-            .box, .chart, .list {
-              border: 1px solid #ccc;
-              padding: 15px;
-              margin-bottom: 20px;
+            body {
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              color: #333;
             }
-            img { max-width: 100%; }
+            h1 {
+              text-align: center;
+              color: #b71c1c;
+            }
+            h2 {
+              color: #b71c1c;
+              border-bottom: 2px solid #b71c1c;
+              padding-bottom: 5px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 30px;
+            }
+            th, td {
+              border: 1px solid #ddd;
+              padding: 8px;
+              text-align: left;
+            }
+            th {
+              background-color: #f2f2f2;
+            }
           </style>
         </head>
-        <body onload="window.print(); window.close();">
-          <div class="header">
-            <img src="../../../assets/logo22.png" alt="Logo" class="logo" />
-            <div class="report-title">Emergency Dashboard Report</div>
-            <div class="report-date">${currentDate}</div>
-          </div>
-          <div>
-            ${summary}
-            ${clone.innerHTML}
-          </div>
+        <body>
+          <h1>Dashboard Report</h1>
+          <p>Date Generated: ${currentDate}</p>
+
+          <h2>Summary</h2>
+          <ul>
+            <li>Total Users: ${this.userCount}</li>
+            <li>Total Emergency Requests: ${this.EmergencyRequest}</li>
+            <li>Most Frequent Police Requests (Last 6 Months): ${peakPoliceMonth} with ${peakPoliceValue}</li>
+            <li>Most Frequent Accident Category (Pie Chart): ${peakPieLabel}</li>
+            <li>Year with Most Accidents (Last 5 Years): ${peakYearlyYear}</li>
+          </ul>
+
+          <h2>Dashboard Content</h2>
+          ${clone.outerHTML}
+
+          <script>
+            window.onload = () => {
+              window.print();
+              setTimeout(() => window.close(), 300);
+            };
+          </script>
         </body>
       </html>
-    `;
+    `);
 
-    printWindow.document.open();
-    printWindow.document.write(htmlContent);
     printWindow.document.close();
   }
 }

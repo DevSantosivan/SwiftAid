@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { Auth } from '@angular/fire/auth';
 import {
   Router,
@@ -6,7 +6,6 @@ import {
   RouterLink,
   RouterLinkActive,
 } from '@angular/router';
-import { LoaderComponent } from '../../loader/loader.component';
 import { AdminNavbarComponent } from '../admin-navbar/admin-navbar.component';
 import { Chart, registerables } from 'chart.js';
 import { UserService } from '../../core/user.service';
@@ -18,26 +17,109 @@ import {
   getDocs,
   DocumentData,
 } from '@angular/fire/firestore';
-import { DashboardComponent } from '../../superadmin/dashboard/dashboard.component';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { AuthService } from '../../core/auth.service';
 
 Chart.register(...registerables);
 
 @Component({
   selector: 'app-home',
-  imports: [AdminNavbarComponent, RouterOutlet, RouterLinkActive, RouterLink],
+  imports: [
+    AdminNavbarComponent,
+    RouterOutlet,
+    RouterLinkActive,
+    RouterLink,
+    FormsModule,
+    ReactiveFormsModule,
+    CommonModule,
+  ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
 })
 export class HomeComponent implements OnInit {
+  // Charts references
   chart: any;
-  pieChart: any; // Declare the pie chart variable
-  yearlyChart: any; // Declare the yearly chart variable
+  pieChart: any;
+  yearlyChart: any;
 
-  // Line Chart Configuration (Monthly)
+  // Sidebar state
+  isCollapsed = false;
+
+  // Notification state
+  hasUnreadNotifications = false;
+  unreadNotificationCount = 0;
+
+  // User and data counts
+  userCount = 0;
+  emergencyRequestCount = 0;
+
+  // Add this for mobile view detection
+  isMobileView: boolean = false;
+
+  constructor(
+    private authentication: Auth,
+    private router: Router,
+    private userService: UserService,
+    private emergencyRequestService: EmergencyRequestService,
+    private firestore: Firestore,
+    private notificationService: NotificationService,
+    private authService: AuthService
+  ) {}
+
+  ngOnInit() {
+    this.checkScreenWidth();
+
+    // Your existing async logic inside ngOnInit wrapped in an async function:
+    (async () => {
+      try {
+        // Load unread notification count and state
+        await this.updateUnreadNotificationStatus();
+
+        // Fetch user count
+        this.userCount = await this.userService.getUserCount();
+
+        // Fetch emergency request count
+        this.emergencyRequestCount =
+          await this.emergencyRequestService.getRequestCount();
+
+        // TODO: Load pie chart data for accident categories here
+        await this.getAccidentCategoriesFromFirestore();
+
+        // Load yearly accident data and update chart
+        await this.getYearlyAccidentData();
+
+        // Initialize your charts here if needed, e.g.:
+        // this.chart = new Chart(<canvasRef>, this.lineChartConfig);
+        // this.yearlyChart = new Chart(<canvasRef>, this.yearlyChartConfig);
+      } catch (error) {
+        console.error('Error initializing dashboard:', error);
+      }
+    })();
+  }
+
+  // HostListener to listen to window resize and update isMobileView accordingly
+  @HostListener('window:resize', ['$event'])
+  onResize(event: any) {
+    this.checkScreenWidth();
+  }
+
+  // Helper method to set isMobileView based on window width
+  private checkScreenWidth() {
+    this.isMobileView = window.innerWidth <= 768; // breakpoint for mobile/tablet
+  }
+
+  toggleSidebar() {
+    this.isCollapsed = !this.isCollapsed;
+  }
+
+  // (Rest of your existing methods below...)
+
+  // Line Chart Config for Monthly Data (example static data)
   public lineChartConfig: any = {
     type: 'bar',
     data: {
-      labels: this.getMonthLabels(7), // Keeps monthly data as per your original request
+      labels: this.getMonthLabels(7),
       datasets: [
         {
           label: 'Police',
@@ -71,74 +153,22 @@ export class HomeComponent implements OnInit {
     options: {
       responsive: true,
       scales: {
-        y: {
-          beginAtZero: true,
-        },
+        y: { beginAtZero: true },
       },
     },
   };
 
-  // Pie Chart Configuration (Accident Categories)
-  public pieChartConfig: any = {
-    type: 'pie',
-    data: {
-      labels: [
-        'Assault',
-        'Break-in',
-        'Vandalism',
-        'Theft',
-        'Accident',
-        'Heart Attack',
-        'Stroke',
-        'Breathing Issues',
-        'Fire',
-        'Explosion',
-        'Gas Leak',
-        'Flood',
-      ],
-      datasets: [
-        {
-          label: 'Accident Categories',
-          data: [5, 3, 25, 12, 10, 7, 6, 4, 8, 5, 9, 6], // Example data for each category
-          backgroundColor: [
-            'rgb(245, 18, 75)', // Assault
-            'rgb(241, 69, 69)', // Break-in
-            'rgb(255, 102, 102)', // Vandalism
-            'rgb(255, 77, 77)', // Theft
-            'rgb(204, 0, 0)', // Accident
-            'rgb(255, 87, 34)', // Heart Attack
-            'rgb(255, 153, 153)', // Stroke
-            'rgb(255, 128, 128)', // Breathing Issues
-            'rgb(255, 69, 0)', // Fire
-            'rgb(255, 85, 85)', // Explosion
-            'rgb(204, 51, 51)', // Gas Leak
-            'rgb(255, 102, 85)', // Flood
-          ],
-          borderWidth: 1,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: 'top',
-        },
-      },
-    },
-  };
-
-  // Yearly Chart Configuration (Accident Data)
+  // Yearly Chart Config (Accident Data)
   public yearlyChartConfig: any = {
     type: 'line',
     data: {
-      labels: this.getYearLabels(5), // Get the last 5 years for example
+      labels: this.getYearLabels(5),
       datasets: [
         {
           label: 'Accident Data',
-          data: [20, 30, 40, 25, 50], // Sample data (replace with actual data)
+          data: [20, 30, 40, 25, 50], // placeholder data, replaced on load
           fill: false,
-          borderColor: 'rgb(255, 8, 0)', // Blue line color
+          borderColor: 'rgb(255, 8, 0)',
           tension: 0.1,
         },
       ],
@@ -146,163 +176,105 @@ export class HomeComponent implements OnInit {
     options: {
       responsive: true,
       scales: {
-        y: {
-          beginAtZero: true,
-        },
+        y: { beginAtZero: true },
       },
     },
   };
 
-  constructor(
-    private authentication: Auth,
-    private route: Router,
-    private userService: UserService,
-    private EmergencyRequestService: EmergencyRequestService,
-    private firestore: Firestore,
-    private notificationService: NotificationService
-  ) {}
+  // Your other methods...
 
-  userCount: number = 0;
-  EmergencyRequest: number = 0;
-
-  async ngOnInit() {
-    console.log('ngOnInit called');
-
-    // Initialize the charts
-    this.chart = new Chart('MyLineChart', this.lineChartConfig);
-    this.pieChart = new Chart('MyPieChart', this.pieChartConfig);
-    this.yearlyChart = new Chart('MyYearlyChart', this.yearlyChartConfig);
-
-    try {
-      // Fetch user count
-      const userCount = await this.userService.getUserCount();
-
-      this.userCount = userCount;
-
-      // Fetch emergency request count
-      const registeredAccount =
-        await this.EmergencyRequestService.getRequestCount();
-
-      this.EmergencyRequest = registeredAccount;
-
-      // Fetch accident category data for pie chart
-      await this.getAccidentCategoriesFromFirestore();
-
-      // Fetch yearly accident data for line chart
-      await this.getYearlyAccidentData();
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  }
-
-  // Get Month Labels (for Monthly Chart)
   getMonthLabels(count: number): string[] {
-    const labels = [];
+    const labels: string[] = [];
     const date = new Date();
     for (let i = 0; i < count; i++) {
-      labels.push(date.toLocaleString('default', { month: 'short' }));
+      labels.unshift(date.toLocaleString('default', { month: 'short' }));
       date.setMonth(date.getMonth() - 1);
     }
-    return labels.reverse(); // To show in the correct order (latest month first)
+    return labels;
   }
 
-  // Get Year Labels (for Yearly Chart)
   getYearLabels(count: number): string[] {
-    const labels = [];
-    const date = new Date();
-    for (let i = 0; i < count; i++) {
-      labels.push((date.getFullYear() - i).toString()); // Get last 'count' years
+    const labels: string[] = [];
+    const year = new Date().getFullYear();
+    for (let i = count - 1; i >= 0; i--) {
+      labels.push((year - i).toString());
     }
-    return labels.reverse();
+    return labels;
   }
 
-  // Fetch data for accident categories from Firestore
   async getAccidentCategoriesFromFirestore() {
     const accidentRef = collection(this.firestore, 'EmergencyRequest');
     const querySnapshot = await getDocs(accidentRef);
-
-    // Initialize counters for each event type
-    const counts: Record<string, number> = {
-      Assault: 0,
-      'Break-in': 0,
-      Vandalism: 0,
-      Theft: 0,
-      Accident: 0,
-      'Heart Attack': 0,
-      Stroke: 0,
-      Explosion: 0,
-      'Gas Leak': 0,
-      Flood: 0,
-      Fire: 0,
-    };
-
-    querySnapshot.forEach((doc) => {
-      const data = doc.data() as DocumentData;
-      const event = data['event']?.trim() as string;
-      if (event && counts.hasOwnProperty(event)) {
-        counts[event]++;
-      }
-    });
-
-    // Update pie chart with the counts
-    this.pieChartConfig.data.datasets[0].data = Object.values(counts);
-    this.pieChart.update();
+    // TODO: aggregate data here to build your pie chart dataset
   }
 
-  // Fetch yearly accident data from Firestore
   async getYearlyAccidentData() {
     const accidentRef = collection(this.firestore, 'EmergencyRequest');
     const querySnapshot = await getDocs(accidentRef);
 
-    // Aggregate data by year
-    const yearCounts: { [key: string]: number } = {};
+    const yearCounts: { [year: string]: number } = {};
 
-    // Loop through each document in the Firestore collection
     querySnapshot.forEach((doc) => {
       const data = doc.data() as DocumentData;
-      const timestamp = data['timestamp']; // Extract the timestamp field
+      const timestamp = data['timestamp'];
 
       if (timestamp) {
         const year = new Date(timestamp.seconds * 1000)
           .getFullYear()
-          .toString(); // Extract year from timestamp
-        yearCounts[year] = (yearCounts[year] || 0) + 1; // Count events by year
+          .toString();
+        yearCounts[year] = (yearCounts[year] || 0) + 1;
       }
     });
 
-    // Prepare the years and counts for the chart
     const years = Object.keys(yearCounts).sort(
-      (a, b) => parseInt(b) - parseInt(a)
-    ); // Sort by year descending
+      (a, b) => parseInt(a) - parseInt(b)
+    );
     const counts = years.map((year) => yearCounts[year]);
 
-    // Update the yearly chart with aggregated counts
     this.yearlyChartConfig.data.labels = years;
     this.yearlyChartConfig.data.datasets[0].data = counts;
-    this.yearlyChart.update();
+
+    if (this.yearlyChart) this.yearlyChart.update();
   }
 
-  isloader: boolean = false;
-
-  // Navigation methods
   navigateToMap() {
-    this.route.navigate(['/admin/map']);
+    this.router.navigate(['/admin/map']);
   }
 
   navigateToHistoryCall() {
-    this.route.navigate(['/admin/history-call']);
+    this.router.navigate(['/admin/history-call']);
   }
 
   navigateToUserList() {
-    this.route.navigate(['/admin/user-list']);
+    this.router.navigate(['/admin/user-list']);
   }
 
   signout() {
-    return this.authentication.signOut().then(() => {
-      setTimeout(() => {
-        this.route.navigate(['/login']);
-      }, 3000);
-      this.isloader = true;
+    this.authentication.signOut().then(() => {
+      this.router.navigate(['/login']);
     });
+  }
+
+  async updateUnreadNotificationStatus() {
+    try {
+      const currentUser = this.authentication.currentUser;
+      if (!currentUser) {
+        this.hasUnreadNotifications = false;
+        this.unreadNotificationCount = 0;
+        return;
+      }
+
+      const count =
+        await this.emergencyRequestService.getUnreadNotificationCountForUser(
+          currentUser.uid
+        );
+
+      this.unreadNotificationCount = count;
+      this.hasUnreadNotifications = count > 0;
+
+      console.log('Unread notifications:', count);
+    } catch (error) {
+      console.error('Failed to fetch unread notification count:', error);
+    }
   }
 }

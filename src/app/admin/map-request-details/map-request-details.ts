@@ -14,6 +14,7 @@ import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { UserService } from '../../core/user.service';
 import { getAuth } from 'firebase/auth';
 import { ActivatedRoute, Router } from '@angular/router';
+import { NavigationService } from '../../core/navigation.service';
 
 @Component({
   selector: 'app-map-request-details',
@@ -40,7 +41,7 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
   routeLine?: L.Polyline;
   currentStaff: any = null;
   private watchId?: number;
-
+  backLabel: string = 'Back To Emergency Request List';
   staffAddress: string = 'Fetching address...'; // 🆕 For readable address
 
   constructor(
@@ -48,10 +49,25 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
     private userService: UserService,
     private ngZone: NgZone,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private navigationService: NavigationService
   ) {}
 
+  goBack() {
+    const previousUrl = this.navigationService.getPreviousUrl();
+    this.router.navigateByUrl(previousUrl);
+  }
+
   async ngAfterViewInit(): Promise<void> {
+    const prevUrl = this.navigationService.getPreviousUrl();
+
+    if (prevUrl.includes('Notification')) {
+      this.backLabel = 'Back To Notifications';
+    } else if (prevUrl.includes('EmergencyRequest')) {
+      this.backLabel = 'Back To Emergency Request List';
+    } else {
+      this.backLabel = 'Back To Home'; // fallback
+    }
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) return;
 
