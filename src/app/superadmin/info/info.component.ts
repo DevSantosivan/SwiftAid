@@ -1,10 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 import 'leaflet-control-geocoder';
 import { Barangay } from '../../model/baranggay';
 import { BarangayService } from '../../core/barangay.service';
+
+import { IncidentService, Incident } from '../../core/incident.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-info',
@@ -13,7 +16,7 @@ import { BarangayService } from '../../core/barangay.service';
   templateUrl: './info.component.html',
   styleUrls: ['./info.component.scss'],
 })
-export class InfoComponent implements OnInit {
+export class InfoComponent implements OnInit, OnDestroy {
   activeTab: string = 'barangay';
 
   // Modals and states
@@ -22,8 +25,6 @@ export class InfoComponent implements OnInit {
   isSubmitting = false;
   showSuccessModal = false;
   editingBarangayId: string | null = null;
-  editingIncidentId: string | null = null; // to track which incident is being edited
-  isEditingIncident: boolean = false; // optional flag to toggle edit mode
 
   // Barangay data
   allBaranggay: Barangay[] = [];
@@ -31,35 +32,35 @@ export class InfoComponent implements OnInit {
   map: any;
 
   // Incident data
-  allIncidents: { id: string; name: string; icon: string; tips: string[] }[] =
-    [];
-  newIncident = { id: '', name: '', icon: '', tips: [] as string[] };
+  allIncidents: Incident[] = [];
+  newIncident: Incident = { id: '', name: '', icon: '', tips: [] };
   newTip = '';
 
   // Dropdown states
   openDropdownIndex: string | null = null;
   openIncidentDropdownIndex: string | null = null;
 
-  constructor(private barangayService: BarangayService) {}
+  private incidentSub?: Subscription;
+
+  constructor(
+    private barangayService: BarangayService,
+    private incidentService: IncidentService
+  ) {}
 
   ngOnInit(): void {
     this.fetchBarangays();
 
-    // Example incidents with IDs for managing dropdown
-    this.allIncidents = [
-      {
-        id: '1',
-        name: 'Fire',
-        icon: 'bx bxs-hot',
-        tips: ['Call fire department', 'Evacuate area'],
+    // Subscribe to Firestore incident updates
+    this.incidentSub = this.incidentService.getAll().subscribe({
+      next: (incidents) => {
+        this.allIncidents = incidents;
       },
-      {
-        id: '2',
-        name: 'Flood',
-        icon: 'bx bx-water',
-        tips: ['Move to higher ground', 'Avoid water currents'],
-      },
-    ];
+      error: (err) => console.error('Error fetching incidents:', err),
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.incidentSub?.unsubscribe();
   }
 
   setTab(tabName: string): void {
@@ -69,7 +70,12 @@ export class InfoComponent implements OnInit {
   // ===== BARANGAY LOGIC =====
 
   async fetchBarangays() {
-    this.allBaranggay = await this.barangayService.getAll();
+    try {
+      this.allBaranggay = await this.barangayService.getAll();
+    } catch (error) {
+      console.error('Error fetching barangays:', error);
+      alert('Failed to fetch barangays. Please try again later.');
+    }
   }
 
   openAddModal(barangayToEdit?: Barangay) {
@@ -154,7 +160,6 @@ export class InfoComponent implements OnInit {
       this.newBarangay.barangay_contact
     ) {
       this.isSubmitting = true;
-
       try {
         if (this.editingBarangayId) {
           await this.barangayService.update(
@@ -168,10 +173,10 @@ export class InfoComponent implements OnInit {
         await this.fetchBarangays();
         this.closeModal();
         this.showSuccessModal = true;
-
         setTimeout(() => (this.showSuccessModal = false), 2000);
       } catch (error) {
         console.error('Error submitting barangay:', error);
+        alert('Failed to submit barangay. Please try again.');
       } finally {
         this.isSubmitting = false;
       }
@@ -184,8 +189,18 @@ export class InfoComponent implements OnInit {
 
   async deleteBarangay(id: string | undefined) {
     if (id && confirm('Are you sure you want to delete this barangay?')) {
-      await this.barangayService.delete(id);
-      await this.fetchBarangays();
+      this.isSubmitting = true;
+      try {
+        await this.barangayService.delete(id);
+        await this.fetchBarangays();
+        this.showSuccessModal = true;
+        setTimeout(() => (this.showSuccessModal = false), 2000);
+      } catch (error) {
+        console.error('Error deleting barangay:', error);
+        alert('Failed to delete barangay. Please try again.');
+      } finally {
+        this.isSubmitting = false;
+      }
     }
   }
 
@@ -195,7 +210,6 @@ export class InfoComponent implements OnInit {
     this.openDropdownIndex = this.openDropdownIndex === id ? null : id;
   }
 
-  // Close barangay dropdown on outside click
   @HostListener('document:click')
   closeDropdown() {
     this.openDropdownIndex = null;
@@ -224,22 +238,29 @@ export class InfoComponent implements OnInit {
     this.newIncident.tips.splice(index, 1);
   }
 
-  submitIncident() {
+  async submitIncident() {
     if (this.newIncident.name && this.newIncident.icon) {
-      if (this.newIncident.id) {
-        // Edit existing incident
-        const index = this.allIncidents.findIndex(
-          (inc) => inc.id === this.newIncident.id
-        );
-        if (index !== -1) {
-          this.allIncidents[index] = { ...this.newIncident };
+      this.isSubmitting = true;
+      try {
+        if (this.newIncident.id) {
+          // Update existing incident
+          await this.incidentService.update(
+            this.newIncident.id,
+            this.newIncident
+          );
+        } else {
+          // Add new incident
+          await this.incidentService.add(this.newIncident);
         }
-      } else {
-        // Add new incident with generated ID
-        this.newIncident.id = Date.now().toString();
-        this.allIncidents.push({ ...this.newIncident });
+        this.closeIncidentModal();
+        this.showSuccessModal = true;
+        setTimeout(() => (this.showSuccessModal = false), 2000);
+      } catch (error) {
+        console.error('Error submitting incident:', error);
+        alert('Failed to submit incident. Please try again.');
+      } finally {
+        this.isSubmitting = false;
       }
-      this.closeIncidentModal();
     }
   }
 
@@ -250,37 +271,36 @@ export class InfoComponent implements OnInit {
       this.openIncidentDropdownIndex === id ? null : id;
   }
 
-  // Close incident dropdown on outside click
   @HostListener('document:click')
   closeIncidentDropdown() {
     this.openIncidentDropdownIndex = null;
   }
 
-  viewIncident(incident: {
-    id: string;
-    name: string;
-    icon: string;
-    tips: string[];
-  }) {
+  viewIncident(incident: Incident) {
     alert(`Viewing Incident: ${incident.name}`);
     this.openIncidentDropdownIndex = null;
   }
 
-  editIncident(incident: {
-    id: string;
-    name: string;
-    icon: string;
-    tips: string[];
-  }) {
+  editIncident(incident: Incident) {
     this.newIncident = { ...incident };
     this.showAddIncidentModal = true;
     this.openIncidentDropdownIndex = null;
   }
 
-  deleteIncident(id: string | undefined) {
+  async deleteIncident(id: string | undefined) {
     if (id && confirm('Are you sure you want to delete this incident?')) {
-      this.allIncidents = this.allIncidents.filter((inc) => inc.id !== id);
-      this.openIncidentDropdownIndex = null;
+      this.isSubmitting = true;
+      try {
+        await this.incidentService.delete(id);
+        this.showSuccessModal = true;
+        setTimeout(() => (this.showSuccessModal = false), 2000);
+        this.openIncidentDropdownIndex = null;
+      } catch (error) {
+        console.error('Error deleting incident:', error);
+        alert('Failed to delete incident. Please try again.');
+      } finally {
+        this.isSubmitting = false;
+      }
     }
   }
 }

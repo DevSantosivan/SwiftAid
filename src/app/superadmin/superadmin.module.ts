@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { NgModule, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterModule } from '@angular/router';
@@ -14,6 +14,7 @@ import { FeedbackComponent } from './feedback/feedback.component';
 import { InfoComponent } from './info/info.component';
 import { TeamStaffComponent } from './team-staff/team-staff.component';
 import { TimeDiffPipe } from '../../pipe/time-diff.pipe';
+import { NotificationService } from '../core/notification.service';
 
 @NgModule({
   imports: [
@@ -42,4 +43,22 @@ import { TimeDiffPipe } from '../../pipe/time-diff.pipe';
     TimeDiffPipe,
   ],
 })
-export class SuperAdminModule {}
+export class SuperAdminModule implements OnInit {
+  constructor(private notificationService: NotificationService) {}
+
+  async ngOnInit(): Promise<void> {
+    console.log('AppComponent initialized');
+
+    const permission =
+      await this.notificationService.requestNotificationPermission();
+    console.log('Notification permission:', permission);
+
+    if (permission === 'granted') {
+      await this.notificationService.initializeLatestTimestamp();
+      this.notificationService.listenToEmergencyRequests();
+      this.notificationService.listenForFCMMessages();
+    } else {
+      console.warn('Notification permission not granted.');
+    }
+  }
+}

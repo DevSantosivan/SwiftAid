@@ -1,5 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { IncidentService } from '../../core/incident.service';
+
+interface EnrichedFeedback {
+  id: string;
+  name: string;
+  rating: number;
+  comment: string;
+  timestamp: any;
+  profilePic?: string;
+}
 
 @Component({
   selector: 'app-feedback',
@@ -8,35 +18,28 @@ import { Component } from '@angular/core';
   templateUrl: './feedback.component.html',
   styleUrl: './feedback.component.scss',
 })
-export class FeedbackComponent {
+export class FeedbackComponent implements OnInit {
   activeTab = 'barangay';
-  defaultProfile = 'https://via.placeholder.com/50';
+  defaultProfile = 'assets/profile.jpg';
   showDeleteNotification = false;
   selectedIds: string[] = [];
 
-  feedbackList = [
-    {
-      id: '1',
-      name: 'Juan Dela Cruz',
-      profilePic: 'https://randomuser.me/api/portraits/men/32.jpg',
-      rating: 5,
-      comment: 'Great service and support from the barangay!',
-    },
-    {
-      id: '2',
-      name: 'Maria Santos',
-      profilePic: 'https://randomuser.me/api/portraits/women/44.jpg',
-      rating: 4,
-      comment: 'Fast response but room for improvement in follow-ups.',
-    },
-    {
-      id: '3',
-      name: 'Carlos Reyes',
-      profilePic: '',
-      rating: 3,
-      comment: 'Okay lang. Medyo matagal pero maayos naman.',
-    },
-  ];
+  feedbackList: EnrichedFeedback[] = [];
+
+  constructor(private incidentService: IncidentService) {}
+
+  ngOnInit(): void {
+    this.incidentService.getFeedbacksWithRequestNames().subscribe((data) => {
+      this.feedbackList = data.map((item) => ({
+        id: item.id,
+        name: item.name,
+        profilePic: this.defaultProfile, // You can replace with actual profilePic if available
+        rating: item.rating,
+        comment: item.feedback, // or item.comment if you changed your model
+        timestamp: item.timestamp,
+      }));
+    });
+  }
 
   setTab(tabName: string): void {
     this.activeTab = tabName;
@@ -72,10 +75,8 @@ export class FeedbackComponent {
     );
     this.selectedIds = [];
 
-    // ✅ Show deleted message
     this.showDeleteNotification = true;
 
-    // ✅ Hide after 3 seconds
     setTimeout(() => {
       this.showDeleteNotification = false;
     }, 3000);

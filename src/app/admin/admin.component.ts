@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { NotificationService } from '../core/notification.service';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../core/auth.service';
 
 @Component({
   selector: 'app-admin',
@@ -10,21 +11,32 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./admin.component.scss'],
 })
 export class AdminComponent implements OnInit {
-  constructor(private notificationService: NotificationService) {}
+  constructor(
+    private authService: AuthService,
+    private notificationService: NotificationService
+  ) {}
 
   async ngOnInit(): Promise<void> {
-    console.log('🚀 AdminComponent initialized');
+    const user = this.authService.getCurrentUser();
 
-    const permission =
-      await this.notificationService.requestNotificationPermission();
-    console.log('🔐 Notification permission:', permission);
+    if (!user) {
+      console.log('🔒 No user logged in — skipping FCM init.');
+      return;
+    }
 
-    if (permission === 'granted') {
-      await this.notificationService.initializeLatestTimestamp();
-      this.notificationService.listenToEmergencyRequests();
-      this.notificationService.listenForFCMMessages();
-    } else {
-      console.warn('⚠️ Notification permission not granted');
+    try {
+      const permission =
+        await this.notificationService.requestNotificationPermission();
+
+      if (permission === 'granted') {
+        await this.notificationService.initializeLatestTimestamp();
+        this.notificationService.listenToEmergencyRequests();
+        this.notificationService.listenForFCMMessages();
+      } else {
+        console.warn('⚠️ Notification permission not granted');
+      }
+    } catch (error) {
+      console.error('❌ Error initializing notifications:', error);
     }
   }
 }

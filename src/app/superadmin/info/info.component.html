@@ -68,7 +68,7 @@
               <div class="image">
                 <img [src]="barangay.baranggay_img" />
               </div>
-              <h2 class="tittle">{{ barangay.baranggay }}</h2>
+              <h2 class="title">{{ barangay.baranggay }}</h2>
               <p>{{ barangay.captain_name }}</p>
               <span>{{ barangay.barangay_contact }}</span>
               <p *ngIf="barangay.latLng">📍 {{ barangay.latLng }}</p>
@@ -89,14 +89,11 @@
           <div class="info">
             <div class="header" (click)="$event.stopPropagation()">
               <button
-                style="border: none; cursor: pointer"
+                aria-label="Open incident options"
                 class="dropdown-toggle"
                 (click)="toggleIncidentDropdown(incident.id, $event)"
               >
-                <i
-                  style="background-color: white; border: none; font-size: 15px"
-                  class="bx bx-dots-vertical-rounded"
-                ></i>
+                <i class="bx bx-dots-vertical-rounded"></i>
               </button>
 
               <div
@@ -119,15 +116,15 @@
             </div>
 
             <div class="info-body">
-              <div class="icon">
+              <div
+                class="icon"
+                style="font-size: 48px; color: #007bff; margin-bottom: 10px"
+              >
                 <i [class]="incident.icon"></i>
               </div>
-              <h2 class="tittle">{{ incident.name }}</h2>
+              <h2 class="title">{{ incident.name }}</h2>
 
-              <div
-                class="tips"
-                *ngIf="incident.tips && incident.tips.length > 0"
-              >
+              <div *ngIf="incident.tips?.length" class="tips">
                 <h4>Tips:</h4>
                 <ul>
                   <li *ngFor="let tip of incident.tips">{{ tip }}</li>
@@ -144,48 +141,61 @@
 <!-- Incident Modal -->
 <div class="modal" [class.show]="showAddIncidentModal">
   <div class="modal-content">
-    <h2>{{ isEditingIncident ? "Edit Incident" : "Add Incident" }}</h2>
-    <form (ngSubmit)="submitIncident()" #incidentForm="ngForm">
-      <label>Incident Name</label>
-      <input type="text" required [(ngModel)]="newIncident.name" name="name" />
-
-      <label>Icon Class Name</label>
+    <h2>{{ newIncident.id ? "Edit Incident" : "Add Incident" }}</h2>
+    <form (ngSubmit)="submitIncident()" #incidentForm="ngForm" novalidate>
+      <label for="incidentName">Incident Name</label>
       <input
+        id="incidentName"
+        type="text"
+        required
+        [(ngModel)]="newIncident.name"
+        name="name"
+        #nameInput="ngModel"
+        [class.invalid]="nameInput.invalid && nameInput.touched"
+      />
+      <div *ngIf="nameInput.invalid && nameInput.touched" class="error-message">
+        Incident name is required.
+      </div>
+
+      <label for="incidentIcon">Icon Class Name</label>
+      <input
+        id="incidentIcon"
         type="text"
         required
         [(ngModel)]="newIncident.icon"
         name="icon"
         placeholder="e.g. bx bxs-car-crash"
+        #iconInput="ngModel"
+        [class.invalid]="iconInput.invalid && iconInput.touched"
       />
-
-      <label>Tips for this Incident</label>
-      <div
-        style="width: 100%"
-        *ngFor="let tip of newIncident.tips; let i = index"
-      >
-        <p style="width: 100%">
-          {{ tip }}
-          <button
-            style="background-color: white"
-            type="button"
-            (click)="removeTip(i)"
-          >
-            <i class="bx bx-x"></i>
-          </button>
-        </p>
+      <div *ngIf="iconInput.invalid && iconInput.touched" class="error-message">
+        Icon class is required.
       </div>
 
-      <input
-        type="text"
-        [(ngModel)]="newTip"
-        name="newTip"
-        placeholder="Enter a tip"
-      />
-      <button type="button" (click)="addTip()">Add Tip</button>
+      <label>Tips for this Incident</label>
+      <div class="tips-input-group">
+        <input
+          type="text"
+          [(ngModel)]="newTip"
+          name="newTip"
+          placeholder="Enter a tip"
+          (keyup.enter)="addTip()"
+        />
+        <button type="button" (click)="addTip()">Add Tip</button>
+      </div>
 
-      <div style="margin-top: 20px">
-        <button type="submit">
-          {{ isEditingIncident ? "Update" : "Save" }}
+      <ul class="tip-list">
+        <li *ngFor="let tip of newIncident.tips; let i = index">
+          {{ tip }}
+          <button type="button" aria-label="Remove tip" (click)="removeTip(i)">
+            <i class="bx bx-x"></i>
+          </button>
+        </li>
+      </ul>
+
+      <div class="modal-actions">
+        <button type="submit" [disabled]="incidentForm.invalid">
+          {{ newIncident.id ? "Update" : "Save" }}
         </button>
         <button type="button" (click)="closeIncidentModal()">Cancel</button>
       </div>
@@ -248,7 +258,9 @@
 <div class="modal-success" *ngIf="showSuccessModal">
   <p>✅ Barangay submitted successfully!</p>
 </div>
-
+<div class="loading-overlay" *ngIf="isSubmitting">
+  <div class="spinner"></div>
+</div>
 <div class="mobile-message">
   <div class="mobile-content-message">
     <img src="../../../assets/formobile.gif" alt="" />

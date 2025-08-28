@@ -3,6 +3,7 @@
     <h4>Information Management</h4>
     <p>List of Barangay and Event</p>
 
+    <!-- Tab Navigation -->
     <ul class="nav custom-tabs">
       <li class="nav-item">
         <a
@@ -24,7 +25,9 @@
       </li>
     </ul>
 
+    <!-- User Feedback Tab -->
     <div *ngIf="activeTab === 'barangay'" class="tab-content">
+      <!-- Toolbar with Select All and Delete -->
       <div class="toolbar" *ngIf="feedbackList.length">
         <input
           type="checkbox"
@@ -42,6 +45,7 @@
         </button>
       </div>
 
+      <!-- Feedback List -->
       <div class="user-feedback-container">
         <div class="feedback-item" *ngFor="let feedback of feedbackList">
           <input
@@ -80,11 +84,14 @@
       </div>
     </div>
 
+    <!-- Blocked Comments Tab -->
     <div *ngIf="activeTab === 'event'" class="tab-content">
       <p>Blocked Comments content goes here...</p>
     </div>
   </div>
 </div>
+
+<!-- Notification -->
 <div class="notification" *ngIf="showDeleteNotification">
   <span>🗑️ Deleted successfully!</span>
 </div>
