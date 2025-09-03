@@ -5,13 +5,13 @@ import { FormsModule } from '@angular/forms';
 import { EmergencyRequest } from '../../model/emergency';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { AuthService } from '../../core/auth.service';
-
+import { VerticalAlign } from 'docx';
 import { Chart, registerables } from 'chart.js';
 import { saveAs } from 'file-saver';
+import { HeadingLevel } from 'docx';
 
 import * as XLSX from 'xlsx';
 
-// DOCX imports for Word export
 import {
   Document,
   Packer,
@@ -36,7 +36,7 @@ Chart.register(...registerables);
 export class IncidentHistory implements OnInit, OnDestroy {
   activeTab: 'all' | 'resolved' | 'cancelled' = 'all';
 
-  allRequests: EmergencyRequest[] = []; // resolved + cancelled
+  allRequests: EmergencyRequest[] = [];
   resolvedRequests: EmergencyRequest[] = [];
   cancelledRequests: EmergencyRequest[] = [];
 
@@ -44,11 +44,11 @@ export class IncidentHistory implements OnInit, OnDestroy {
   filteredResolvedRequests: EmergencyRequest[] = [];
   filteredCancelledRequests: EmergencyRequest[] = [];
 
-  searchTerm: string = '';
   selectedRequests: EmergencyRequest[] = [];
-  showBulkMenu = false;
-
   requestToView?: EmergencyRequest;
+
+  showBulkMenu = false;
+  searchTerm = '';
 
   requestStatusChart?: Chart;
   requestEventBarChart?: Chart;
@@ -67,6 +67,10 @@ export class IncidentHistory implements OnInit, OnDestroy {
     this.requestEventBarChart?.destroy();
   }
 
+  // =====================
+  // DATA LOADING & FILTER
+  // =====================
+
   async loadRequests() {
     try {
       const fetchedRequests =
@@ -81,9 +85,7 @@ export class IncidentHistory implements OnInit, OnDestroy {
       );
 
       this.allRequests = [...this.resolvedRequests, ...this.cancelledRequests];
-
       this.applyFilters();
-      this.updateMonthlyEventBarChart(this.allRequests);
     } catch (error) {
       console.error('Error loading requests:', error);
     }
@@ -96,21 +98,19 @@ export class IncidentHistory implements OnInit, OnDestroy {
       this.resolvedRequests,
       term
     );
-
     this.filteredCancelledRequests = this.filterBySearch(
       this.cancelledRequests,
       term
     );
-
     this.filteredAllRequests = this.filterBySearch(this.allRequests, term);
 
-    this.selectedRequests = this.selectedRequests.filter((selected) =>
-      this.getCurrentFilteredRequests().some((r) => r.id === selected.id)
+    const current = this.getCurrentFilteredRequests();
+    this.selectedRequests = this.selectedRequests.filter((s) =>
+      current.some((r) => r.id === s.id)
     );
 
-    const currentRequests = this.getCurrentFilteredRequests();
-    this.updateRequestStatusPieChart(currentRequests);
-    this.updateMonthlyEventBarChart(currentRequests);
+    this.updateRequestStatusPieChart(current);
+    this.updateMonthlyEventBarChart(current);
   }
 
   filterBySearch(
@@ -119,11 +119,10 @@ export class IncidentHistory implements OnInit, OnDestroy {
   ): EmergencyRequest[] {
     if (!term) return requests;
 
-    return requests.filter(
-      (req) =>
-        (req.name?.toLowerCase().includes(term) ?? false) ||
-        (req.description?.toLowerCase().includes(term) ?? false) ||
-        (req.status?.toLowerCase().includes(term) ?? false)
+    return requests.filter((req) =>
+      [req.name, req.description, req.status].some((field) =>
+        field?.toLowerCase().includes(term)
+      )
     );
   }
 
@@ -144,44 +143,42 @@ export class IncidentHistory implements OnInit, OnDestroy {
     }
   }
 
+  // =====================
+  // SELECTION HANDLING
+  // =====================
+
   isChecked(req: EmergencyRequest): boolean {
-    return this.selectedRequests.some((selected) => selected.id === req.id);
+    return this.selectedRequests.some((s) => s.id === req.id);
   }
 
   setChecked(req: EmergencyRequest, event: any) {
-    if (event.target.checked) {
-      if (!this.isChecked(req)) {
-        this.selectedRequests.push(req);
-      }
-    } else {
+    const checked = event.target.checked;
+    if (checked && !this.isChecked(req)) {
+      this.selectedRequests.push(req);
+    } else if (!checked) {
       this.selectedRequests = this.selectedRequests.filter(
-        (selected) => selected.id !== req.id
+        (s) => s.id !== req.id
       );
     }
   }
 
   isAllSelected(): boolean {
-    const currentRequests = this.getCurrentFilteredRequests();
-    return (
-      currentRequests.length > 0 &&
-      currentRequests.every((r) => this.isChecked(r))
-    );
+    const current = this.getCurrentFilteredRequests();
+    return current.length > 0 && current.every((r) => this.isChecked(r));
   }
 
   toggleSelectAllRequests(event: any) {
+    const current = this.getCurrentFilteredRequests();
     const checked = event.target.checked;
-    const currentRequests = this.getCurrentFilteredRequests();
 
     if (checked) {
       this.selectedRequests = [
         ...this.selectedRequests,
-        ...currentRequests.filter(
-          (r) => !this.selectedRequests.some((sel) => sel.id === r.id)
-        ),
+        ...current.filter((r) => !this.isChecked(r)),
       ];
     } else {
       this.selectedRequests = this.selectedRequests.filter(
-        (sel) => !currentRequests.some((r) => r.id === sel.id)
+        (r) => !current.some((cr) => cr.id === r.id)
       );
     }
   }
@@ -209,6 +206,10 @@ export class IncidentHistory implements OnInit, OnDestroy {
     this.showBulkMenu = false;
   }
 
+  // =====================
+  // VIEWING / MODAL
+  // =====================
+
   viewRequest(req: EmergencyRequest) {
     this.requestToView = req;
   }
@@ -218,9 +219,13 @@ export class IncidentHistory implements OnInit, OnDestroy {
   }
 
   deleteSelectedRequests() {
-    console.log('Deleting:', this.selectedRequests);
+    console.log('To delete:', this.selectedRequests);
     this.selectedRequests = [];
   }
+
+  // =====================
+  // CHARTS
+  // =====================
 
   updateMonthlyEventBarChart(requests: EmergencyRequest[]) {
     const monthLabels: string[] = [];
@@ -238,31 +243,25 @@ export class IncidentHistory implements OnInit, OnDestroy {
     }
 
     const eventSet = new Set<string>();
-    requests.forEach((req) => {
-      if (req.event) eventSet.add(req.event);
-    });
-
+    requests.forEach((r) => r.event && eventSet.add(r.event));
     const events = Array.from(eventSet);
-    const countsPerEvent: { [event: string]: number[] } = {};
 
+    const countsPerEvent: { [event: string]: number[] } = {};
     events.forEach((event) => {
       countsPerEvent[event] = new Array(monthLabels.length).fill(0);
     });
 
-    requests.forEach((req) => {
-      if (!req.timestamp || !req.event) return;
-      const date = req.timestamp.toDate
-        ? req.timestamp.toDate()
-        : new Date(req.timestamp);
+    requests.forEach((r) => {
+      if (!r.timestamp || !r.event) return;
+      const date = r.timestamp.toDate
+        ? r.timestamp.toDate()
+        : new Date(r.timestamp);
       const label = date.toLocaleString('default', {
         month: 'short',
         year: 'numeric',
       });
-
       const index = monthMap.get(label);
-      if (index !== undefined) {
-        countsPerEvent[req.event][index]++;
-      }
+      if (index !== undefined) countsPerEvent[r.event][index]++;
     });
 
     const colors = [
@@ -282,16 +281,10 @@ export class IncidentHistory implements OnInit, OnDestroy {
       backgroundColor: colors[i % colors.length],
     }));
 
-    if (this.requestEventBarChart) {
-      this.requestEventBarChart.destroy();
-    }
-
+    this.requestEventBarChart?.destroy();
     this.requestEventBarChart = new Chart('requestStatusBarChart', {
       type: 'bar',
-      data: {
-        labels: monthLabels,
-        datasets: datasets,
-      },
+      data: { labels: monthLabels, datasets },
       options: {
         responsive: true,
         plugins: {
@@ -314,20 +307,13 @@ export class IncidentHistory implements OnInit, OnDestroy {
   updateRequestStatusPieChart(requests: EmergencyRequest[]) {
     let resolved = 0,
       cancelled = 0;
-
-    requests.forEach((req) => {
-      const status = req.status?.toLowerCase() || '';
-      if (['resolved', 'completed'].includes(status)) {
-        resolved++;
-      } else if (status === 'cancelled') {
-        cancelled++;
-      }
+    requests.forEach((r) => {
+      const status = r.status?.toLowerCase();
+      if (['resolved', 'completed'].includes(status)) resolved++;
+      else if (status === 'cancelled') cancelled++;
     });
 
-    if (this.requestStatusChart) {
-      this.requestStatusChart.destroy();
-    }
-
+    this.requestStatusChart?.destroy();
     this.requestStatusChart = new Chart('requestStatusChart', {
       type: 'pie',
       data: {
@@ -343,20 +329,10 @@ export class IncidentHistory implements OnInit, OnDestroy {
       options: {
         responsive: true,
         plugins: {
-          legend: {
-            position: 'bottom',
-            labels: {
-              boxWidth: 14,
-              padding: 16,
-            },
-          },
+          legend: { position: 'bottom', labels: { boxWidth: 14, padding: 16 } },
           tooltip: {
             callbacks: {
-              label: (context) => {
-                const label = context.label || '';
-                const value = context.parsed || 0;
-                return `${label}: ${value}`;
-              },
+              label: (context) => `${context.label}: ${context.parsed}`,
             },
           },
         },
@@ -364,39 +340,30 @@ export class IncidentHistory implements OnInit, OnDestroy {
     });
   }
 
-  // --- WORD EXPORT RELATED ---
+  // =====================
+  // EXPORT TO WORD
+  // =====================
 
-  // Fetches image URL and returns ImageRun or null if failed
   private async getImageRun(imageUrl: string): Promise<ImageRun | null> {
     try {
       const response = await fetch(imageUrl);
-      if (!response.ok) {
-        console.error('Failed to fetch image:', response.statusText);
-        return null;
-      }
-
+      if (!response.ok) return null;
       const blob = await response.blob();
 
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
-          const arrayBuffer = reader.result as ArrayBuffer;
-          const uint8Array = new Uint8Array(arrayBuffer);
-
-          // Detect image type by extension, normalize 'jpeg' to 'jpg'
-          let type: 'png' | 'jpg' = 'png'; // default png
-          if (
+          const uint8Array = new Uint8Array(reader.result as ArrayBuffer);
+          const type: 'jpg' | 'png' =
             imageUrl.toLowerCase().endsWith('.jpg') ||
             imageUrl.toLowerCase().endsWith('.jpeg')
-          ) {
-            type = 'jpg'; // use 'jpg' instead of 'jpeg'
-          }
+              ? 'jpg'
+              : 'png';
 
           resolve(
             new ImageRun({
               data: uint8Array,
               transformation: { width: 100, height: 100 },
-              type: type,
             })
           );
         };
@@ -404,21 +371,16 @@ export class IncidentHistory implements OnInit, OnDestroy {
         reader.readAsArrayBuffer(blob);
       });
     } catch (e) {
-      console.error('Failed to load image', e);
+      console.error('Error loading image:', e);
       return null;
     }
   }
 
   async exportToWord() {
     const rows = this.getCurrentFilteredRequests();
+    if (rows.length === 0) return alert('No data to export!');
 
-    if (rows.length === 0) {
-      alert('No data to export!');
-      return;
-    }
-
-    // Create header cells with bold text
-    const headerCells = [
+    const headers = [
       'ID',
       'Name',
       'Address',
@@ -429,59 +391,56 @@ export class IncidentHistory implements OnInit, OnDestroy {
       'Image',
       'Status',
       'Timestamp',
-    ].map(
-      (header) =>
-        new TableCell({
-          width: { size: 1000, type: WidthType.DXA },
-          children: [
-            new Paragraph({
-              children: [new TextRun({ text: header, bold: true })],
-            }),
-          ],
-        })
-    );
-
-    const tableRows: TableRow[] = [];
-    tableRows.push(new TableRow({ children: headerCells }));
+    ];
+    const tableRows: TableRow[] = [
+      new TableRow({
+        children: headers.map(
+          (header) =>
+            new TableCell({
+              width: { size: 1000, type: WidthType.DXA },
+              children: [
+                new Paragraph({
+                  children: [new TextRun({ text: header, bold: true })],
+                }),
+              ],
+            })
+        ),
+      }),
+    ];
 
     for (const req of rows) {
-      let imageCellChildren: Paragraph[] = [new Paragraph('No Image')];
+      const imageParagraph = req.image
+        ? await this.getImageRun(req.image)
+        : null;
+      const imageCell = new TableCell({
+        children: imageParagraph
+          ? [new Paragraph({ children: [imageParagraph] })]
+          : [new Paragraph('No Image')],
+        verticalAlign: VerticalAlign.CENTER,
 
-      if (req.image) {
-        const imageRun = await this.getImageRun(req.image);
-        if (imageRun) {
-          imageCellChildren = [new Paragraph({ children: [imageRun] })];
-        }
-      }
+        width: { size: 1200, type: WidthType.DXA },
+      });
 
       const rowCells = [
-        req.id ?? '',
-        req.name ?? '',
-        req.address ?? '',
-        req.contactNumber ?? '',
-        req.description ?? '',
-        req.email ?? '',
-        req.event ?? '',
-        req.image ?? '',
-        req.status ?? '',
+        req.id,
+        req.name,
+        req.address,
+        req.contactNumber,
+        req.description,
+        req.email,
+        req.event,
+        '', // Image placeholder
+        req.status,
         req.timestamp
-          ? req.timestamp.toDate
+          ? req.timestamp.toDate?.()
             ? req.timestamp.toDate().toLocaleString()
             : new Date(req.timestamp).toLocaleString()
           : '',
-      ].map((text, i) => {
-        if (i === 7) {
-          // Image cell
-          return new TableCell({
-            children: imageCellChildren,
-            verticalAlign: 'center',
-            width: { size: 1200, type: WidthType.DXA },
-          });
-        }
-        return new TableCell({
-          children: [new Paragraph(String(text))],
-        });
-      });
+      ].map((val, i) =>
+        i === 7
+          ? imageCell
+          : new TableCell({ children: [new Paragraph(String(val ?? ''))] })
+      );
 
       tableRows.push(new TableRow({ children: rowCells }));
     }
@@ -492,11 +451,9 @@ export class IncidentHistory implements OnInit, OnDestroy {
           children: [
             new Paragraph({
               text: 'Emergency Requests Report',
-              heading: 'Heading1',
+              heading: HeadingLevel.HEADING_1,
             }),
-            new Table({
-              rows: tableRows,
-            }),
+            new Table({ rows: tableRows }),
           ],
         },
       ],
@@ -508,11 +465,7 @@ export class IncidentHistory implements OnInit, OnDestroy {
 
   exportToExcel() {
     const rows = this.getCurrentFilteredRequests();
-
-    if (rows.length === 0) {
-      alert('No data to export!');
-      return;
-    }
+    if (rows.length === 0) return alert('No data to export!');
 
     const worksheetData = [
       [
@@ -550,9 +503,7 @@ export class IncidentHistory implements OnInit, OnDestroy {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Requests');
 
     const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([wbout], {
-      type: 'application/octet-stream',
-    });
+    const blob = new Blob([wbout], { type: 'application/octet-stream' });
 
     saveAs(blob, 'emergency_requests_report.xlsx');
   }
