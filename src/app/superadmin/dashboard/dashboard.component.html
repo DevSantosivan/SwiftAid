@@ -1,6 +1,6 @@
 <div class="content-body" id="dashboard-to-print">
   <div class="content_1">
-    <h4>Dashboard</h4>
+    <h4>Admin Dashboard</h4>
     <p>Main</p>
     <!-- start -->
     <div class="flex-box">
@@ -8,29 +8,69 @@
         <div class="flex">
           <h4>Total Registered Account</h4>
           <i
-            style="font-size: 50px; color: red"
             class="bx bxs-user-account"
+            style="font-size: 40px; color: red"
           ></i>
         </div>
         <p>{{ userCount }}</p>
+        <small>Total of All Accounts</small>
       </div>
+
+      <div class="box">
+        <div class="flex">
+          <h4>Total Team</h4>
+          <i class="bx bxs-group" style="font-size: 40px; color: red"></i>
+        </div>
+        <p>{{ totalTeam }}</p>
+        <small>Registered Staff</small>
+      </div>
+
+      <div class="box">
+        <div class="flex">
+          <h4>Total Resident</h4>
+          <i class="bx bx-male-female" style="font-size: 40px; color: red"></i>
+        </div>
+        <p>{{ totalresident }}</p>
+        <small>Verified Residents</small>
+      </div>
+
+      <div class="box">
+        <div class="flex">
+          <h4>Pending Resident</h4>
+          <i class="bx bx-time" style="font-size: 40px; color: red"></i>
+        </div>
+        <p>{{ totalPendingResident }}</p>
+        <small>Residents Awaiting Approval</small>
+      </div>
+
+      <div class="box">
+        <div class="flex">
+          <h4>Total Emergency Request</h4>
+          <i
+            class="bx bx-git-pull-request"
+            style="font-size: 40px; color: red"
+          ></i>
+        </div>
+        <p>{{ EmergencyRequest }}</p>
+        <small>All Resident Requests</small>
+      </div>
+
       <div class="box">
         <div class="flex">
           <h4>Total Rescue</h4>
-          <i style="font-size: 50px; color: red" class="bx bxs-ambulance"></i>
+          <i class="bx bxs-ambulance" style="font-size: 40px; color: red"></i>
         </div>
-        <p>{{ EmergencyRequest }}</p>
+        <p>{{ totalresolveRequest }}</p>
+        <small>Emergency Requests Resolved</small>
       </div>
+
       <div class="box">
         <div class="flex">
-          <h4>Total Request Rescue</h4>
-          <i
-            style="font-size: 50px; color: red"
-            class="bx bx-git-pull-request"
-          ></i>
+          <h4>Total Pending Request</h4>
+          <i class="bx bx-timer" style="font-size: 40px; color: red"></i>
         </div>
-
-        <p>{{ EmergencyRequest }}</p>
+        <p>{{ totalPendingRequests }}</p>
+        <small>Emergency Requests Awaiting Approval</small>
       </div>
     </div>
     <!-- end -->
@@ -76,6 +116,12 @@
   <!-- end of content 1 -->
   <div class="content_2">
     <div class="btn-flex">
+      <div class="date-time">
+        <p>
+          <i class="bx bxs-calendar-alt"></i>
+          {{ currentDateTime | date : "full" }}
+        </p>
+      </div>
       @if(isSuperAdmin) {
       <div class="btn" (click)="printDashboard()">
         <i class="bx bx-printer"></i>

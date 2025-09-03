@@ -1,29 +1,26 @@
-import { Injectable } from '@angular/core';
-import {
-  collection,
-  getDocs,
-  getFirestore,
-  query,
-  where,
-  deleteDoc,
-  doc,
-  updateDoc,
-  getDoc,
-  setDoc,
-} from 'firebase/firestore';
-import { account } from '../model/users';
-import { environment } from '../model/environment';
+import { Injectable, NgZone } from '@angular/core';
 import { initializeApp } from 'firebase/app';
 import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  onDisconnect,
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  setDoc,
+  updateDoc,
+  getDoc,
+  deleteDoc,
+  addDoc,
   serverTimestamp,
-} from 'firebase/database';
+} from 'firebase/firestore';
+import { getDatabase, ref, onValue } from 'firebase/database';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { environment } from '../model/environment';
+import { account } from '../model/users';
 import { Observable } from 'rxjs';
 import { collectionData } from '@angular/fire/firestore';
+import { register } from '../model/registered';
 
 export interface AccountWithStatus extends account {
   status: { online: boolean; last: number | null };
@@ -33,35 +30,83 @@ export interface AccountWithStatus extends account {
   providedIn: 'root',
 })
 export class UserService {
-  private db;
+  // 🔵 Primary Firebase app and auth (current logged-in user - admin)
+  private primaryApp = initializeApp(environment.firebaseConfig);
+  private db = getFirestore(this.primaryApp);
+  private primaryAuth = getAuth(this.primaryApp);
 
-  constructor() {
-    const firebaseApp = initializeApp(environment.firebaseConfig);
-    this.db = getFirestore(firebaseApp);
+  // 🔵 Secondary app to avoid auto-login when creating new users
+  private secondaryApp = initializeApp(environment.firebaseConfig, 'Secondary');
+  private secondaryAuth = getAuth(this.secondaryApp);
+
+  constructor(private ngZone: NgZone) {}
+
+  /**
+   * ✅ Create user without affecting the current admin session
+   */
+  async createAccount(
+    email: string,
+    password: string,
+    additionalData: Partial<register>
+  ): Promise<void> {
+    try {
+      // 🔐 Use secondary auth instance to avoid logging in as new user
+      const userCredential = await createUserWithEmailAndPassword(
+        this.secondaryAuth,
+        email,
+        password
+      );
+      const user = userCredential.user;
+      const userData: register = {
+        fullName: additionalData.fullName ?? '',
+        first_name: additionalData.first_name ?? '',
+        last_name: additionalData.last_name ?? '',
+        charge: additionalData.charge ?? '',
+        office_id: additionalData.office_id ?? '',
+        contactNumber: additionalData.contactNumber ?? '',
+        email: user.email ?? '',
+        password: '', // clear password
+        role: additionalData.role ?? 'admin',
+      };
+
+      const userDocRef = doc(this.db, 'users', user.uid);
+      await setDoc(userDocRef, { uid: user.uid, ...userData });
+
+      // 🚫 Prevent session takeover
+      await this.secondaryAuth.signOut();
+    } catch (error) {
+      console.error('Error creating account:', error);
+      throw error;
+    }
+  }
+
+  async saveAccessKey(key: string): Promise<void> {
+    try {
+      const accessKeysCollection = collection(this.db, 'accessKeys');
+      await addDoc(accessKeysCollection, {
+        key,
+        used: false,
+        createdAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error saving access key:', error);
+      throw error;
+    }
   }
 
   async getUserCount(): Promise<number> {
-    try {
-      const usersCollection = collection(this.db, 'users');
-      const snapshot = await getDocs(usersCollection);
-      return snapshot.size;
-    } catch (error) {
-      console.error('Error fetching user count:', error);
-      throw error;
-    }
+    const usersCollection = collection(this.db, 'users');
+    const snapshot = await getDocs(usersCollection);
+    return snapshot.size;
   }
 
   async getUsers(): Promise<account[]> {
-    try {
-      const usersCollection = collection(this.db, 'users');
-      const snapshot = await getDocs(usersCollection);
-      return snapshot.docs.map(
-        (doc) => ({ ...doc.data(), id: doc.id } as account)
-      );
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      throw error;
-    }
+    const usersCollection = collection(this.db, 'users');
+    const snapshot = await getDocs(usersCollection);
+    return snapshot.docs.map((doc) => ({
+      ...(doc.data() as account),
+      id: doc.id,
+    }));
   }
 
   getAllAccounts(): Observable<account[]> {
@@ -71,42 +116,45 @@ export class UserService {
     >;
   }
 
+  async getPendingResidentAccounts(): Promise<account[]> {
+    const q = query(
+      collection(this.db, 'users'),
+      where('role', '==', 'resident'),
+      where('account_status', '==', 'pending')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({
+      ...(doc.data() as account),
+      uid: doc.id,
+    }));
+  }
+
   async addUser(data: account): Promise<void> {
-    try {
-      const newDocRef = doc(this.db, 'users', data.uid);
-      await setDoc(newDocRef, data);
-    } catch (error) {
-      console.error('Error adding user:', error);
-      throw error;
-    }
+    const userDocRef = doc(this.db, 'users', data.uid);
+    await setDoc(userDocRef, data);
   }
 
   async unblockUsers(uids: string[]): Promise<void> {
-    try {
-      await Promise.all(
-        uids.map((uid) =>
-          this.updateUser(uid, { blocked: false, blockReason: '' })
-        )
-      );
-    } catch (error) {
-      console.error('Error unblocking users:', error);
-      throw error;
-    }
+    await Promise.all(
+      uids.map((uid) =>
+        this.updateUser(uid, { blocked: false, blockReason: '' })
+      )
+    );
   }
 
   subscribeUserStatus(
     uid: string,
     cb: (online: boolean, last: number | null) => void
-  ) {
+  ): void {
     const db_rt = getDatabase();
     const statusRef = ref(db_rt, `status/${uid}`);
 
-    onValue(statusRef, (snap) => {
-      if (!snap.exists()) {
+    onValue(statusRef, (snapshot) => {
+      if (!snapshot.exists()) {
         cb(false, null);
         return;
       }
-      const data = snap.val();
+      const data = snapshot.val();
       const online = data.state === 'online';
       const lastOnline = data.lastOnline ?? null;
       cb(online, lastOnline);
@@ -126,59 +174,46 @@ export class UserService {
   async getCurrentUserRole(uid: string): Promise<string | null> {
     const docRef = doc(this.db, 'users', uid);
     const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      return data['role'] || null;
-    }
-    return null;
+    return docSnap.exists() ? docSnap.data()?.['role'] ?? null : null;
   }
 
   async getUserById(uid: string): Promise<account | null> {
-    try {
-      const userRef = doc(this.db, 'users', uid);
-      const snapshot = await getDoc(userRef);
-      if (snapshot.exists()) {
-        return {
-          ...(snapshot.data() as account),
-          uid: snapshot.id,
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error('Error fetching user by ID:', error);
-      throw error;
-    }
+    const userDoc = doc(this.db, 'users', uid);
+    const snapshot = await getDoc(userDoc);
+    return snapshot.exists()
+      ? { ...(snapshot.data() as account), uid: snapshot.id }
+      : null;
   }
 
-  updateUser(uid: string, data: Partial<account>): Promise<void> {
+  async updateUser(uid: string, data: Partial<account>): Promise<void> {
     const userDocRef = doc(this.db, 'users', uid);
-    return updateDoc(userDocRef, data);
+    await updateDoc(userDocRef, data);
   }
 
-  deleteUser(uid: string): Promise<void> {
+  async updateUserStatus(uid: string, account_status: string): Promise<void> {
     const userDocRef = doc(this.db, 'users', uid);
-    return deleteDoc(userDocRef);
+    await this.ngZone.run(() =>
+      updateDoc(userDocRef, {
+        account_status,
+        updatedAt: new Date(),
+      })
+    );
+  }
+
+  async deleteUser(uid: string): Promise<void> {
+    const userDocRef = doc(this.db, 'users', uid);
+    await deleteDoc(userDocRef);
   }
 
   async deleteUsers(uids: string[]): Promise<void> {
-    try {
-      await Promise.all(uids.map((uid) => this.deleteUser(uid)));
-    } catch (error) {
-      console.error('Error deleting multiple users:', error);
-      throw error;
-    }
+    await Promise.all(uids.map((uid) => this.deleteUser(uid)));
   }
 
   async blockUsers(uids: string[], reason: string): Promise<void> {
-    try {
-      await Promise.all(
-        uids.map((uid) =>
-          this.updateUser(uid, { blocked: true, blockReason: reason })
-        )
-      );
-    } catch (error) {
-      console.error('Error blocking users:', error);
-      throw error;
-    }
+    await Promise.all(
+      uids.map((uid) =>
+        this.updateUser(uid, { blocked: true, blockReason: reason })
+      )
+    );
   }
 }

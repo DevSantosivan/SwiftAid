@@ -1,0 +1,77 @@
+<div class="content-body">
+  <a (click)="navigateToVerification()" class="back-button">
+    ← Back to Verifications
+  </a>
+  <h3>Pending Account Details</h3>
+  <p>Verifying Resident Account Details</p>
+  <!-- Back Button -->
+
+  <div class="verification-container">
+    <!-- Left: Profile, Work, Skills -->
+    <div class="details-left">
+      <div class="profile-section">
+        <img [src]="profilePicture" alt="Profile Picture" class="profile-pic" />
+        <h2>{{ fullName }}</h2>
+        <p class="location"><i class="bx bx-map"></i> {{ address }}</p>
+        <p class="role">Resident</p>
+      </div>
+    </div>
+
+    <!-- Right: Contact & Basic Info -->
+    <!-- Right: Contact & Basic Info -->
+    <div class="contact-right">
+      <div class="header-contact-right">
+        <div>
+          <h3>Account Information</h3>
+          <p>Account Info Details</p>
+        </div>
+        <div class="actions">
+          <!-- <button class="decline" (click)="onDecline()">Decline</button>
+          <button class="accept" (click)="onAccept()">Accept</button> -->
+        </div>
+      </div>
+      <div class="card">
+        <h4>Contact Information</h4>
+        <p>
+          <i class="bx bxs-phone"></i>
+          <a href="tel:+639123456789">{{ contactNumber }}</a>
+        </p>
+        <p><i class="bx bx-current-location"></i> {{ address }}</p>
+        <p>
+          <i class="bx bx-envelope"></i>
+          <a href="mailto:{{ email }}">{{ email }}</a>
+        </p>
+
+        <h4>Uploaded Valid IDs</h4>
+        <div class="id-images">
+          <div class="id-card">
+            <p>National ID</p>
+            <div class="img">
+              <img [src]="nationalIdImage" alt="National ID" />
+            </div>
+          </div>
+          <div class="id-card">
+            <p>Birth Certificate</p>
+            <div class="img">
+              <img [src]="birthCertificateImage" alt="Birth Certificate" />
+            </div>
+          </div>
+        </div>
+
+        <h4>Additional Verification Info</h4>
+        <p>
+          <strong>Valid ID Number:</strong> {{user?.idNumber}}
+          <br />
+        </p>
+        <p>
+          <strong>Date of Birth:</strong> {{user?.dateOfBirth}}
+          <br />
+        </p>
+
+        <h4>Basic Information</h4>
+        <p><strong>Birthday:</strong> {{user?.dateOfBirth}}</p>
+        <p><strong>Gender:</strong> {{user?.sex}}</p>
+      </div>
+    </div>
+  </div>
+</div>

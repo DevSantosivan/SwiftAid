@@ -17,6 +17,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { debounce } from 'lodash';
 import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
+import { DatePipe } from '@angular/common'; // Import DatePipe
 
 @Component({
   selector: 'app-map-request',
@@ -24,6 +25,7 @@ import { Router } from '@angular/router';
   imports: [CommonModule],
   templateUrl: './map-request.html',
   styleUrls: ['./map-request.scss'],
+  providers: [DatePipe], // Add DatePipe to providers
 })
 export class MapRequest implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef;
@@ -46,18 +48,23 @@ export class MapRequest implements AfterViewInit, OnDestroy {
 
   markerClusterGroup!: L.MarkerClusterGroup;
 
+  // Add loading flag
+  isLoading = true;
+
   constructor(
     private requestService: EmergencyRequestService,
     private userService: UserService,
     private ngZone: NgZone,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private datePipe: DatePipe // Inject DatePipe
   ) {}
 
   async ngAfterViewInit(): Promise<void> {
     this.initializeMap();
 
     this.loadingRequests = true;
+    this.isLoading = true;
     this.cdr.detectChanges();
 
     await this.loadCurrentStaff();
@@ -67,9 +74,24 @@ export class MapRequest implements AfterViewInit, OnDestroy {
       .subscribe({
         next: (requests) => {
           this.ngZone.run(() => {
-            this.requests = requests;
+            // ✅ Sort by staffUpdatedAt or timestamp (newest first)
+            this.requests = requests
+              .filter(
+                (r) => r.status === 'Pending' || r.status === 'Responding'
+              )
+              .sort((a, b) => {
+                const timeA = new Date(
+                  a.staffUpdatedAt || a.timestamp
+                ).getTime();
+                const timeB = new Date(
+                  b.staffUpdatedAt || b.timestamp
+                ).getTime();
+                return timeB - timeA;
+              });
+
             this.applyFilter(this.activeFilter || 'All');
             this.loadingRequests = false;
+            this.isLoading = false; // Hide spinner when requests are loaded
             this.cdr.detectChanges();
           });
         },
@@ -77,6 +99,7 @@ export class MapRequest implements AfterViewInit, OnDestroy {
           console.error('Error receiving realtime requests:', error);
           this.ngZone.run(() => {
             this.loadingRequests = false;
+            this.isLoading = false;
             this.cdr.detectChanges();
           });
         },
@@ -120,7 +143,6 @@ export class MapRequest implements AfterViewInit, OnDestroy {
       .addTo(this.map)
       .bindPopup('<strong>Staff Location</strong>');
 
-    // 🔥 Center the map on the actual staff location
     this.map.setView(this.staffLocation, 14);
 
     this.trackStaffLocation();
@@ -164,9 +186,6 @@ export class MapRequest implements AfterViewInit, OnDestroy {
           ];
           this.staffMarker?.setLatLng(this.staffLocation);
 
-          // Optional: Uncomment to follow staff as they move
-          // this.map.setView(this.staffLocation, this.map.getZoom());
-
           if (this.currentRequestId && this.currentStaff) {
             try {
               await this.requestService.updateRequestWithStaffInfo(
@@ -197,7 +216,9 @@ export class MapRequest implements AfterViewInit, OnDestroy {
 
     this.filteredRequests =
       status === 'All'
-        ? this.requests
+        ? this.requests.filter(
+            (r) => r.status === 'Pending' || r.status === 'Responding'
+          )
         : this.requests.filter((r) => r.status === status);
 
     this.markerClusterGroup?.clearLayers();
@@ -270,7 +291,13 @@ export class MapRequest implements AfterViewInit, OnDestroy {
   }
 
   generatePopupContent(req: EmergencyRequest, detailed = false): string {
-    return `
+    // Format the timestamp
+    const formattedDate = this.datePipe.transform(
+      req.timestamp || req.staffUpdatedAt,
+      'MMMM d, y, h:mm a'
+    );
+
+    return ` 
       <div>
         ${
           detailed && req.image
@@ -290,6 +317,7 @@ export class MapRequest implements AfterViewInit, OnDestroy {
                 req.staffLastName || 'N/A'
               }<br>
                Status: ${req.status || 'N/A'}<br>
+               Last Updated: ${formattedDate || 'N/A'}<br>
                <button id="acceptBtn">Accept</button>`
             : ''
         }

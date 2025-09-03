@@ -23,9 +23,9 @@
           >In Progress</span
         >
         <span
+          style="opacity: 0"
           class="filter-box"
           [class.active]="activeFilter === 'Resolved'"
-          (click)="applyFilter('Resolved')"
           >Resolved</span
         >
       </div>
@@ -75,10 +75,14 @@
                   >{{ req.staffFirstName }} {{ req.staffLastName }}</strong
                 ></span
               >
+              <p class="timestamp">
+                Date : {{ req.timestamp?.toDate() | date : "short" }}
+              </p>
 
               <div class="request-actions">
                 <button class="view" (click)="ViewRequest(req)">
-                  View Details
+                  <i style="rotate: 30deg" class="bx bx-up-arrow-alt"></i> View
+                  Details
                 </button>
                 <button
                   class="view"

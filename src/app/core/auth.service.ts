@@ -2,7 +2,17 @@ import { Injectable, inject } from '@angular/core';
 import { Auth, signInWithEmailAndPassword, User } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
-import { getFirestore, Firestore, doc, getDoc } from 'firebase/firestore';
+import {
+  getFirestore,
+  Firestore,
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  updateDoc,
+} from 'firebase/firestore';
 import { environment } from '../model/environment';
 import { initializeApp } from 'firebase/app';
 
@@ -43,6 +53,33 @@ export class AuthService {
         this.userRole$.next(null);
       }
     });
+  }
+
+  async validateAccessKey(keyInput: string): Promise<boolean> {
+    try {
+      const accessKeyRef = collection(this.firestore, 'accessKeys');
+      const q = query(
+        accessKeyRef,
+        where('key', '==', keyInput),
+        where('used', '==', false)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        return false; // Key not found or already used
+      }
+
+      // Optional: Mark the key as used
+      const docToUpdate = querySnapshot.docs[0];
+      await updateDoc(doc(this.firestore, 'accessKeys', docToUpdate.id), {
+        used: true,
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error validating access key:', error);
+      return false;
+    }
   }
 
   getCurrentUser(): User | null {

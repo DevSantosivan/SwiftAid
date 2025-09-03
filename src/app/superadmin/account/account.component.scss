@@ -95,14 +95,12 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-
 }
-.account-list input{
+.account-list input {
   margin: 0px 10px;
-   left: 50px;
-   
+  left: 50px;
 }
-.account-header{
+.account-header {
   padding: 40px 50px;
 }
 .account-header,
@@ -110,10 +108,8 @@
   display: flex;
   padding: 10px 0px 10px 15px;
   border-bottom: 1px solid #ddd;
- 
-  font-size: 14px;
- 
 
+  font-size: 14px;
 }
 
 .account-header {
@@ -154,8 +150,6 @@
   color: #555;
 }
 
-
-
 /* Bulk dropdown section */
 .bulk-select-dropdown {
   display: flex;
@@ -164,7 +158,7 @@
   margin-bottom: 12px;
   position: relative;
 
-  input[type='checkbox'] {
+  input[type="checkbox"] {
     margin: 0;
   }
 
@@ -179,12 +173,12 @@
       font-size: 14px;
     }
 
-    .dropdown-list{
+    .dropdown-list {
       position: absolute;
       top: 100%;
       left: 0;
       background-color: #fff;
-    
+
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       z-index: 100;
       display: flex;
@@ -201,7 +195,6 @@
       font-size: 14px;
       cursor: pointer;
       width: 100%;
-
     }
 
     .dropdown-list button:hover {
@@ -210,11 +203,11 @@
   }
 }
 
-.top-action-bar{
+.top-action-bar {
   width: 100%;
   padding: 20px 0px;
 
-  button{
+  button {
     margin: 0px 10px;
 
     background-color: #fff;
@@ -223,17 +216,12 @@
     padding: 5px;
     cursor: pointer;
   }
-  button:hover{
+  button:hover {
     background-color: #cac6c6;
     border-radius: 3px;
     color: rgb(228, 222, 222);
   }
 }
-
-
-
-
-
 
 .no-data {
   text-align: center;
@@ -250,8 +238,6 @@
     color: #666;
   }
 }
-
-
 
 /* Modal Backdrop */
 .modal-backdrop {
@@ -270,7 +256,7 @@
 /* Modal Container */
 .modal {
   background: #fff;
- 
+
   padding: 24px;
   width: 400px;
   max-width: 90%;
@@ -364,7 +350,7 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   z-index: 1000;
   animation: slideIn 0.3s ease-out;
-  span{
+  span {
     font-size: 14px;
   }
 }
@@ -380,8 +366,8 @@
   }
 }
 
-.blocking-modal-progress{
- position: fixed;
+.blocking-modal-progress {
+  position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
@@ -407,7 +393,7 @@
   z-index: 99999;
   animation: fadeIn 0.3s ease forwards;
 
-  input{
+  input {
     padding: 10px 8px;
     border: none;
     background-color: #cccccc15;
@@ -588,16 +574,14 @@
   animation: slideDown 0.3s ease-out forwards;
 }
 
-
 .account-row {
   position: relative;
-  
 }
 
 .account-row:hover {
-    border-bottom: 2px solid #ccc;
-  
-   cursor: pointer;
+  border-bottom: 2px solid #ccc;
+
+  cursor: pointer;
 }
 
 .account-row .action-buttons {
@@ -634,4 +618,62 @@
   right: 160px;
   opacity: 1;
   z-index: 10;
+}
+
+.loading-indicator {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff96;
+  backdrop-filter: blur(5px);
+  z-index: 999999;
+  position: fixed;
+  left: 0;
+  top: 0;
+}
+
+.success-modal {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  color: #333;
+  padding: 15px 25px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  font-size: 14px;
+  z-index: 1000;
+
+  /* Start hidden and slide in */
+  animation: slideIn 0.3s ease forwards;
+}
+
+/* Add a class for slide-out animation */
+.success-modal.slide-out {
+  animation: slideOut 0.3s ease forwards;
+}
+
+/* Slide In Keyframes */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide Out Keyframes */
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
 }

@@ -3,7 +3,7 @@ export interface account {
   twoFactorSecret?: string | null;
   id: string;
   uid: string;
-  profilePicture: string;
+  profileImageUrl: string;
   fullName: string;
   contactNumber: string;
   email: string;
@@ -12,10 +12,15 @@ export interface account {
   office_id?: string; // Optional for residents
   charge?: string; // Optional field, depending on your logic
   role: 'resident' | 'admin' | 'superAdmin'; // Include 'resident' for UI consistency
+  dateOfBirth: string;
+  validIdImageUrl: string;
+  idNumber: string;
   status: {
     online: boolean;
     last: number | null;
   };
+  sex: string;
+  account_status: 'pending' | 'approved' | 'rejected';
   blocked?: boolean; // Optional - for block modal logic
   blockReason?: string;
 }

@@ -39,6 +39,8 @@ export class AccountComponent implements OnInit {
   selectedStaff: account[] = [];
 
   showDeleteNotification = false;
+
+  // Central loading flag for blocking UI
   blockingInProgress: boolean = false;
 
   constructor(private accountService: UserService) {}
@@ -63,7 +65,6 @@ export class AccountComponent implements OnInit {
     );
   }
 
-  // 🔍 Filtered Lists
   get filteredAllAccounts() {
     return this.allAccounts.filter((acc) => this.matchesSearch(acc));
   }
@@ -219,20 +220,28 @@ export class AccountComponent implements OnInit {
     if (file && this.accountToEdit) {
       const reader = new FileReader();
       reader.onload = () => {
-        this.accountToEdit!.profilePicture = reader.result as string;
+        this.accountToEdit!.profileImageUrl = reader.result as string;
       };
       reader.readAsDataURL(file);
     }
   }
 
-  saveEdit() {
-    if (this.accountToEdit) {
-      this.accountService
-        .updateUser(this.accountToEdit.id, this.accountToEdit)
-        .then(() => {
-          this.accountToEdit = null;
-          this.showSuccess('User updated successfully.');
-        });
+  async saveEdit() {
+    if (!this.accountToEdit) return;
+
+    this.blockingInProgress = true;
+    try {
+      await this.accountService.updateUser(
+        this.accountToEdit.id,
+        this.accountToEdit
+      );
+      this.accountToEdit = null;
+      this.showSuccess('User updated successfully.');
+    } catch (error) {
+      console.error('Update failed:', error);
+      alert('Failed to update user. Please try again.');
+    } finally {
+      this.blockingInProgress = false;
     }
   }
 
@@ -241,13 +250,21 @@ export class AccountComponent implements OnInit {
     this.showDeleteModal = true;
   }
 
-  confirmDelete() {
+  async confirmDelete() {
     if (!this.accountToDelete) return;
-    this.accountService.deleteUser(this.accountToDelete.id).then(() => {
+
+    this.blockingInProgress = true;
+    try {
+      await this.accountService.deleteUser(this.accountToDelete.id);
       this.accountToDelete = null;
       this.showDeleteModal = false;
       this.showSuccess('User deleted successfully.');
-    });
+    } catch (error) {
+      console.error('Delete failed:', error);
+      alert('Failed to delete user. Please try again.');
+    } finally {
+      this.blockingInProgress = false;
+    }
   }
 
   cancelDelete() {
@@ -259,20 +276,29 @@ export class AccountComponent implements OnInit {
     this.showDeleteModalSelected = true;
   }
 
-  confirmSeletedAccountDelete() {
+  async confirmSeletedAccountDelete() {
     this.showDeleteModalSelected = false;
     const selectedIds = [
       ...this.selectedResidents.map((acc) => acc.id),
       ...this.selectedStaff.map((acc) => acc.id),
     ];
-    this.accountService.deleteUsers(selectedIds).then(() => {
+
+    if (selectedIds.length === 0) return;
+
+    this.blockingInProgress = true;
+    try {
+      await this.accountService.deleteUsers(selectedIds);
       this.selectedResidentMap = {};
       this.selectedStaffMap = {};
       this.selectedResidents = [];
       this.selectedStaff = [];
-      this.showDeleteModalSelected = false;
       this.showSuccess('Selected users deleted successfully.');
-    });
+    } catch (error) {
+      console.error('Bulk delete failed:', error);
+      alert('Failed to delete selected users. Please try again.');
+    } finally {
+      this.blockingInProgress = false;
+    }
   }
 
   blockSelectedResidents() {
@@ -284,26 +310,29 @@ export class AccountComponent implements OnInit {
     this.blockReason = '';
   }
 
-  confirmBlock() {
+  async confirmBlock() {
     if (!this.blockReason.trim()) {
       alert('Please provide a reason for blocking.');
       return;
     }
+
     this.showBlockModal = false;
     this.blockingInProgress = true;
 
     const uids = this.selectedResidents.map((acc) => acc.id);
-    this.accountService
-      .blockUsers(uids, this.blockReason)
-      .then(() => {
-        this.blockingInProgress = false;
-        this.closeBlockModal(); // close modal
-        this.showSuccess('Selected users have been successfully blocked.');
-      })
-      .catch((error) => {
-        this.blockingInProgress = false;
+    try {
+      await this.accountService.blockUsers(uids, this.blockReason);
+      this.showSuccess('Selected users have been successfully blocked.');
+      this.blockReason = '';
+    } catch (error) {
+      if (error instanceof Error) {
         alert('Blocking failed: ' + error.message);
-      });
+      } else {
+        alert('Blocking failed: Unknown error');
+      }
+    } finally {
+      this.blockingInProgress = false;
+    }
   }
 
   showSuccess(message: string) {

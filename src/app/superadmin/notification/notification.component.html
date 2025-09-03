@@ -38,6 +38,25 @@
     </div>
   </div>
 
+  <!-- Select All and Delete Selected -->
+  <div class="bulk-actions" *ngIf="filteredRequests.length > 0">
+    <label>
+      <input
+        type="checkbox"
+        [checked]="isAllSelected()"
+        (change)="toggleSelectAll($event)"
+      />
+      Select All
+    </label>
+    <button
+      (click)="confirmDeleteSelected()"
+      [disabled]="selectedNotifications.size === 0"
+      class="delete-btn"
+    >
+      Delete Selected ({{ selectedNotifications.size }})
+    </button>
+  </div>
+
   <!-- No notifications for All -->
   <div
     *ngIf="filterType === 'all' && filteredRequests.length === 0"
@@ -79,6 +98,14 @@
 
   <!-- Notification Items -->
   <div *ngFor="let notif of filteredRequests" class="notification-item">
+    <div class="checkbox-container">
+      <input
+        type="checkbox"
+        [checked]="selectedNotifications.has(notif.id)"
+        (change)="toggleSelection(notif.id, $event)"
+      />
+    </div>
+
     <div class="avatar">
       <img
         [src]="
@@ -126,5 +153,35 @@
         </button>
       </div>
     </div>
+  </div>
+</div>
+
+<div *ngIf="isLoading" class="loading-indicator">
+  <img src="../../../assets/resolve.gif" alt="Loading..." />
+</div>
+
+<!-- Success Modal -->
+<div *ngIf="showSuccessModal" class="success-modal">
+  {{ modalMessage }}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div
+  class="modal-backdrop"
+  *ngIf="showDeleteConfirmModal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="modalTitle"
+>
+  <div class="modal-container">
+    <h3 id="modalTitle">
+      <i style="color: red; font-size: 40px" class="bx bxs-trash"></i>
+      Confirm Delete
+    </h3>
+    <p>Are you sure you want to delete the selected notifications?</p>
+    <button (click)="onConfirmDelete()" [disabled]="isLoading">
+      Yes, Delete
+    </button>
+    <button (click)="onCancelDelete()" [disabled]="isLoading">Cancel</button>
   </div>
 </div>

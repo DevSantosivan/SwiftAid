@@ -4,7 +4,6 @@ import { AuthService } from '../../core/auth.service';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { EmergencyRequest } from '../../model/emergency';
 import { Router } from '@angular/router';
 
 @Component({
@@ -21,6 +20,9 @@ export class Notification implements OnInit, OnDestroy {
   currentUserId: string = '';
   filterType: 'all' | 'unread' | 'mentions' = 'all';
   private subscription?: Subscription;
+
+  // Set to track selected notification IDs for bulk actions
+  selectedNotifications = new Set<string>();
 
   constructor(
     private emergencyService: EmergencyRequestService,
@@ -46,11 +48,13 @@ export class Notification implements OnInit, OnDestroy {
         this.currentUserId
       );
     this.applyFilter();
+    this.clearSelection();
   }
 
   setFilter(type: 'all' | 'unread' | 'mentions') {
     this.filterType = type;
     this.applyFilter();
+    this.clearSelection();
   }
 
   applyFilter() {
@@ -71,6 +75,7 @@ export class Notification implements OnInit, OnDestroy {
       );
     }
   }
+
   ViewRequest(notif: any) {
     const requestId = notif?.request?.id;
     if (requestId) {
@@ -86,6 +91,65 @@ export class Notification implements OnInit, OnDestroy {
     await this.emergencyService.markAllNotificationsAsReadForUser(
       this.currentUserId
     );
+    await this.loadNotifications();
+  }
+
+  async deleteNotification(notif: any) {
+    try {
+      await this.emergencyService.deleteNotificationForUser(
+        this.currentUserId,
+        notif.id
+      );
+      await this.loadNotifications();
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  }
+
+  // Multi-select toggle for checkboxes
+  toggleSelection(notificationId: string, event: any) {
+    if (event.target.checked) {
+      this.selectedNotifications.add(notificationId);
+    } else {
+      this.selectedNotifications.delete(notificationId);
+    }
+  }
+
+  // Check if all filtered notifications are selected
+  isAllSelected(): boolean {
+    return (
+      this.filteredRequests.length > 0 &&
+      this.filteredRequests.every((notif) =>
+        this.selectedNotifications.has(notif.id)
+      )
+    );
+  }
+
+  // Select or deselect all visible notifications
+  toggleSelectAll(event: any) {
+    if (event.target.checked) {
+      this.filteredRequests.forEach((notif) =>
+        this.selectedNotifications.add(notif.id)
+      );
+    } else {
+      this.selectedNotifications.clear();
+    }
+  }
+
+  clearSelection() {
+    this.selectedNotifications.clear();
+  }
+
+  // Delete all selected notifications for current user
+  async deleteSelected() {
+    const idsToDelete = Array.from(this.selectedNotifications);
+    for (const id of idsToDelete) {
+      await this.emergencyService.deleteNotificationForUser(
+        this.currentUserId,
+        id
+      );
+    }
+    this.clearSelection();
     await this.loadNotifications();
   }
 }

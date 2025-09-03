@@ -1,0 +1,59 @@
+<div class="content-body">
+  <h3>Pending Account</h3>
+  <p>Verifying Resident Account</p>
+  <ng-template #noDataTemplate>
+    <br />
+    <br />
+    <br />
+    <br />
+    <div class="no-data">
+      <img src="assets/Empty Box.gif" alt="No Data" />
+      <p>No pending Account available.</p>
+    </div>
+  </ng-template>
+  <!-- Show accounts if any -->
+  <ng-container *ngIf="pendingAccounts.length > 0; else noDataTemplate">
+    <div *ngFor="let account of pendingAccounts" class="verification-item">
+      <div class="verification-details">
+        <h4>{{ account.fullName }}</h4>
+        <p>Location: {{ account.address }}</p>
+        <p class="description">{{ account.contactNumber }}</p>
+
+        <button
+          class="view-button"
+          (click)="viewDetails(account.uid)"
+          [disabled]="isLoading"
+        >
+          <i style="rotate: 30deg" class="bx bx-up-arrow-alt"></i> View Details
+        </button>
+      </div>
+
+      <div class="verification-actions">
+        <button
+          class="decline-button"
+          (click)="decline(account.uid)"
+          [disabled]="isLoading"
+        >
+          Decline
+        </button>
+        <button
+          class="accept-button"
+          (click)="accept(account.uid)"
+          [disabled]="isLoading"
+        >
+          Accept
+        </button>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Loading spinner while processing -->
+  <div *ngIf="isLoading" class="loading-indicator">
+    <img src="../../../assets/resolve.gif" alt="Loading..." />
+  </div>
+
+  <!-- Success Toast -->
+  <div *ngIf="showSuccessModal" class="success-modal">{{ successMessage }}</div>
+
+  <!-- No Data Placeholder -->
+</div>

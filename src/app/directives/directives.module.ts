@@ -12,17 +12,21 @@ export class RedirectGuard implements CanActivate {
 
     if (user) {
       const token = await user.getIdTokenResult();
-      const role = token.claims['role'];
+      const role = (token.claims['role'] as string)?.toLowerCase() ?? '';
 
       if (role === 'superadmin') {
-        this.router.navigate(['/admin']);
+        this.router.navigate(['/superAdmin']);
         return false;
       } else if (role === 'staff') {
         this.router.navigate(['/staff-dashboard']);
         return false;
+      } else if (role === 'admin') {
+        this.router.navigate(['/admin']);
+        return false;
       }
     }
 
-    return true; // allow access to the default route if not logged in
+    // Not logged in or no matching role, allow access
+    return true;
   }
 }

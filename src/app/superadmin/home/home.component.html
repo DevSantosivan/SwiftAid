@@ -1,35 +1,35 @@
 <!-- <div class="container-admin" style="background-color: #fff">
-  <div class="right-side-navbar">
-    <div class="header">
-      <h3 class="flex-logo">
-        <img src="assets/logo.jpg" alt="" class="logo" />SwiftAid
-      </h3>
+    <div class="right-side-navbar">
+      <div class="header">
+        <h3 class="flex-logo">
+          <img src="assets/logo.jpg" alt="" class="logo" />SwiftAid
+        </h3>
+      </div>
+      <div class="navlinks">
+        <ul>
+          <li class="active"><i class="bx bxs-dashboard"></i> Dashboard</li>
+          <li (click)="navigateToMap()"><i class="bx bxs-map"></i> Map</li>
+          <li (click)="navigateToHistoryCall()">
+            <i class="bx bx-history"></i> History
+          </li>
+          <li (click)="navigateToUserList()">
+            <i class="bx bxs-user-detail"></i>Resident
+          </li>
+        </ul>
+      </div>
     </div>
-    <div class="navlinks">
-      <ul>
-        <li class="active"><i class="bx bxs-dashboard"></i> Dashboard</li>
-        <li (click)="navigateToMap()"><i class="bx bxs-map"></i> Map</li>
-        <li (click)="navigateToHistoryCall()">
-          <i class="bx bx-history"></i> History
-        </li>
-        <li (click)="navigateToUserList()">
-          <i class="bx bxs-user-detail"></i>Resident
-        </li>
-      </ul>
-    </div>
-  </div>
 
-  <div class="left-side-container">
-    <div class="content-container">
-      <div class="separator">
-        <app-admin-navbar></app-admin-navbar>
-      </div>
-      <div class="body-container">
-        <app-dashboard></app-dashboard>
+    <div class="left-side-container">
+      <div class="content-container">
+        <div class="separator">
+          <app-admin-navbar></app-admin-navbar>
+        </div>
+        <div class="body-container">
+          <app-dashboard></app-dashboard>
+        </div>
       </div>
     </div>
-  </div>
-</div> -->
+  </div> -->
 <div class="container-admin" style="background-color: #fff">
   <div class="right-side-navbar" [class.collapsed]="isCollapsed">
     <!-- Toggle button -->
@@ -56,7 +56,29 @@
           <i class="bx bxs-dashboard"></i>
           <span *ngIf="!isCollapsed">Dashboard</span>
         </li>
-
+        <li
+          [routerLink]="'EmergencyRequest'"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <i class="bx bx-git-pull-request"></i>
+          <span *ngIf="!isCollapsed">Emergency Request</span>
+          <span
+            *ngIf="hasUnreadEmergencyRequests"
+            class="notification-dot"
+            [class.collapsed]="isCollapsed"
+          >
+            {{ unreadEmergencyRequestCount }}
+          </span>
+        </li>
+        <li
+          [routerLink]="['IncidentHistory']"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: false }"
+        >
+          <i class="bx bx-history"></i>
+          <span *ngIf="!isCollapsed">Incident History</span>
+        </li>
         <li
           [routerLink]="['Team']"
           routerLinkActive="active"
@@ -67,21 +89,27 @@
         </li>
 
         <li
-          [routerLink]="'EmergencyRequest'"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-        >
-          <i class="bx bx-history"></i>
-          <span *ngIf="!isCollapsed">Emergency Request</span>
-        </li>
-
-        <li
           [routerLink]="'Account'"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
         >
           <i class="bx bxs-user-detail"></i>
-          <span *ngIf="!isCollapsed">Account</span>
+          <span *ngIf="!isCollapsed">Accounts</span>
+        </li>
+        <li
+          [routerLink]="'Verification'"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <i class="bx bx-badge-check"></i>
+          <span *ngIf="!isCollapsed">Verification</span>
+          <span
+            *ngIf="hasPendingAccounts"
+            class="notification-dot"
+            [class.collapsed]="isCollapsed"
+          >
+            {{ pendingAccountCount }}
+          </span>
         </li>
 
         <li
@@ -99,7 +127,7 @@
           [routerLinkActiveOptions]="{ exact: true }"
         >
           <i class="bx bx-info-circle"></i>
-          <span *ngIf="!isCollapsed">Info</span>
+          <span *ngIf="!isCollapsed">System Settings</span>
         </li>
 
         <li

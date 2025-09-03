@@ -282,28 +282,28 @@
       *ngIf="activeTab === 'all' && filteredAllAccounts.length === 0"
       class="no-data"
     >
-      <img src="../../../assets/nodata.gif" alt="No Data" />
+      <img src="../../../assets/Empty Box.gif" alt="No Data" />
       <p>No accounts available.</p>
     </div>
     <div
       *ngIf="activeTab === 'resident' && filteredResidents.length === 0"
       class="no-data"
     >
-      <img src="../../../assets/nodata.gif" alt="No Residents" />
+      <img src="../../../assets/Empty Box.gif" alt="No Residents" />
       <p>No resident accounts found.</p>
     </div>
     <div
       *ngIf="activeTab === 'staff' && filteredStaff.length === 0"
       class="no-data"
     >
-      <img src="../../../assets/nodata.gif" alt="No Staff" />
+      <img src="../../../assets/Empty Box.gif" alt="No Staff" />
       <p>No staff accounts found.</p>
     </div>
     <div
       *ngIf="activeTab === 'block-account' && filteredBlocked.length === 0"
       class="no-data"
     >
-      <img src="../../../assets/nodata.gif" alt="No Blocked Accounts" />
+      <img src="../../../assets/Empty Box.gif" alt="No Blocked Accounts" />
       <p>No blocked accounts found.</p>
     </div>
   </div>
@@ -328,7 +328,7 @@
 </div>
 
 <!-- Notification -->
-<div class="notification" *ngIf="showDeleteNotification">
+<div class="success-modal" *ngIf="showDeleteNotification">
   <span>🗑️ Deleted successfully!</span>
 </div>
 <!-- VIEW Modal -->
@@ -338,7 +338,7 @@
     <div class="profile-header">
       <img
         class="profile-img"
-        [src]="accountToView.profilePicture || defaultAvatar"
+        [src]="accountToView.profileImageUrl"
         alt="Avatar"
       />
       <div class="profile-info">
@@ -391,7 +391,7 @@
       <div class="profile-header">
         <img
           class="profile-img"
-          [src]="accountToEdit.profilePicture || defaultAvatar"
+          [src]="accountToEdit.profileImageUrl"
           alt="Avatar"
         />
         <div>
@@ -495,12 +495,10 @@
   </div>
 </div>
 @if(blockingInProgress){
-<div class="blocking-modal-progress">
-  <div class="gif-img">
-    <img src="../../../assets/blocking.gif" alt="" />
-  </div>
+<div class="loading-indicator">
+  <img src="../../../assets/resolve.gif" alt="Loading..." />
 </div>
 }
-<div class="modal-success" *ngIf="showSuccessModal">
-  <p>{{ successMessage }}</p>
+<div class="success-modal" *ngIf="showSuccessModal">
+  <p><i class="bx bxs-check-circle"></i> {{ successMessage }}</p>
 </div>

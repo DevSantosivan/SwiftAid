@@ -21,7 +21,7 @@ import { NavigationService } from '../../core/navigation.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './map-request-details.html',
-  styleUrl: './map-request-details.scss',
+  styleUrls: ['./map-request-details.scss'],
 })
 export class MapRequestDetails implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef;
@@ -42,7 +42,11 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
   currentStaff: any = null;
   private watchId?: number;
   backLabel: string = 'Back To Emergency Request List';
-  staffAddress: string = 'Fetching address...'; // 🆕 For readable address
+  staffAddress: string = 'Fetching address...'; // For readable address
+  proximityMessage: string = ''; // Message to show when close to the request
+
+  // Proximity threshold (in meters)
+  proximityThreshold = 500; // 500 meters
 
   constructor(
     private requestService: EmergencyRequestService,
@@ -68,6 +72,7 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
     } else {
       this.backLabel = 'Back To Home'; // fallback
     }
+
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) return;
 
@@ -141,7 +146,7 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
       .bindPopup('Your Location');
 
     const latLng = this.staffLocation as [number, number];
-    this.staffAddress = await this.reverseGeocode(latLng[0], latLng[1]); // 🆕 Initial address fetch
+    this.staffAddress = await this.reverseGeocode(latLng[0], latLng[1]); // Initial address fetch
   }
 
   renderRequestMarker(): void {
@@ -170,11 +175,7 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
       dashArray: '10,6',
     }).addTo(this.map);
 
-    const group = L.featureGroup([
-      this.staffMarker!,
-      this.requestMarker!,
-      this.routeLine,
-    ]);
+    const group = L.featureGroup([this.staffMarker!]);
     this.map.fitBounds(group.getBounds().pad(0.2));
   }
 
@@ -206,10 +207,11 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
             ]);
           }
 
-          // 🆕 Reverse Geocode on movement
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          this.staffAddress = await this.reverseGeocode(lat, lng);
+          // Check proximity and display message if close
+          this.checkProximityToRequest(
+            position.coords.latitude,
+            position.coords.longitude
+          );
 
           try {
             await this.requestService.updateRequestWithStaffInfo(
@@ -219,8 +221,8 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
                 first_name: this.currentStaff?.first_name,
                 last_name: this.currentStaff?.last_name,
                 email: this.currentStaff?.email,
-                lat,
-                lng,
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
               },
               false
             );
@@ -236,6 +238,22 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
         timeout: 10000,
       }
     );
+  }
+
+  // Check proximity to the request
+  checkProximityToRequest(lat: number, lng: number): void {
+    const requestLoc = L.latLng(this.request.latitude, this.request.longitude);
+    const staffLoc = L.latLng(lat, lng);
+    const distance = staffLoc.distanceTo(requestLoc); // distance in meters
+
+    // Display message if within proximity threshold
+    if (distance <= this.proximityThreshold) {
+      this.proximityMessage = `You are within ${Math.round(
+        distance
+      )} meters of the request location.`;
+    } else {
+      this.proximityMessage = ''; // No proximity message if outside threshold
+    }
   }
 
   async reverseGeocode(lat: number, lng: number): Promise<string> {
@@ -256,7 +274,6 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
     if (user) {
       try {
         this.currentStaff = await this.userService.getUserById(user.uid);
-        this.currentUserRole = this.currentStaff?.role || '';
       } catch {
         // fail silently
       }

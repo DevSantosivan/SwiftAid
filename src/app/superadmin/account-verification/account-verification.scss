@@ -1,0 +1,134 @@
+.content-body {
+  margin-top: 5%;
+  width: 100%;
+  display: flex;
+  z-index: -1;
+  flex-direction: column;
+  padding: 10px 2%;
+}
+h3 {
+  font-size: 16px;
+
+  color: #333;
+}
+p {
+  font-size: 13px;
+
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.verification-item {
+  width: 100%;
+
+  display: flex;
+  justify-content: space-between;
+  padding: 15px;
+  background-color: #fff;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  margin-bottom: 15px;
+}
+
+.verification-details {
+  flex: 1;
+}
+
+.verification-details h4 {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.verification-details p {
+  font-size: 14px;
+  color: #555;
+}
+
+.description {
+  font-size: 12px;
+  color: #888;
+}
+
+.verification-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.view-button,
+.decline-button,
+.accept-button {
+  height: 40px;
+  padding: 10px 20px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.view-button {
+  margin-top: 15px;
+  background-color: #fff;
+}
+
+.decline-button {
+  background-color: #fff;
+  color: #333;
+}
+
+.accept-button {
+  background-color: #333;
+  color: white;
+}
+
+.view-button:hover {
+  background-color: #eaeaea;
+}
+
+.decline-button:hover {
+  background-color: #e03e3e;
+}
+
+.accept-button:hover {
+  background-color: #45a049;
+}
+
+.loading-indicator {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff96;
+  backdrop-filter: blur(5px);
+  z-index: 999999;
+  position: fixed;
+  left: 0;
+  top: 0;
+}
+
+.success-modal {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #4caf50;
+  color: white;
+  padding: 15px 25px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.3s ease forwards;
+  z-index: 1000;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

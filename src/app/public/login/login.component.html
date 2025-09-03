@@ -1,35 +1,26 @@
 <div class="navbar">
-  <img
-    src="./../../../assets/arrow-left-circle (1).png"
-    width="40"
-    height="40"
-    alt=""
-  />
+  <i style="font-size: 40px" class="bx bx-arrow-back"></i>
   <img src="./../../../assets/logo22.png" width="50" height="50" alt="" />
 </div>
 
 <div class="login-container">
   <form [formGroup]="loginForm">
-    @if(valid){
-    <div class="validation">
+    <!-- Validation messages -->
+    <div *ngIf="valid" class="validation">
       <strong>Wrong Credentials</strong>
       <p>Please input field</p>
     </div>
-    }@else if(email_pass) {
-    <div class="validation">
+    <div *ngIf="email_pass" class="validation">
       <strong>Wrong Credentials</strong>
       <p>Invalid username or password.</p>
     </div>
-    }@else if(success){
-    <div class="validation success">
+    <div *ngIf="success" class="validation success">
       <strong>Success</strong>
       <p>Successfully logged in.</p>
     </div>
-    } @else {
-    <div class="validation">
+    <div *ngIf="!valid && !email_pass && !success" class="validation">
       <p>You must log in to continue.</p>
     </div>
-    }
 
     <div class="login-description">
       <h3><span>SwiftAid</span></h3>
@@ -54,17 +45,60 @@
     </div>
 
     <div class="contact-mdrrmo">
-      <p>Contact Mddrmo</p>
-      <a href="">Mddrmo</a>
+      <p>Create an account</p>
+      <a
+        style="color: red; cursor: pointer; text-decoration: underline"
+        (click)="openAdminAccessKeyModal()"
+        >Registration</a
+      >
     </div>
-    <!-- <button class="google-login" (click)="regiter()" type="button">
-      Register
-    </button> -->
+
+    <!-- Developer Access Key Button -->
+    <div class="developer-access">
+      <button
+        style="
+          background-color: white;
+          color: #585656;
+          border: 1px solid #cccccc8e;
+        "
+        (click)="openDevAccessKeyModal()"
+        type="button"
+      >
+        Developer Access
+      </button>
+    </div>
   </form>
 </div>
 
-@if(isLoading){
-<div class="loading-screen">
+<!-- Loading Screen -->
+<div *ngIf="isLoading" class="loading-screen">
   <app-loading-screen></app-loading-screen>
 </div>
-}
+
+<!-- Developer Access Key Modal -->
+<div *ngIf="showDevAccessKeyModal" class="modal-backdrop">
+  <div class="modal-content">
+    <i style="font-size: 55px" class="bx bxs-key"></i>
+    <h2>Enter Developer Access Key</h2>
+    <input [(ngModel)]="devAccessKeyInput" placeholder="Enter developer key" />
+    <div *ngIf="devAccessKeyError" class="error-message">
+      {{ devAccessKeyError }}
+    </div>
+    <button (click)="verifyDevAccessKey()">Submit</button>
+    <button (click)="closeDevAccessKeyModal()" type="button">Cancel</button>
+  </div>
+</div>
+
+<!-- Admin Registration Key Modal -->
+<div *ngIf="showAdminAccessKeyModal" class="modal-backdrop">
+  <div class="modal-content">
+    <i style="font-size: 55px" class="bx bxs-key"></i>
+    <h2>Enter Admin Registration Key</h2>
+    <input [(ngModel)]="adminAccessKeyInput" placeholder="Enter admin key" />
+    <div *ngIf="adminAccessKeyError" class="error-message">
+      {{ adminAccessKeyError }}
+    </div>
+    <button (click)="verifyAdminAccessKey()">Submit</button>
+    <button (click)="closeAdminAccessKeyModal()" type="button">Cancel</button>
+  </div>
+</div>

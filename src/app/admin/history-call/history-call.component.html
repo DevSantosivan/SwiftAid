@@ -17,8 +17,8 @@
         <div class="dropdown-list" *ngIf="showBulkMenu">
           <button (click)="selectBy('all')">Select All</button>
           <button (click)="selectBy('none')">Select None</button>
-          <button (click)="selectBy('accepted')">Accepted by Me</button>
-          <button (click)="selectBy('completed')">Completed</button>
+
+          <button (click)="selectBy('resolved')">Completed</button>
         </div>
       </div>
     </div>
@@ -55,22 +55,14 @@
           <i class="bx bx-list-ul"></i> All Requests</a
         >
       </li>
+
       <li class="nav-item">
         <a
           class="nav-link"
-          [class.active]="activeTab === 'accepted'"
-          (click)="setTab('accepted')"
+          [class.active]="activeTab === 'resolved'"
+          (click)="setTab('resolved')"
         >
-          <i class="bx bx-check-circle"></i> Accepted by Me</a
-        >
-      </li>
-      <li class="nav-item">
-        <a
-          class="nav-link"
-          [class.active]="activeTab === 'completed'"
-          (click)="setTab('completed')"
-        >
-          <i class="bx bx-check-double"></i> Completed</a
+          <i class="bx bx-check-double"></i> Resolved</a
         >
       </li>
       <li class="nav-item">

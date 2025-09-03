@@ -1,31 +1,67 @@
-import { Component } from '@angular/core';
-import { ViewChild, ElementRef, AfterViewInit } from '@angular/core';
-import { EmergencyRequestService } from '../../core/rescue_request.service';
-import { DashboardChartService } from '../../core/dashboard-chart.service';
-import { Auth, getAuth } from '@angular/fire/auth';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Auth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { UserService } from '../../core/user.service';
-import { OnInit } from '@angular/core';
-import { Chart, registerables } from 'chart.js';
-import { Firestore } from '@angular/fire/firestore';
+import { EmergencyRequestService } from '../../core/rescue_request.service';
+import { DashboardChartService } from '../../core/dashboard-chart.service';
 import { NotificationService } from '../../core/notification.service';
+import { Firestore } from '@angular/fire/firestore';
+import { EmergencyRequest } from '../../model/emergency';
+import { Chart } from 'chart.js';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.scss',
+  styleUrls: ['./dashboard.scss'],
 })
-export class Dashboard implements OnInit {
-  chart: any;
-  pieChart: any; // Declare the pie chart variable
-  yearlyChart: any; // Declare the yearly chart variable
+export class Dashboard implements OnInit, OnDestroy {
+  pieChart: any;
+  yearlyChart: any;
+  requestEventBarChart?: Chart;
+
   isAdmin: boolean = false;
   currentUserId: string = '';
   isloader: boolean = false;
   userCount: number = 0;
-  EmergencyRequest: number = 0;
-  // Line Chart Configuration (Monthly)
+  totalRequestRescueCount: number = 0;
+  totalRescueCount: number = 0;
+  recentRequests: EmergencyRequest[] = [];
+  isSuperAdmin: boolean = false;
+
+  totalTeam = 0;
+  totalresident = 0;
+  totalPendingResident = 0;
+
+  EmergencyRequest = 0;
+  totalresolveRequest = 0;
+  totalPendingRequests = 0;
+  pieChartLegend: { label: string; color: string }[] = [];
+
+  private RED_PALETTE = [
+    '#b71c1c',
+    '#d32f2f',
+    '#f44336',
+    '#ef5350',
+    '#c62828',
+    '#212121',
+    '#424242',
+    '#e0e0e0',
+    '#ffffff',
+  ];
+
+  constructor(
+    private authentication: Auth,
+    private route: Router,
+    private userService: UserService,
+    private emergencyRequestService: EmergencyRequestService,
+    private firestore: Firestore,
+    private notificationService: NotificationService,
+    private dashboardChartService: DashboardChartService
+  ) {}
+
   getMonthLabels(monthCount: number): string[] {
     const monthNames = [
       'Jan',
@@ -41,7 +77,6 @@ export class Dashboard implements OnInit {
       'Nov',
       'Dec',
     ];
-
     const labels = [];
     const today = new Date();
     let month = today.getMonth();
@@ -61,86 +96,20 @@ export class Dashboard implements OnInit {
     }
     return years;
   }
-  public lineChartConfig: any = {
-    type: 'bar',
-    data: {
-      labels: this.getMonthLabels(7), // Keeps monthly data as per your original request
-      datasets: [
-        {
-          label: 'Police',
-          data: [120, 140, 100, 180, 150, 160, 130],
-          borderColor: 'red',
-          backgroundColor: 'rgba(255, 0, 0, 0.8)',
-          fill: true,
-          borderWidth: 1,
-          pointBorderRadius: 5,
-        },
-        {
-          label: 'Ambulance',
-          data: [60, 70, 50, 90, 85, 80, 75],
-          borderColor: 'red',
-          backgroundColor: 'rgba(255, 0, 0, 0.6)',
-          fill: true,
-          borderWidth: 1,
-          pointBorderRadius: 5,
-        },
-        {
-          label: 'Fire',
-          data: [30, 45, 50, 40, 60, 55, 48],
-          borderColor: 'red',
-          backgroundColor: 'rgba(255, 0, 0, 0.4)',
-          fill: true,
-          borderWidth: 1,
-          pointBorderRadius: 5,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: {
-          beginAtZero: true,
-        },
-      },
-    },
-  };
 
-  // Pie Chart Configuration (Accident Categories)
+  generateThemedColor(index: number): string {
+    return this.RED_PALETTE[index % this.RED_PALETTE.length];
+  }
+
   public pieChartConfig: any = {
     type: 'pie',
     data: {
-      labels: [
-        'Assault',
-        'Break-in',
-        'Vandalism',
-        'Theft',
-        'Accident',
-        'Heart Attack',
-        'Stroke',
-        'Breathing Issues',
-        'Fire',
-        'Explosion',
-        'Gas Leak',
-        'Flood',
-      ],
+      labels: [],
       datasets: [
         {
           label: 'Accident Categories',
-          data: [5, 3, 25, 12, 10, 7, 6, 4, 8, 5, 9, 6], // Example data for each category
-          backgroundColor: [
-            'rgb(245, 18, 75)', // Assault
-            'rgb(241, 69, 69)', // Break-in
-            'rgb(255, 102, 102)', // Vandalism
-            'rgb(255, 77, 77)', // Theft
-            'rgb(204, 0, 0)', // Accident
-            'rgb(255, 87, 34)', // Heart Attack
-            'rgb(255, 153, 153)', // Stroke
-            'rgb(255, 128, 128)', // Breathing Issues
-            'rgb(255, 69, 0)', // Fire
-            'rgb(255, 85, 85)', // Explosion
-            'rgb(204, 51, 51)', // Gas Leak
-            'rgb(255, 102, 85)', // Flood
-          ],
+          data: [],
+          backgroundColor: [],
           borderWidth: 1,
         },
       ],
@@ -148,89 +117,191 @@ export class Dashboard implements OnInit {
     options: {
       responsive: true,
       plugins: {
-        legend: {
-          position: 'top',
-        },
+        legend: { display: false },
       },
     },
   };
 
-  // Yearly Chart Configuration (Accident Data)
   public yearlyChartConfig: any = {
     type: 'line',
     data: {
-      labels: this.getYearLabels(5), // Get the last 5 years for example
+      labels: this.getYearLabels(5),
       datasets: [
         {
           label: 'Accident Data',
-          data: [20, 30, 40, 25, 50], // Sample data (replace with actual data)
+          data: [20, 30, 40, 25, 50],
           fill: false,
-          borderColor: 'rgb(255, 8, 0)', // Blue line color
+          borderColor: '#b71c1c',
           tension: 0.1,
         },
       ],
     },
     options: {
       responsive: true,
-      scales: {
-        y: {
-          beginAtZero: true,
-        },
-      },
+      scales: { y: { beginAtZero: true } },
     },
   };
 
-  constructor(
-    private authentication: Auth,
-    private route: Router,
-    private userService: UserService,
-    private EmergencyRequestService: EmergencyRequestService,
-    private firestore: Firestore,
-    private notificationService: NotificationService,
-    private dashboardChartService: DashboardChartService
-  ) {}
-  currentStaff: any = null;
-  currentUserRole: string = '';
-  async loadCurrentStaff() {
-    const user = getAuth().currentUser;
-    if (user) {
-      try {
-        this.currentStaff = await this.userService.getUserById(user.uid);
-        this.currentUserRole = this.currentStaff?.role || '';
-      } catch {
-        // fail silently
+  updatePieChart(accidentCategoryCounts: { [category: string]: number }) {
+    const filteredLabels: string[] = [];
+    const filteredData: number[] = [];
+    const filteredColors: string[] = [];
+
+    for (const [category, count] of Object.entries(accidentCategoryCounts)) {
+      if (count > 0) {
+        filteredLabels.push(category);
+        filteredData.push(count);
+        filteredColors.push(this.generateThemedColor(filteredColors.length));
       }
     }
+
+    this.pieChartConfig.data.labels = filteredLabels;
+    this.pieChartConfig.data.datasets[0].data = filteredData;
+    this.pieChartConfig.data.datasets[0].backgroundColor = filteredColors;
+
+    this.pieChartLegend = filteredLabels.map((label, i) => ({
+      label,
+      color: filteredColors[i],
+    }));
+
+    this.pieChart.update();
+  }
+
+  updateMonthlyEventBarChart(requests: EmergencyRequest[]) {
+    const monthLabels: string[] = [];
+    const monthMap: Map<string, number> = new Map();
+
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = d.toLocaleString('default', {
+        month: 'short',
+        year: 'numeric',
+      });
+      monthLabels.push(label);
+      monthMap.set(label, monthLabels.length - 1);
+    }
+
+    const eventSet = new Set<string>();
+    requests.forEach((req) => {
+      if (req.event) eventSet.add(req.event);
+    });
+
+    const events = Array.from(eventSet);
+    const countsPerEvent: { [event: string]: number[] } = {};
+
+    events.forEach((event) => {
+      countsPerEvent[event] = new Array(monthLabels.length).fill(0);
+    });
+
+    requests.forEach((req) => {
+      if (!req.timestamp || !req.event) return;
+
+      const date = req.timestamp.toDate
+        ? req.timestamp.toDate()
+        : new Date(req.timestamp);
+
+      const label = date.toLocaleString('default', {
+        month: 'short',
+        year: 'numeric',
+      });
+
+      const index = monthMap.get(label);
+      if (index !== undefined) {
+        countsPerEvent[req.event][index]++;
+      }
+    });
+
+    const redShades = [
+      '#FFCDD2',
+      '#EF9A9A',
+      '#E57373',
+      '#EF5350',
+      '#F44336',
+      '#E53935',
+      '#D32F2F',
+      '#C62828',
+      '#B71C1C',
+    ];
+
+    const datasets = events.map((event, i) => ({
+      label: event,
+      data: countsPerEvent[event],
+      backgroundColor: redShades[i % redShades.length],
+    }));
+
+    if (this.requestEventBarChart) {
+      this.requestEventBarChart.destroy();
+    }
+
+    this.requestEventBarChart = new Chart('requestEventBarChart', {
+      type: 'bar',
+      data: {
+        labels: monthLabels,
+        datasets: datasets,
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { mode: 'index', intersect: false },
+        },
+        scales: {
+          x: { stacked: true, title: { display: true, text: 'Month' } },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            title: { display: true, text: 'Number of Requests' },
+            ticks: { stepSize: 1 },
+          },
+        },
+      },
+    });
   }
 
   async ngOnInit() {
+    const user = this.authentication.currentUser;
+    this.currentUserId = user?.uid || '';
+
+    const role = await this.userService.getCurrentUserRole(this.currentUserId);
+    this.isSuperAdmin = role === 'admin';
     const admins = await this.userService.getAdmins();
     this.isAdmin = admins.some((admin) => admin.uid === this.currentUserId);
 
-    // Initialize the charts
-    this.chart = new Chart('MyLineChart', this.lineChartConfig);
     this.pieChart = new Chart('MyPieChart', this.pieChartConfig);
     this.yearlyChart = new Chart('MyYearlyChart', this.yearlyChartConfig);
 
     try {
-      const userCount = await this.userService.getUserCount();
+      const users = await this.userService.getUsers();
+      this.userCount = users.length;
+      this.totalTeam = users.filter((u) => u.role === 'admin').length;
+      this.totalresident = users.filter(
+        (u) => u.role === 'resident' && u.account_status === 'approved'
+      ).length;
+      this.totalPendingResident = users.filter(
+        (u) => u.role === 'resident' && u.account_status === 'pending'
+      ).length;
 
-      this.userCount = userCount;
+      const requests = await this.emergencyRequestService.getRequestResolved();
+      this.EmergencyRequest = requests.length;
+      this.totalresolveRequest = requests.filter(
+        (r) => r.status?.toLowerCase() === 'resolved'
+      ).length;
+      this.totalPendingRequests = requests.filter(
+        (r) => r.status?.toLowerCase() === 'pending'
+      ).length;
 
-      // Fetch emergency request count
-      const registeredAccount =
-        await this.EmergencyRequestService.getRequestCount();
+      if (this.isSuperAdmin || this.isAdmin) {
+        const accidentCategoryCounts =
+          await this.dashboardChartService.fetchAccidentCategoryCountsForCurrentUser();
+        this.updatePieChart(accidentCategoryCounts);
+      }
 
-      this.EmergencyRequest = registeredAccount;
-
-      // Use DashboardChartService to fetch data for charts
-      const accidentCategoryCounts =
-        await this.dashboardChartService.fetchAccidentCategoryCounts();
-      this.pieChartConfig.data.datasets[0].data = Object.values(
-        accidentCategoryCounts
-      );
-      this.pieChart.update();
-      this.loadCurrentStaff();
+      const resolvedRequests =
+        await this.emergencyRequestService.getRequestsByStaffId(
+          this.currentUserId
+        );
+      this.totalRescueCount = resolvedRequests.length;
 
       const yearlyData =
         await this.dashboardChartService.fetchYearlyAccidentData();
@@ -238,19 +309,72 @@ export class Dashboard implements OnInit {
       this.yearlyChartConfig.data.datasets[0].data = yearlyData.counts;
       this.yearlyChart.update();
 
-      // Continue with other data fetching as needed
-      // ...
+      // ✅ New: Update Monthly Bar Chart
+      this.updateMonthlyEventBarChart(requests);
+
+      this.recentRequests = requests
+        .sort(
+          (a, b) =>
+            (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0)
+        )
+        .slice(0, 5);
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching dashboard data:', error);
     }
+  }
+
+  ngOnDestroy() {
+    this.pieChart?.destroy();
+    this.yearlyChart?.destroy();
+    this.requestEventBarChart?.destroy(); // ✅ Clean up
   }
 
   signout() {
     return this.authentication.signOut().then(() => {
+      this.isloader = true;
       setTimeout(() => {
         this.route.navigate(['/login']);
       }, 3000);
-      this.isloader = true;
     });
+  }
+
+  printDashboard(): void {
+    // Add print logic here if needed
+  }
+
+  getStatusLabel(status: string | undefined): string {
+    if (!status) return 'Unknown';
+    switch (status.toLowerCase()) {
+      case 'pending':
+      case 'requesting':
+        return 'Requesting';
+      case 'responding':
+        return 'In Progress';
+      case 'completed':
+      case 'resolved':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return status;
+    }
+  }
+
+  getStatusClass(status: string | undefined): string {
+    if (!status) return 'unknown';
+    switch (status.toLowerCase()) {
+      case 'pending':
+      case 'requesting':
+        return 'requesting';
+      case 'responding':
+        return 'in-progress';
+      case 'completed':
+      case 'resolved':
+        return 'completed';
+      case 'cancelled':
+        return 'cancelled';
+      default:
+        return 'other';
+    }
   }
 }

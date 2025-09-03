@@ -36,14 +36,21 @@
         >
           <i class="bx bxs-ambulance"></i>
           <span *ngIf="!isCollapsed">Emergency Request</span>
+          <span
+            *ngIf="hasUnreadEmergencyRequests"
+            class="notification-dot"
+            [class.collapsed]="isCollapsed"
+          >
+            {{ unreadEmergencyRequestCount }}
+          </span>
         </li>
         <li
           [routerLink]="'History'"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
         >
-          <i class="bx bx-history"></i>
-          <span *ngIf="!isCollapsed">History</span>
+          <i class="bx bxs-report"></i>
+          <span *ngIf="!isCollapsed">Report</span>
         </li>
         <li
           [routerLink]="'Resident'"

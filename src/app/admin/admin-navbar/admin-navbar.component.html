@@ -5,13 +5,13 @@
   <div class="user-info" (click)="showSide()">
     <span class="user-email">{{ currentUser?.email || "User Name" }}</span>
     <img
-      *ngIf="currentUser?.profilePicture"
-      [src]="currentUser?.profilePicture"
+      *ngIf="currentUser?.profileImageUrl"
+      [src]="currentUser?.profileImageUrl"
       alt="Profile Picture"
       class="user-img"
     />
     <i
-      *ngIf="!currentUser?.profilePicture"
+      *ngIf="!currentUser?.profileImageUrl"
       class="bx bx-user-circle user-icon-large"
     ></i>
   </div>
@@ -30,8 +30,8 @@
 
   <div class="user-pic-name">
     <img
-      *ngIf="currentUser?.profilePicture; else placeholder"
-      [src]="currentUser?.profilePicture"
+      *ngIf="currentUser?.profileImageUrl; else placeholder"
+      [src]="currentUser?.profileImageUrl"
       alt="Profile Picture"
       class="user-icon-image"
     />

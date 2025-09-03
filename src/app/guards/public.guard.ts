@@ -14,8 +14,9 @@ export class PublicGuard implements CanActivate {
     if (user) {
       try {
         this.authService.userDataSubject.next(user);
+
         const token = await user.getIdTokenResult();
-        const role = token.claims['role'] as string | null;
+        const role = (token.claims['role'] as string)?.toLowerCase() ?? '';
 
         this.authService.userRole$.next(role);
 
@@ -25,14 +26,19 @@ export class PublicGuard implements CanActivate {
         } else if (role === 'superAdmin') {
           await this.router.navigate(['/superAdmin']);
           return false;
+        } else if (role === 'staff') {
+          await this.router.navigate(['/staff-dashboard']);
+          return false;
         }
+        // allow access for other roles or no role
         return true;
-      } catch {
+      } catch (error) {
+        console.error('Error in PublicGuard:', error);
         this.router.navigate(['']);
         return false;
       }
     } else {
-      // User not loaded synchronously, fallback to listener:
+      // If user not loaded synchronously, fallback to listener
       return new Promise<boolean>((resolve) => {
         const unsubscribe = this.authService.auth.onAuthStateChanged(
           async (user) => {
@@ -41,8 +47,10 @@ export class PublicGuard implements CanActivate {
             } else {
               try {
                 this.authService.userDataSubject.next(user);
+
                 const token = await user.getIdTokenResult();
-                const role = token.claims['role'] as string | null;
+                const role =
+                  (token.claims['role'] as string)?.toLowerCase() ?? '';
 
                 this.authService.userRole$.next(role);
 
@@ -51,6 +59,9 @@ export class PublicGuard implements CanActivate {
                   resolve(false);
                 } else if (role === 'superAdmin') {
                   await this.router.navigate(['/superAdmin']);
+                  resolve(false);
+                } else if (role === 'staff') {
+                  await this.router.navigate(['/staff-dashboard']);
                   resolve(false);
                 } else {
                   resolve(true);

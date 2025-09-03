@@ -127,3 +127,121 @@
 .mark-all button:hover {
   background-color: #9999992f;
 }
+
+.delete-btn {
+  padding: 5px;
+  border: none;
+  background-color: red;
+  color: #ffff;
+  border-radius: 3px;
+}
+
+.loading-indicator {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff96;
+  backdrop-filter: blur(5px);
+  z-index: 999999;
+  position: fixed;
+  left: 0;
+  top: 0;
+}
+
+.success-modal {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  color: #333;
+  padding: 15px 25px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  font-size: 14px;
+  z-index: 1000;
+
+  /* Start hidden and slide in */
+  animation: slideIn 0.3s ease forwards;
+}
+
+/* Add a class for slide-out animation */
+.success-modal.slide-out {
+  animation: slideOut 0.3s ease forwards;
+}
+
+/* Slide In Keyframes */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide Out Keyframes */
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+#modalTitle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-container {
+  background: white;
+  padding: 24px 32px;
+  border-radius: 8px;
+  width: 350px;
+  max-width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.modal-container h3 {
+  margin-bottom: 16px;
+}
+
+.modal-container p {
+  margin-bottom: 24px;
+}
+
+.modal-container button {
+  margin: 0 10px;
+  padding: 8px 20px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.modal-container button:first-child {
+  background-color: #d9534f;
+  color: white;
+}
+
+.modal-container button:last-child {
+  background-color: #ccc;
+}

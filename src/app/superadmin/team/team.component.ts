@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, inject, Input } from '@angular/core';
-import { account } from '../../model/users';
-import { UserService } from '../../core/user.service';
+import { Component, HostListener, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { TimeDiffPipe } from '../../../pipe/time-diff.pipe';
 import { NgZone } from '@angular/core';
-// Updated interface to match your service output exactly
+
+import { account } from '../../model/users';
+import { register } from '../../model/registered';
+import { UserService } from '../../core/user.service';
+
 interface AccountWithStatus extends account {
   uid: string;
   status: {
@@ -18,9 +19,9 @@ interface AccountWithStatus extends account {
 @Component({
   selector: 'app-team',
   standalone: true,
-  imports: [CommonModule, FormsModule, TimeDiffPipe],
+  imports: [CommonModule, FormsModule],
   templateUrl: './team.component.html',
-  styleUrls: ['./team.component.scss'], // fixed from styleUrl to styleUrls
+  styleUrls: ['./team.component.scss'],
 })
 export class TeamComponent {
   private userService = inject(UserService);
@@ -32,16 +33,32 @@ export class TeamComponent {
   filteredMembers: AccountWithStatus[] = [];
   openDropdownIndex: number | null = null;
   searchTerm: string = '';
-  isProfileVisible = false;
+  isClosing = false;
   viewedMember: AccountWithStatus | null = null;
-  isClosing: boolean = false;
 
-  // For editing modal/view
-  selectedMember: AccountWithStatus | null = null;
-  @Input() member: any;
-
-  // For delete confirmation modal
   deleteMemberToConfirm: AccountWithStatus | null = null;
+
+  // Shared modal state
+  isModalOpen = false;
+  isEditMode = false;
+
+  // Loading states
+  isSaving = false;
+  isDeleting = false;
+
+  // Success modal
+  isSuccessModalOpen = false;
+  successMessage = '';
+
+  // One object for both Create and Edit
+  activeMember: Partial<AccountWithStatus> & { password?: string } = {
+    fullName: '',
+    email: '',
+    contactNumber: '',
+    office_id: '',
+    charge: '',
+    status: { online: false, last: null },
+  };
 
   async ngOnInit() {
     try {
@@ -68,101 +85,178 @@ export class TeamComponent {
     this.openDropdownIndex = null;
   }
 
-  editMember(member: AccountWithStatus): void {
-    this.selectedMember = { ...member };
-  }
-
   viewMember(uid: string): void {
     const found = this.filteredMembers.find((m) => m.uid === uid);
-    if (found) {
-      this.viewedMember = found;
-    }
+    if (found) this.viewedMember = found;
   }
 
   closeViewModal(): void {
     this.isClosing = true;
-
     setTimeout(() => {
       this.viewedMember = null;
       this.isClosing = false;
     }, 300);
   }
 
-  closeModal(): void {
-    this.selectedMember = null;
-  }
-
-  deleteMember(member: AccountWithStatus): void {
-    this.selectedMember = { ...member };
-  }
-
-  async updateMember(): Promise<void> {
-    if (!this.selectedMember?.uid) return;
-
-    try {
-      await this.userService.updateUser(
-        this.selectedMember.uid,
-        this.selectedMember
-      );
-      console.log('Update successful');
-
-      this.teamMembers = this.teamMembers.map((member) =>
-        member.uid === this.selectedMember!.uid
-          ? { ...this.selectedMember! }
-          : member
-      );
-      this.filteredMembers = [...this.teamMembers];
-
-      this.closeModal();
-      alert('Member updated successfully!');
-    } catch (error) {
-      console.error('Error updating member:', error);
-      alert('Failed to update member.');
-    }
-  }
-
-  confirmDeleteMember(member: AccountWithStatus): void {
-    this.deleteMemberToConfirm = member;
-  }
-
-  cancelDelete(): void {
-    this.deleteMemberToConfirm = null;
-  }
-
-  async confirmDelete(): Promise<void> {
-    if (!this.deleteMemberToConfirm?.uid) {
-      console.warn('No member selected to delete');
-      return;
-    }
-
-    try {
-      console.log('Deleting member:', this.deleteMemberToConfirm);
-      await this.userService.deleteUser(this.deleteMemberToConfirm.uid);
-      console.log('Delete successful');
-
-      this.teamMembers = this.teamMembers.filter(
-        (m) => m.uid !== this.deleteMemberToConfirm!.uid
-      );
-      this.filteredMembers = this.filteredMembers.filter(
-        (m) => m.uid !== this.deleteMemberToConfirm!.uid
-      );
-
-      alert('Member deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting member:', error);
-      alert('Failed to delete member.');
-    } finally {
-      this.deleteMemberToConfirm = null;
-    }
-  }
-
   onSearchChange(): void {
     const term = this.searchTerm.toLowerCase().trim();
-
     this.filteredMembers = this.teamMembers.filter((member) => {
       const fullName = member.fullName?.toLowerCase() || '';
       const email = member.email?.toLowerCase() || '';
       return fullName.includes(term) || email.includes(term);
     });
+  }
+
+  // === Open Modal for Create or Edit ===
+
+  openCreateModal(): void {
+    this.isEditMode = false;
+    this.isModalOpen = true;
+
+    this.activeMember = {
+      fullName: '',
+      email: '',
+      password: '',
+      contactNumber: '',
+      office_id: '',
+      charge: '',
+      status: { online: false, last: null },
+    };
+  }
+
+  editMember(member: AccountWithStatus): void {
+    this.isEditMode = true;
+    this.isModalOpen = true;
+
+    this.activeMember = {
+      ...member,
+    };
+  }
+
+  closeModal(): void {
+    if (this.isSaving) return; // Prevent close while saving
+    this.isModalOpen = false;
+  }
+
+  async saveMember(): Promise<void> {
+    if (this.isEditMode) {
+      await this.updateMember();
+    } else {
+      await this.createMember();
+    }
+  }
+
+  // === Create ===
+  async createMember(): Promise<void> {
+    if (
+      !this.activeMember.fullName ||
+      !this.activeMember.email ||
+      !this.activeMember.password
+    ) {
+      alert('Please fill in Full Name, Email, and Password.');
+      return;
+    }
+    this.isModalOpen = false;
+    this.isSaving = true;
+    try {
+      const fullNameParts = this.activeMember.fullName.trim().split(' ');
+      const first_name = fullNameParts.shift() || '';
+      const last_name = fullNameParts.join(' ') || '';
+
+      const additionalData: Partial<register> = {
+        fullName: this.activeMember.fullName,
+        first_name,
+        last_name,
+        charge: this.activeMember.charge || '',
+        office_id: this.activeMember.office_id || '',
+        contactNumber: this.activeMember.contactNumber || '',
+      };
+
+      await this.userService.createAccount(
+        this.activeMember.email,
+        this.activeMember.password,
+        additionalData
+      );
+
+      this.teamMembers = await this.userService.getAdmins();
+      this.filteredMembers = [...this.teamMembers];
+
+      this.showSuccessModal('Member created successfully!');
+      this.closeModal();
+    } catch (error) {
+      console.error('Error creating member:', error);
+      alert('Failed to create member.');
+    } finally {
+      this.isSaving = false;
+    }
+  }
+
+  // === Update ===
+  async updateMember(): Promise<void> {
+    if (!this.activeMember?.uid) return;
+
+    this.isSaving = true;
+    this.isModalOpen = false;
+    try {
+      await this.userService.updateUser(
+        this.activeMember.uid,
+        this.activeMember
+      );
+      this.teamMembers = this.teamMembers.map((member) =>
+        member.uid === this.activeMember.uid
+          ? ({ ...this.activeMember } as AccountWithStatus)
+          : member
+      );
+      this.filteredMembers = [...this.teamMembers];
+
+      this.showSuccessModal('Member updated successfully!');
+      this.closeModal();
+    } catch (error) {
+      console.error('Error updating member:', error);
+      alert('Failed to update member.');
+    } finally {
+      this.isSaving = false;
+    }
+  }
+
+  // === Delete ===
+  confirmDeleteMember(member: AccountWithStatus): void {
+    this.deleteMemberToConfirm = member;
+  }
+
+  cancelDelete(): void {
+    if (this.isDeleting) return; // Prevent cancel during deleting
+    this.deleteMemberToConfirm = null;
+  }
+
+  async confirmDelete(): Promise<void> {
+    if (!this.deleteMemberToConfirm?.uid) return;
+
+    this.isDeleting = true;
+    try {
+      await this.userService.deleteUser(this.deleteMemberToConfirm.uid);
+      this.teamMembers = this.teamMembers.filter(
+        (m) => m.uid !== this.deleteMemberToConfirm!.uid
+      );
+      this.filteredMembers = [...this.teamMembers];
+
+      this.showSuccessModal('Member deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting member:', error);
+      alert('Failed to delete member.');
+    } finally {
+      this.isDeleting = false;
+      this.deleteMemberToConfirm = null;
+    }
+  }
+
+  showSuccessModal(message: string) {
+    this.successMessage = message;
+    this.isSuccessModalOpen = true;
+
+    setTimeout(() => {
+      this.isSuccessModalOpen = false;
+      this.successMessage = '';
+    }, 2500);
   }
 }

@@ -1,0 +1,33 @@
+<div class="container">
+  <div class="developer-page-container">
+    <h2>Developer Access Key Generator</h2>
+
+    <button (click)="generateAccessKey()" type="button">
+      Generate Access Key
+    </button>
+
+    <div class="key-display">
+      <input
+        type="text"
+        [formControl]="generatedKey"
+        readonly
+        placeholder="Access key will appear here"
+      />
+      <button
+        (click)="copyKey()"
+        [disabled]="!generatedKey.value"
+        type="button"
+      >
+        Copy
+      </button>
+    </div>
+
+    <button
+      (click)="saveKey()"
+      [disabled]="!generatedKey.value || isSaving"
+      type="button"
+    >
+      {{ isSaving ? 'Saving...' : 'Save Access Key' }}
+    </button>
+  </div>
+</div>

@@ -50,6 +50,10 @@ export class HomeComponent implements OnInit {
   hasUnreadNotifications = false;
   unreadNotificationCount = 0;
 
+  // Emergency Request state
+  hasUnreadEmergencyRequests = false;
+  unreadEmergencyRequestCount = 0;
+
   // User and data counts
   userCount = 0;
   emergencyRequestCount = 0;
@@ -75,6 +79,9 @@ export class HomeComponent implements OnInit {
       try {
         // Load unread notification count and state
         await this.updateUnreadNotificationStatus();
+
+        // Load unread emergency request count
+        await this.updateUnreadEmergencyRequestCount();
 
         // Fetch user count
         this.userCount = await this.userService.getUserCount();
@@ -113,7 +120,52 @@ export class HomeComponent implements OnInit {
     this.isCollapsed = !this.isCollapsed;
   }
 
-  // (Rest of your existing methods below...)
+  // Method to load unread emergency request count from the service
+  async updateUnreadEmergencyRequestCount() {
+    try {
+      const currentUser = this.authentication.currentUser;
+      if (!currentUser) {
+        this.hasUnreadEmergencyRequests = false;
+        this.unreadEmergencyRequestCount = 0;
+        return;
+      }
+
+      const count = await this.emergencyRequestService.getUnreadEmergency(
+        currentUser.uid
+      );
+
+      this.unreadEmergencyRequestCount = count;
+      this.hasUnreadEmergencyRequests = count > 0;
+
+      console.log('Unread emergency requests:', count);
+    } catch (error) {
+      console.error('Failed to fetch unread emergency request count:', error);
+    }
+  }
+
+  // Existing method for loading unread notifications count
+  async updateUnreadNotificationStatus() {
+    try {
+      const currentUser = this.authentication.currentUser;
+      if (!currentUser) {
+        this.hasUnreadNotifications = false;
+        this.unreadNotificationCount = 0;
+        return;
+      }
+
+      const count =
+        await this.emergencyRequestService.getUnreadNotificationCountForUser(
+          currentUser.uid
+        );
+
+      this.unreadNotificationCount = count;
+      this.hasUnreadNotifications = count > 0;
+
+      console.log('Unread notifications:', count);
+    } catch (error) {
+      console.error('Failed to fetch unread notification count:', error);
+    }
+  }
 
   // Line Chart Config for Monthly Data (example static data)
   public lineChartConfig: any = {
@@ -253,28 +305,5 @@ export class HomeComponent implements OnInit {
     this.authentication.signOut().then(() => {
       this.router.navigate(['/login']);
     });
-  }
-
-  async updateUnreadNotificationStatus() {
-    try {
-      const currentUser = this.authentication.currentUser;
-      if (!currentUser) {
-        this.hasUnreadNotifications = false;
-        this.unreadNotificationCount = 0;
-        return;
-      }
-
-      const count =
-        await this.emergencyRequestService.getUnreadNotificationCountForUser(
-          currentUser.uid
-        );
-
-      this.unreadNotificationCount = count;
-      this.hasUnreadNotifications = count > 0;
-
-      console.log('Unread notifications:', count);
-    } catch (error) {
-      console.error('Failed to fetch unread notification count:', error);
-    }
   }
 }

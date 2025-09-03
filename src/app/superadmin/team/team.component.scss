@@ -49,8 +49,12 @@
   background-color: gray;
 }
 
-.status-dot.online { background: green; }
-.status-dot.offline { background: red; }
+.status-dot.online {
+  background: green;
+}
+.status-dot.offline {
+  background: red;
+}
 /* Profile Header Section */
 .profile-header {
   display: flex;
@@ -141,7 +145,6 @@
   animation: slideDown 0.3s ease-out forwards;
 }
 
-
 .header {
   display: flex;
   align-items: center;
@@ -205,6 +208,63 @@
   animation: fadeInUp 0.6s ease forwards;
 }
 
+/* === Unified Input Styling === */
+.edit-input {
+  width: 100%;
+  padding: 10px 14px;
+  margin-top: 6px;
+  margin-bottom: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+  outline: none;
+  transition: border 0.3s, box-shadow 0.3s;
+}
+
+.edit-input:focus {
+  border-color: #b83a3a;
+  box-shadow: 0 0 0 3px rgba(184, 58, 58, 0.1);
+}
+
+/* Label next to input */
+.member-info-row .label {
+  width: 130px;
+  font-weight: 600;
+  color: #444;
+  display: inline-block;
+  vertical-align: top;
+  padding-top: 12px;
+}
+
+/* Create/Edit buttons */
+.btn.btn-save {
+  background-color: #b83a3a;
+  color: #fff;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn.btn-save:hover {
+  background-color: #a83232;
+}
+
+/* Optional: Responsive modal content scroll */
+.modal-content.view-member-modal {
+  overflow-y: auto;
+  max-height: 80vh;
+}
+
+/* Input Placeholder Styling (optional aesthetic touch) */
+.edit-input::placeholder {
+  color: #aaa;
+  font-style: italic;
+}
+
 @keyframes fadeInUp {
   to {
     opacity: 1;
@@ -232,7 +292,7 @@
   border-radius: 5px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 10;
-  width:105px;
+  width: 105px;
 }
 
 .dropdown-menu ul {
@@ -245,7 +305,7 @@
   padding: 8px 16px;
   cursor: pointer;
   transition: background 0.3s;
-  font-size:13px;
+  font-size: 13px;
 }
 
 .dropdown-menu ul li:hover {
@@ -388,4 +448,76 @@
   to {
     stroke-dashoffset: 0;
   }
+}
+
+.loading-indicator {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff96;
+  backdrop-filter: blur(5px);
+  z-index: 999999;
+  position: fixed;
+  left: 0;
+  top: 0;
+}
+
+.success-modal {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  color: #333;
+  padding: 15px 25px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  font-size: 14px;
+  z-index: 1000;
+
+  /* Start hidden and slide in */
+  animation: slideIn 0.3s ease forwards;
+}
+
+/* Add a class for slide-out animation */
+.success-modal.slide-out {
+  animation: slideOut 0.3s ease forwards;
+}
+
+/* Slide In Keyframes */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide Out Keyframes */
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.btn-create {
+  background-color: red;
+  color: #ffff;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-create:hover {
+  border: 1px solid #333;
+  background-color: #fff;
+  color: #333;
 }

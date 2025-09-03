@@ -16,6 +16,8 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { provideMessaging, getMessaging } from '@angular/fire/messaging';
 import { provideServiceWorker } from '@angular/service-worker';
+import { getFunctions } from 'firebase/functions';
+import { provideFunctions } from '@angular/fire/functions';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -27,6 +29,7 @@ export const appConfig: ApplicationConfig = {
     provideFirestore(() => getFirestore()),
     provideMessaging(() => getMessaging()),
     provideCharts(withDefaultRegisterables()),
+    provideFunctions(() => getFunctions()),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',

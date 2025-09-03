@@ -17,16 +17,14 @@ Chart.register(...registerables);
   styleUrls: ['./history-call.component.scss'],
 })
 export class HistoryCallComponent implements OnInit, OnDestroy {
-  activeTab: 'all' | 'accepted' | 'completed' | 'cancelled' = 'all';
+  activeTab: 'all' | 'resolved' | 'cancelled' = 'all';
 
-  allRequests: EmergencyRequest[] = [];
-  acceptedRequests: EmergencyRequest[] = [];
-  completedRequests: EmergencyRequest[] = [];
+  allRequests: EmergencyRequest[] = []; // resolved + cancelled
+  resolvedRequests: EmergencyRequest[] = [];
   cancelledRequests: EmergencyRequest[] = [];
 
   filteredAllRequests: EmergencyRequest[] = [];
-  filteredAcceptedRequests: EmergencyRequest[] = [];
-  filteredCompletedRequests: EmergencyRequest[] = [];
+  filteredResolvedRequests: EmergencyRequest[] = [];
   filteredCancelledRequests: EmergencyRequest[] = [];
 
   searchTerm: string = '';
@@ -35,7 +33,6 @@ export class HistoryCallComponent implements OnInit, OnDestroy {
 
   requestToView?: EmergencyRequest;
 
-  // ✅ Separate Chart.js instances
   requestStatusChart?: Chart;
   requestEventBarChart?: Chart;
 
@@ -55,33 +52,35 @@ export class HistoryCallComponent implements OnInit, OnDestroy {
 
   async loadRequests() {
     try {
-      this.allRequests = await this.emergencyRequestService.getRequest();
-
       const currentUser = await this.authService.getCurrentUser();
-      if (!currentUser) {
-        console.error('No logged-in user');
+      const currentUserId = currentUser?.uid;
+      console.error(currentUserId);
+      if (!currentUserId) {
+        console.error('No current user found.');
         return;
       }
 
-      const currentUserId = currentUser.uid;
+      // Fetch all resolved + cancelled requests
+      const fetchedRequests =
+        await this.emergencyRequestService.getRequestResolved();
 
-      this.acceptedRequests = this.allRequests.filter(
-        (r) =>
-          r.status.toLowerCase() === 'responding' && r.staffId === currentUserId
+      // Filter only requests handled by this user
+      const userRequests = fetchedRequests.filter(
+        (r) => r.staffId === currentUserId
       );
 
-      this.completedRequests = this.allRequests.filter((r) =>
-        ['resolved', 'completed'].includes(r.status.toLowerCase())
+      // Categorize
+      this.resolvedRequests = userRequests.filter(
+        (r) => r.status?.toLowerCase() === 'resolved'
       );
 
-      this.cancelledRequests = this.allRequests.filter(
-        (r) => r.status.toLowerCase() === 'cancelled'
+      this.cancelledRequests = userRequests.filter(
+        (r) => r.status?.toLowerCase() === 'cancelled'
       );
 
-      this.applyFilters();
+      this.allRequests = [...this.resolvedRequests, ...this.cancelledRequests];
 
-      // Draw bar chart from all requests initially
-      this.updateMonthlyEventBarChart(this.allRequests);
+      this.applyFilters(); // Also triggers charts
     } catch (error) {
       console.error('Error loading requests:', error);
     }
@@ -90,19 +89,17 @@ export class HistoryCallComponent implements OnInit, OnDestroy {
   applyFilters() {
     const term = this.searchTerm.trim().toLowerCase();
 
-    this.filteredAllRequests = this.filterBySearch(this.allRequests, term);
-    this.filteredAcceptedRequests = this.filterBySearch(
-      this.acceptedRequests,
+    this.filteredResolvedRequests = this.filterBySearch(
+      this.resolvedRequests,
       term
     );
-    this.filteredCompletedRequests = this.filterBySearch(
-      this.completedRequests,
-      term
-    );
+
     this.filteredCancelledRequests = this.filterBySearch(
       this.cancelledRequests,
       term
     );
+
+    this.filteredAllRequests = this.filterBySearch(this.allRequests, term);
 
     this.selectedRequests = this.selectedRequests.filter((selected) =>
       this.getCurrentFilteredRequests().some((r) => r.id === selected.id)
@@ -127,7 +124,7 @@ export class HistoryCallComponent implements OnInit, OnDestroy {
     );
   }
 
-  setTab(tab: 'all' | 'accepted' | 'completed' | 'cancelled') {
+  setTab(tab: 'all' | 'resolved' | 'cancelled') {
     this.activeTab = tab;
     this.selectedRequests = [];
     this.applyFilters();
@@ -135,10 +132,8 @@ export class HistoryCallComponent implements OnInit, OnDestroy {
 
   getCurrentFilteredRequests(): EmergencyRequest[] {
     switch (this.activeTab) {
-      case 'accepted':
-        return this.filteredAcceptedRequests;
-      case 'completed':
-        return this.filteredCompletedRequests;
+      case 'resolved':
+        return this.filteredResolvedRequests;
       case 'cancelled':
         return this.filteredCancelledRequests;
       default:
@@ -193,19 +188,19 @@ export class HistoryCallComponent implements OnInit, OnDestroy {
     this.showBulkMenu = !this.showBulkMenu;
   }
 
-  selectBy(criteria: 'all' | 'none' | 'accepted' | 'completed') {
+  selectBy(criteria: 'resolved' | 'cancelled' | 'all' | 'none') {
     switch (criteria) {
+      case 'resolved':
+        this.selectedRequests = [...this.resolvedRequests];
+        break;
+      case 'cancelled':
+        this.selectedRequests = [...this.cancelledRequests];
+        break;
       case 'all':
         this.selectedRequests = [...this.allRequests];
         break;
       case 'none':
         this.selectedRequests = [];
-        break;
-      case 'accepted':
-        this.selectedRequests = [...this.acceptedRequests];
-        break;
-      case 'completed':
-        this.selectedRequests = [...this.completedRequests];
         break;
     }
     this.showBulkMenu = false;
@@ -314,21 +309,15 @@ export class HistoryCallComponent implements OnInit, OnDestroy {
   }
 
   updateRequestStatusPieChart(requests: EmergencyRequest[]) {
-    let inProgress = 0,
-      completed = 0,
-      cancelled = 0,
-      others = 0;
+    let resolved = 0,
+      cancelled = 0;
 
     requests.forEach((req) => {
       const status = req.status?.toLowerCase() || '';
-      if (['responding', 'inprogress', 'in progress'].includes(status)) {
-        inProgress++;
-      } else if (['completed', 'resolved'].includes(status)) {
-        completed++;
+      if (['resolved', 'completed'].includes(status)) {
+        resolved++;
       } else if (status === 'cancelled') {
         cancelled++;
-      } else {
-        others++;
       }
     });
 
@@ -339,11 +328,11 @@ export class HistoryCallComponent implements OnInit, OnDestroy {
     this.requestStatusChart = new Chart('requestStatusChart', {
       type: 'pie',
       data: {
-        labels: ['In Progress', 'Completed', 'Cancelled', 'Other'],
+        labels: ['Resolved', 'Cancelled'],
         datasets: [
           {
-            data: [inProgress, completed, cancelled, others],
-            backgroundColor: ['#FFC107', '#4CAF50', '#F44336', '#9E9E9E'],
+            data: [resolved, cancelled],
+            backgroundColor: ['#4CAF50', '#F44336'],
             hoverOffset: 14,
           },
         ],

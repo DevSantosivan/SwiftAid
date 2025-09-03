@@ -175,7 +175,7 @@ export class Resident implements OnInit {
     if (file && this.accountToEdit) {
       const reader = new FileReader();
       reader.onload = () => {
-        this.accountToEdit!.profilePicture = reader.result as string;
+        this.accountToEdit!.profileImageUrl = reader.result as string;
       };
       reader.readAsDataURL(file);
     }

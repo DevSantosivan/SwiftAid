@@ -31,7 +31,7 @@ export const AdminRoutes: Routes = [
     component: HomeComponent,
     children: [
       { path: '', redirectTo: 'Dashboard', pathMatch: 'full' },
-      { path: 'Dashboard', component: DashboardComponent },
+      { path: 'Dashboard', component: Dashboard },
       { path: 'EmergencyRequest', component: MapRequest },
       { path: 'History', component: HistoryCallComponent },
       {

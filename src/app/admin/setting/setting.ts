@@ -49,7 +49,7 @@ export class Setting implements OnInit {
       const userData = await this.authService.getUserById(user.uid);
       if (userData) {
         this.currentUser = userData;
-        this.profilePicture = userData.profilePicture || '';
+        this.profilePicture = userData.profileImageUrl || '';
         this.fullName = userData.fullName || '';
         this.contactNumber = userData.contactNumber || '';
         this.email = userData.email || '';
@@ -91,7 +91,7 @@ export class Setting implements OnInit {
     if (!this.currentUser) return;
 
     const updatedData: Partial<account> = {
-      profilePicture: this.profilePicture,
+      profileImageUrl: this.profilePicture,
       fullName: this.fullName,
       contactNumber: this.contactNumber,
       email: this.email,

@@ -12,6 +12,7 @@ import { Firestore, setDoc, doc, getFirestore } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
 import { environment } from '../../model/environment';
 import { register } from '../../model/registered';
+import { UserService } from '../../core/user.service';
 
 @Component({
   selector: 'app-register',
@@ -28,7 +29,8 @@ export class RegisterComponent {
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private auth: Auth
+    private auth: Auth,
+    private userService: UserService
   ) {
     const firebaseApp = initializeApp(environment.firebaseConfig);
     this.firestore = getFirestore(firebaseApp);
@@ -44,52 +46,36 @@ export class RegisterComponent {
     });
   }
 
-  async register() {
-    if (this.registerForm.valid) {
-      const {
-        charge,
-        office_id,
-        first_name,
-        last_name,
-        contactNumber,
-        email,
-        password,
-      } = this.registerForm.value;
+  async register(): Promise<void> {
+    if (this.registerForm.invalid) {
+      this.errorMessage = 'Please fill in all required fields';
+      return;
+    }
 
-      const accountData: register = {
-        charge,
-        office_id,
-        first_name,
-        last_name,
-        contactNumber,
-        email,
-        password,
-        role: 'admin',
-      };
+    const form = this.registerForm.value;
+    const fullName = `${form.first_name} ${form.last_name}`;
 
-      try {
-        const userCredential = await createUserWithEmailAndPassword(
-          this.auth,
-          email,
-          password
-        );
+    const additionalData: Partial<register> = {
+      fullName,
+      first_name: form.first_name,
+      last_name: form.last_name,
+      charge: form.charge,
+      office_id: form.office_id,
+      contactNumber: form.contactNumber,
+      role: 'superAdmin', // 👈 set superAdmin role
+    };
 
-        const user = userCredential.user;
-        const userRef = doc(this.firestore, 'users', user.uid);
+    try {
+      await this.userService.createAccount(
+        form.email,
+        form.password,
+        additionalData
+      );
 
-        await setDoc(userRef, {
-          ...accountData,
-          createdAt: new Date(),
-        });
-
-        this.router.navigate(['/admin']);
-      } catch (error) {
-        console.error('Error during registration:', error);
-        this.errorMessage =
-          'An error occurred during registration. Please try again.';
-      }
-    } else {
-      this.errorMessage = 'Please fill in all fields correctly.';
+      this.router.navigate(['/login']);
+    } catch (error) {
+      console.error('Registration failed:', error);
+      this.errorMessage = 'Failed to register. Please try again.';
     }
   }
 

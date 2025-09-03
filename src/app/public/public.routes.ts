@@ -6,6 +6,7 @@ import { AboutUsComponent } from './about-us/about-us.component';
 import { RouterModule, Routes } from '@angular/router';
 import { RegisterComponent } from './register/register.component';
 import { ServicesComponent } from './services/services.component';
+import { DeveloperPage } from './developer-page/developer-page';
 
 export const PublicRoutes: Routes = [
   {
@@ -15,6 +16,10 @@ export const PublicRoutes: Routes = [
   {
     path: 'login',
     component: LoginComponent,
+  },
+  {
+    path: 'developer-page',
+    component: DeveloperPage,
   },
   {
     path: 'home',

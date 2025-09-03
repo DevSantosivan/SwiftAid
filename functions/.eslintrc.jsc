@@ -1,0 +1,17 @@
+// module.exports = {
+//   parserOptions: {
+//     ecmaVersion: 2020,
+//     sourceType: "module",
+//   },
+//   env: {
+//     browser: true,
+//     node: true,
+//     es2020: true,
+//   },
+//   plugins: ["js"],
+//   extends: ["plugin:js/recommended"],
+//   rules: {
+//     quotes: ["error", "double", { allowTemplateLiterals: true }],
+//     "prefer-arrow-callback": "error",
+//   },
+// };

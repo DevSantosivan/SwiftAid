@@ -1,5 +1,12 @@
 <div class="content-body">
   <div class="content_1">
+    <!-- Proximity Alert Message at the top -->
+    <div *ngIf="proximityMessage" class="proximity-alert">
+      <i class="bx bxs-bell"></i>
+      <p>{{ proximityMessage }}</p>
+    </div>
+
+    <!-- Back Button -->
     <div class="content-header" (click)="goBack()" style="cursor: pointer">
       <i class="bx bx-left-arrow-alt"></i>
       <span>{{ backLabel }}</span>
@@ -21,38 +28,36 @@
             class="caller-photo"
           />
           <h5>{{ request.name }}</h5>
-          <p class="subtext">Submitted by Resident</p>
         </div>
         <br />
         <div class="form-group" style="display: flex">
-          <label><i class="bx bx-bolt-circle"></i> Event Type :</label>
+          <label><i class="bx bx-bolt-circle"></i></label>
           <p class="readonly-text">{{ request.event }}</p>
         </div>
 
         <div class="form-group" style="display: flex">
-          <label><i class="bx bx-phone"></i> Contact Number :</label>
+          <label><i class="bx bx-phone"></i></label>
           <p class="readonly-text">{{ request.contactNumber }}</p>
         </div>
 
         <div class="form-group" style="display: flex">
-          <label><i class="bx bx-envelope"></i> Email :</label>
+          <label><i class="bx bx-envelope"></i> </label>
           <p class="readonly-text">{{ request.email }}</p>
         </div>
 
         <div class="form-group" style="display: flex">
-          <label><i class="bx bx-first-aid"></i> Needs :</label>
+          <label><i class="bx bx-first-aid"></i> </label>
           <p class="readonly-text">{{ request.event }}</p>
         </div>
 
         <div class="form-group" style="display: flex">
-          <label><i class="bx bx-calendar"></i> Submitted On :</label>
+          <label><i class="bx bx-calendar"></i> </label>
           <p class="readonly-text">
             {{ request.timestamp?.toDate() | date: 'medium' }}
           </p>
         </div>
       </div>
 
-      <!-- MIDDLE PANEL: Location Info -->
       <!-- MIDDLE PANEL: Location Info -->
       <div class="middle-panel">
         <h4><i class="bx bx-map"></i> Location Information</h4>
@@ -120,20 +125,17 @@
           <h4><i class="bx bx-user-check"></i> Dispatched Team</h4>
           <div class="rescue-card">
             <p>
-              <i class="bx bx-user"></i> <strong>Name:</strong> {{
-              request.staffFirstName }} {{ request.staffLastName }}
+              <i class="bx bx-user"></i> {{ request.staffFirstName }} {{
+              request.staffLastName }}
             </p>
-            <p>
-              <i class="bx bx-envelope"></i> <strong>Email:</strong> {{
-              request.staffEmail }}
-            </p>
+            <p><i class="bx bx-envelope"></i> {{ request.staffEmail }}</p>
             <p>
               <i class="bx bx-briefcase"></i>
-              <strong>Position:</strong> Mdrrmo Staff
+              Mdrrmo Staff
             </p>
             <p>
               <i class="bx bx-time-five"></i>
-              <strong>Dispatched At:</strong>
+
               {{ request.staffUpdatedAt?.toDate() | date: 'short' }}
             </p>
           </div>
@@ -222,7 +224,6 @@
           </div>
 
           <!-- Accept Button: Show only if status is Pending -->
-          <!-- ✅ Accept Button: Show only when Pending -->
           <button
             class="dispatch-btn"
             *ngIf="request?.status === 'Pending'"

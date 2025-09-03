@@ -9,6 +9,10 @@ import { InfoComponent } from './info/info.component';
 import { TeamStaffComponent } from './team-staff/team-staff.component';
 import { ViewRequestDetails } from './view-request-details/view-request-details';
 import { NotificationComponent } from './notification/notification.component';
+import { HistoryCallComponent } from '../admin/history-call/history-call.component';
+import { IncidentHistory } from './incident-history/incident-history';
+import { AccountVerification } from './account-verification/account-verification';
+import { AccountVerificationDetails } from './account-verification-details/account-verification-details';
 
 export const SuperAdminRoutes: Routes = [
   {
@@ -17,13 +21,23 @@ export const SuperAdminRoutes: Routes = [
     children: [
       { path: '', redirectTo: 'Dashboard', pathMatch: 'full' },
       { path: 'Dashboard', component: DashboardComponent },
+      { path: 'Verification', component: AccountVerification },
       { path: 'EmergencyRequest', component: EmergencyRequestComponent },
+
       { path: 'Team', component: TeamComponent },
+      { path: 'IncidentHistory', component: IncidentHistory },
       { path: 'Team-Details', component: TeamStaffComponent },
       { path: 'Account', component: AccountComponent },
       { path: 'Feedback', component: FeedbackComponent },
       { path: 'Info', component: InfoComponent },
       { path: 'Notifications', component: NotificationComponent },
+      {
+        path: 'Verification/:id',
+        loadComponent: () =>
+          import(
+            './account-verification-details/account-verification-details'
+          ).then((m) => m.AccountVerificationDetails),
+      },
       {
         path: 'EmergencyRequest/:id',
         loadComponent: () =>

@@ -4,17 +4,28 @@
       <div class="text">
         <h4>Team</h4>
         <p>Manage Team Members</p>
+        <br />
+        <br />
+        <div class="actions">
+          <!-- Create Member Button -->
+          <button class="btn btn-create" (click)="openCreateModal()">
+            + Create Member
+          </button>
+        </div>
       </div>
-      <div class="search-bar">
-        <input
-          type="text"
-          [(ngModel)]="searchTerm"
-          (input)="onSearchChange()"
-          placeholder="Search team members..."
-        />
-        <button type="button">
-          <i class="bx bx-search"></i>
-        </button>
+
+      <div class="flex-btn-search">
+        <div class="search-bar">
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (input)="onSearchChange()"
+            placeholder="Search team members..."
+          />
+          <button type="button">
+            <i class="bx bx-search"></i>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -44,38 +55,14 @@
         <div class="member-info">
           <img
             [src]="
-              member.profilePicture
-                ? member.profilePicture
+              member.profileImageUrl
+                ? member.profileImageUrl
                 : 'https://i.pinimg.com/736x/32/e4/61/32e46132a367eb48bb0c9e5d5b659c88.jpg'
             "
             alt="Team Member"
           />
           <h5>{{ member.email }}</h5>
-          <p>
-            {{ member.fullName }}
-            <!-- <span
-              class="status-dot"
-              [class.online]="member.status.online"
-              [class.offline]="!member.status.online"
-              [title]="
-                member.status.online
-                  ? 'Online'
-                  : member.status.last
-                  ? 'Last active: ' + (member.status.last | timeDiff)
-                  : 'Offline'
-              "
-            ></span>
-          </p>
-          <span style="font-size: 13px">
-            {{
-              member.status.online
-                ? "Active now"
-                : member.status.last
-                ? "Active " + (member.status.last | timeDiff)
-                : "Offline"
-            }}
-          </span> -->
-          </p>
+          <p>{{ member.fullName }}</p>
         </div>
 
         <p class="staff-label">{{ member.role }}</p>
@@ -89,54 +76,133 @@
   </div>
 </div>
 
-<!-- Edit Member Modal -->
-<div class="modal" *ngIf="selectedMember">
-  <div class="modal-content">
-    <span class="close" (click)="closeModal()">&times;</span>
-    <h2>Edit Member</h2>
-    <form (ngSubmit)="updateMember()">
-      <label>Email</label>
-      <input [(ngModel)]="selectedMember.email" name="email" required />
+<!-- Loading Overlay -->
 
-      <label>Full Name</label>
-      <input [(ngModel)]="selectedMember.fullName" name="fullName" required />
+<div class="loading-indicator" *ngIf="isSaving || isDeleting">
+  <img src="../../../assets/resolve.gif" alt="Loading..." />
+</div>
+<!-- Success Notification -->
 
-      <label>Role</label>
-      <input [(ngModel)]="selectedMember.role" name="role" />
-
-      <button type="submit">Update</button>
-    </form>
-  </div>
+<div class="success-modal" *ngIf="isSuccessModalOpen">
+  <p><i class="bx bxs-check-circle"></i> {{ successMessage }}</p>
 </div>
 
-<!-- Delete Confirmation Modal -->
-<div class="modal" *ngIf="deleteMemberToConfirm">
-  <div class="modal-content delete-modal">
-    <span class="close" (click)="cancelDelete()">
-      <i class="bx bx-x"></i>
-    </span>
+<!-- Shared Create/Edit Member Modal -->
+<div
+  class="isProfilemodal"
+  [ngClass]="{ 'hide-modal': isClosing }"
+  *ngIf="isModalOpen"
+>
+  <div
+    class="modal-content view-member-modal"
+    [ngClass]="{ 'hide-animation': isClosing }"
+  >
+    <span class="close" (click)="closeModal()" [class.disabled]="isSaving"
+      >&times;</span
+    >
+    <h2>{{ isEditMode ? "Edit Member" : "Create New Member" }}</h2>
 
-    <h2>
-      <i
-        class="bx bx-trash"
-        style="color: #e74c3c; vertical-align: middle; margin-right: 8px"
-      ></i>
-      Confirm Delete
-    </h2>
+    <div class="profile-header">
+      <img
+        [src]="
+          activeMember.profileImageUrl
+            ? activeMember.profileImageUrl
+            : 'https://i.pinimg.com/736x/32/e4/61/32e46132a367eb48bb0c9e5d5b659c88.jpg'
+        "
+        alt="Profile"
+        class="profile-img"
+      />
+      <div class="profile-info">
+        <input
+          type="text"
+          [(ngModel)]="activeMember.fullName"
+          name="fullName"
+          placeholder="Full Name"
+          class="edit-input"
+          [disabled]="isSaving"
+        />
+        <input
+          type="email"
+          [(ngModel)]="activeMember.email"
+          name="email"
+          placeholder="Email"
+          class="edit-input"
+          [disabled]="isSaving"
+        />
+        <!-- Show password input only in create mode -->
+        <input
+          *ngIf="!isEditMode"
+          type="password"
+          [(ngModel)]="activeMember.password"
+          name="password"
+          placeholder="Password"
+          class="edit-input"
+          autocomplete="new-password"
+          [disabled]="isSaving"
+        />
+      </div>
+    </div>
 
-    <p>
-      Are you sure you want to <strong>delete</strong>
-      <span class="member-name">{{ deleteMemberToConfirm.fullName }}</span
-      >? This action <span class="danger-text">cannot be undone</span>.
-    </p>
+    <div class="member-card">
+      <div class="member-info-row">
+        <span class="label">Role:</span>
+        <input
+          type="text"
+          [(ngModel)]="activeMember.role"
+          name="role"
+          placeholder="Role"
+          class="edit-input"
+          [disabled]="isSaving"
+        />
+      </div>
 
-    <div class="modal-buttons">
-      <button class="btn btn-cancel" (click)="cancelDelete()">
-        <i class="bx bx-x"></i> Cancel
-      </button>
-      <button class="btn btn-delete" (click)="confirmDelete()">
-        <i class="bx bx-trash"></i> Delete
-      </button>
+      <div class="member-info-row">
+        <span class="label">Contact Number:</span>
+        <input
+          type="text"
+          [(ngModel)]="activeMember.contactNumber"
+          name="contactNumber"
+          placeholder="Contact Number"
+          class="edit-input"
+          [disabled]="isSaving"
+        />
+      </div>
+
+      <div class="member-info-row">
+        <span class="label">Office ID:</span>
+        <input
+          type="text"
+          [(ngModel)]="activeMember.office_id"
+          name="office_id"
+          placeholder="Office ID"
+          class="edit-input"
+          [disabled]="isSaving"
+        />
+      </div>
+
+      <div class="member-info-row">
+        <span class="label">Charge:</span>
+        <input
+          type="text"
+          [(ngModel)]="activeMember.charge"
+          name="charge"
+          placeholder="Charge"
+          class="edit-input"
+          [disabled]="isSaving"
+        />
+      </div>
+
+      <div style="margin-top: 20px; text-align: right">
+        <button
+          (click)="saveMember()"
+          class="btn btn-save"
+          [disabled]="isSaving"
+          type="button"
+        >
+          <span *ngIf="isSaving" class="loading-spinner"></span>
+          <span *ngIf="!isSaving">{{ isEditMode ? "Update" : "Create" }}</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -157,7 +223,7 @@
     <div class="profile-header">
       <img
         [src]="
-          viewedMember.profilePicture ||
+          viewedMember.profileImageUrl ||
           'https://i.pinimg.com/736x/32/e4/61/32e46132a367eb48bb0c9e5d5b659c88.jpg'
         "
         alt="Profile"
@@ -186,6 +252,48 @@
         <span class="label">Charge:</span>
         <span class="value">{{ viewedMember.charge }}</span>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal" *ngIf="deleteMemberToConfirm">
+  <div class="modal-content delete-modal">
+    <span class="close" (click)="cancelDelete()" [class.disabled]="isDeleting">
+      <i class="bx bx-x"></i>
+    </span>
+
+    <h2>
+      <i
+        class="bx bx-trash"
+        style="color: #e74c3c; vertical-align: middle; margin-right: 8px"
+      ></i>
+      Confirm Delete
+    </h2>
+
+    <p>
+      Are you sure you want to <strong>delete</strong>
+      <span class="member-name">{{ deleteMemberToConfirm.fullName }}</span
+      >? This action <span class="danger-text">cannot be undone</span>.
+    </p>
+
+    <div class="modal-buttons">
+      <button
+        class="btn btn-cancel"
+        (click)="cancelDelete()"
+        [disabled]="isDeleting"
+      >
+        <i class="bx bx-x"></i> Cancel
+      </button>
+      <button
+        class="btn btn-delete"
+        (click)="confirmDelete()"
+        [disabled]="isDeleting"
+        type="button"
+      >
+        <span *ngIf="isDeleting" class="loading-spinner"></span>
+        <span *ngIf="!isDeleting"> <i class="bx bx-trash"></i> Delete </span>
+      </button>
     </div>
   </div>
 </div>
