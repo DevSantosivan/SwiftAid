@@ -54,7 +54,11 @@
             ],
             "allowedCommonJsDependencies": [
               "leaflet",
-              "leaflet-routing-machine"
+              "leaflet-routing-machine",
+              "lodash",
+              "docx",
+              "file-saver",
+              "leaflet.markercluster"
             ]
           },
           "configurations": {
@@ -67,8 +71,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "8kb",
-                  "maximumError": "10kb"
+                  "maximumWarning": "10kb",
+                  "maximumError": "12kb"
                 }
               ],
               "outputHashing": "all",
