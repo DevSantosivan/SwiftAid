@@ -17,7 +17,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { debounce } from 'lodash';
 import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
-import { DatePipe } from '@angular/common'; // Import DatePipe
+import { DatePipe } from '@angular/common';
 
 @Component({
   selector: 'app-map-request',
@@ -25,7 +25,7 @@ import { DatePipe } from '@angular/common'; // Import DatePipe
   imports: [CommonModule],
   templateUrl: './map-request.html',
   styleUrls: ['./map-request.scss'],
-  providers: [DatePipe], // Add DatePipe to providers
+  providers: [DatePipe],
 })
 export class MapRequest implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef;
@@ -35,11 +35,14 @@ export class MapRequest implements AfterViewInit, OnDestroy {
   filteredRequests: EmergencyRequest[] = [];
   activeFilter: string = 'All';
 
-  staffLocation: L.LatLngExpression = [12.3775, 121.0315];
+  staffLocation: L.LatLngExpression = [12.3622, 121.0671];
   staffMarker?: L.Marker;
+  // Removed staffRadiusCircle from here since no longer used
   routeLine?: L.Polyline;
 
   loadingRequests = false;
+  isLoading = true;
+
   currentStaff: any = null;
   private currentRequestId: string | null = null;
 
@@ -48,8 +51,13 @@ export class MapRequest implements AfterViewInit, OnDestroy {
 
   markerClusterGroup!: L.MarkerClusterGroup;
 
-  // Add loading flag
-  isLoading = true;
+  readonly SAN_JOSE_BOUNDS = L.latLngBounds(
+    L.latLng(12.315, 121.015),
+    L.latLng(12.44, 121.08)
+  );
+
+  readonly GEOFENCE_RADIUS_METERS = 10000; // 10km radius
+  geofenceCircle?: L.Circle;
 
   constructor(
     private requestService: EmergencyRequestService,
@@ -57,7 +65,7 @@ export class MapRequest implements AfterViewInit, OnDestroy {
     private ngZone: NgZone,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private datePipe: DatePipe // Inject DatePipe
+    private datePipe: DatePipe
   ) {}
 
   async ngAfterViewInit(): Promise<void> {
@@ -69,15 +77,97 @@ export class MapRequest implements AfterViewInit, OnDestroy {
 
     await this.loadCurrentStaff();
 
+    this.subscribeToRequests();
+
+    await this.setInitialStaffLocation();
+
+    this.addStaffMarker();
+
+    // Removed updateStaffRadiusCircle here since no longer needed
+
+    // We already set the view inside initializeMap, so no need to call fitBounds here
+
+    this.trackStaffLocation();
+  }
+
+  ngOnDestroy(): void {
+    if (this.watchId !== undefined) {
+      navigator.geolocation.clearWatch(this.watchId);
+    }
+    this.requestSubscription?.unsubscribe();
+  }
+
+  private initializeMap(): void {
+    // Center the map on the center of San Jose Occidental Mindoro bounds
+    const sanJoseCenter = this.SAN_JOSE_BOUNDS.getCenter();
+
+    this.map = L.map(this.mapContainer.nativeElement).setView(
+      sanJoseCenter,
+      13
+    );
+
+    // Add geofence circle around San Jose center only
+    this.geofenceCircle = L.circle(sanJoseCenter, {
+      radius: this.GEOFENCE_RADIUS_METERS,
+      color: 'red',
+      fillOpacity: 0.1,
+    }).addTo(this.map);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(this.map);
+
+    try {
+      this.markerClusterGroup = L.markerClusterGroup();
+      this.map.addLayer(this.markerClusterGroup);
+    } catch (error) {
+      console.error('Error initializing marker cluster:', error);
+    }
+
+    // Restrict map bounds to San Jose bounds
+    this.map.setMaxBounds(this.SAN_JOSE_BOUNDS);
+  }
+
+  private async loadCurrentStaff(): Promise<void> {
+    const auth = getAuth();
+    return new Promise((resolve) => {
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          try {
+            const staff = await this.userService.getUserById(user.uid);
+            this.ngZone.run(() => {
+              this.currentStaff = staff;
+              this.cdr.detectChanges();
+              resolve();
+            });
+          } catch (err) {
+            console.error('Failed to load staff:', err);
+            resolve();
+          }
+        } else {
+          console.warn('No authenticated user');
+          resolve();
+        }
+      });
+    });
+  }
+
+  private subscribeToRequests(): void {
     this.requestSubscription = this.requestService
       .getRequestRealtime()
       .subscribe({
         next: (requests) => {
           this.ngZone.run(() => {
-            // ✅ Sort by staffUpdatedAt or timestamp (newest first)
+            // Filter & sort requests inside San Jose bounds and with desired statuses
             this.requests = requests
               .filter(
-                (r) => r.status === 'Pending' || r.status === 'Responding'
+                (r) =>
+                  (r.status === 'Pending' || r.status === 'Responding') &&
+                  r.latitude !== undefined &&
+                  r.longitude !== undefined &&
+                  this.SAN_JOSE_BOUNDS.contains(
+                    L.latLng(r.latitude, r.longitude)
+                  )
               )
               .sort((a, b) => {
                 const timeA = new Date(
@@ -89,14 +179,15 @@ export class MapRequest implements AfterViewInit, OnDestroy {
                 return timeB - timeA;
               });
 
-            this.applyFilter(this.activeFilter || 'All');
+            this.applyFilter(this.activeFilter);
+
             this.loadingRequests = false;
-            this.isLoading = false; // Hide spinner when requests are loaded
+            this.isLoading = false;
             this.cdr.detectChanges();
           });
         },
         error: (error) => {
-          console.error('Error receiving realtime requests:', error);
+          console.error('Realtime requests error:', error);
           this.ngZone.run(() => {
             this.loadingRequests = false;
             this.isLoading = false;
@@ -104,35 +195,36 @@ export class MapRequest implements AfterViewInit, OnDestroy {
           });
         },
       });
+  }
 
-    await this.ngZone.run(async () => {
-      if (
-        this.currentStaff?.staffLat !== undefined &&
-        this.currentStaff?.staffLng !== undefined
-      ) {
+  private async setInitialStaffLocation(): Promise<void> {
+    if (
+      this.currentStaff?.staffLat !== undefined &&
+      this.currentStaff?.staffLng !== undefined
+    ) {
+      this.staffLocation = [
+        this.currentStaff.staffLat,
+        this.currentStaff.staffLng,
+      ];
+    } else {
+      try {
+        const position = await new Promise<GeolocationPosition>(
+          (resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+            })
+        );
         this.staffLocation = [
-          this.currentStaff.staffLat,
-          this.currentStaff.staffLng,
+          position.coords.latitude,
+          position.coords.longitude,
         ];
-      } else {
-        try {
-          const position = await new Promise<GeolocationPosition>(
-            (resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-              });
-            }
-          );
-          this.staffLocation = [
-            position.coords.latitude,
-            position.coords.longitude,
-          ];
-        } catch (err) {
-          console.warn('Geolocation failed, using default.');
-        }
+      } catch {
+        console.warn('Geolocation not available, using default');
       }
-    });
+    }
+  }
 
+  private addStaffMarker(): void {
     this.staffMarker = L.marker(this.staffLocation, {
       icon: L.icon({
         iconUrl: 'assets/ambulance.png',
@@ -142,39 +234,9 @@ export class MapRequest implements AfterViewInit, OnDestroy {
     })
       .addTo(this.map)
       .bindPopup('<strong>Staff Location</strong>');
-
-    this.map.setView(this.staffLocation, 14);
-
-    this.trackStaffLocation();
   }
 
-  ngOnDestroy(): void {
-    if (this.watchId !== undefined)
-      navigator.geolocation.clearWatch(this.watchId);
-    this.requestSubscription?.unsubscribe();
-  }
-
-  initializeMap(): void {
-    this.map = L.map(this.mapContainer.nativeElement).setView(
-      [14.5995, 120.9842],
-      12
-    );
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(this.map);
-
-    try {
-      this.markerClusterGroup = L.markerClusterGroup();
-      this.map.addLayer(this.markerClusterGroup);
-    } catch (error) {
-      console.error(
-        'Failed to initialize markerClusterGroup. Ensure leaflet.markercluster is loaded.'
-      );
-    }
-  }
-
-  trackStaffLocation(): void {
+  private trackStaffLocation(): void {
     if (!navigator.geolocation) return;
 
     this.watchId = navigator.geolocation.watchPosition(
@@ -185,6 +247,7 @@ export class MapRequest implements AfterViewInit, OnDestroy {
             position.coords.longitude,
           ];
           this.staffMarker?.setLatLng(this.staffLocation);
+          // Removed call to updateStaffRadiusCircle here
 
           if (this.currentRequestId && this.currentStaff) {
             try {
@@ -206,10 +269,14 @@ export class MapRequest implements AfterViewInit, OnDestroy {
           }
         });
       },
-      () => {},
+      (err) => {
+        console.warn('Watch position error:', err);
+      },
       { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
     );
   }
+
+  // Removed updateStaffRadiusCircle method completely because no radius circle around staff
 
   private _applyFilterDebounced = debounce((status: string) => {
     this.activeFilter = status;
@@ -221,7 +288,11 @@ export class MapRequest implements AfterViewInit, OnDestroy {
           )
         : this.requests.filter((r) => r.status === status);
 
-    this.markerClusterGroup?.clearLayers();
+    this.filteredRequests = this.filteredRequests.filter((r) =>
+      this.SAN_JOSE_BOUNDS.contains(L.latLng(r.latitude!, r.longitude!))
+    );
+
+    this.markerClusterGroup.clearLayers();
 
     this.filteredRequests.forEach((req) => {
       if (req.latitude && req.longitude) {
@@ -235,7 +306,7 @@ export class MapRequest implements AfterViewInit, OnDestroy {
         }).bindPopup(this.generatePopupContent(req));
 
         marker.on('click', () => this.centerMapOnRequest(req));
-        this.markerClusterGroup?.addLayer(marker);
+        this.markerClusterGroup.addLayer(marker);
       }
     });
 
@@ -249,14 +320,20 @@ export class MapRequest implements AfterViewInit, OnDestroy {
   applyFilter(status: string): void {
     this._applyFilterDebounced(status);
   }
-
+  async ViewRequest(req: EmergencyRequest) {
+    this.router.navigate(['/admin/EmergencyRequest', req.id]);
+  }
   centerMapOnRequest(request: EmergencyRequest): void {
     if (!request.latitude || !request.longitude) return;
 
-    const staffLoc = L.latLng(this.staffLocation);
     const requestLoc = L.latLng(request.latitude, request.longitude);
 
-    this.markerClusterGroup?.clearLayers();
+    if (!this.SAN_JOSE_BOUNDS.contains(requestLoc)) {
+      alert('Request is outside San Jose boundary and cannot be displayed.');
+      return;
+    }
+
+    this.markerClusterGroup.clearLayers();
     if (this.routeLine) this.map.removeLayer(this.routeLine);
 
     const marker = L.marker(requestLoc, {
@@ -275,9 +352,9 @@ export class MapRequest implements AfterViewInit, OnDestroy {
       if (btn) btn.onclick = () => this.acceptRequest(request);
     });
 
-    this.markerClusterGroup?.addLayer(marker);
+    this.markerClusterGroup.addLayer(marker);
 
-    this.routeLine = L.polyline([staffLoc, requestLoc], {
+    this.routeLine = L.polyline([this.staffLocation, requestLoc], {
       color: 'red',
       weight: 4,
       opacity: 0.7,
@@ -291,13 +368,12 @@ export class MapRequest implements AfterViewInit, OnDestroy {
   }
 
   generatePopupContent(req: EmergencyRequest, detailed = false): string {
-    // Format the timestamp
     const formattedDate = this.datePipe.transform(
       req.timestamp || req.staffUpdatedAt,
       'MMMM d, y, h:mm a'
     );
 
-    return ` 
+    return `
       <div>
         ${
           detailed && req.image
@@ -322,10 +398,6 @@ export class MapRequest implements AfterViewInit, OnDestroy {
             : ''
         }
       </div>`;
-  }
-
-  async ViewRequest(req: EmergencyRequest) {
-    this.router.navigate(['/admin/EmergencyRequest', req.id]);
   }
 
   async acceptRequest(req: EmergencyRequest) {
@@ -358,29 +430,5 @@ export class MapRequest implements AfterViewInit, OnDestroy {
       console.error('Accept request failed:', err);
       alert('Failed to accept request.');
     }
-  }
-
-  async loadCurrentStaff(): Promise<void> {
-    const auth = getAuth();
-    return new Promise((resolve) => {
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          try {
-            const staff = await this.userService.getUserById(user.uid);
-            this.ngZone.run(() => {
-              this.currentStaff = staff;
-              this.cdr.detectChanges();
-              resolve();
-            });
-          } catch (err) {
-            console.error('Failed to load current staff:', err);
-            resolve();
-          }
-        } else {
-          console.warn('No authenticated user.');
-          resolve();
-        }
-      });
-    });
   }
 }

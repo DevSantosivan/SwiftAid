@@ -26,6 +26,69 @@ export class EmergencyRequestService {
   private collectionName = 'EmergencyRequest';
   auth: any; // You may want to properly inject your auth service here
 
+  async updateLocationByStaffId(
+    staffId: string,
+    lat: number,
+    lng: number
+  ): Promise<void> {
+    try {
+      const ref = collection(this.firestore, this.collectionName);
+
+      const q = query(
+        ref,
+        where('staffId', '==', staffId),
+        where('status', '==', 'Responding')
+      );
+
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        return;
+      }
+
+      const docRef = snap.docs[0].ref;
+
+      await updateDoc(docRef, {
+        staffLat: lat,
+        staffLng: lng,
+        staffUpdatedAt: new Date(),
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  subscribeToLocationUpdatesByStaffId(
+    staffId: string
+  ): Observable<EmergencyRequest[]> {
+    return new Observable((subscriber) => {
+      const ref = collection(this.firestore, this.collectionName);
+      const q = query(
+        ref,
+        where('staffId', '==', staffId),
+        where('status', '==', 'Responding')
+      );
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          this.ngZone.run(() => {
+            const requests = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            })) as EmergencyRequest[];
+            subscriber.next(requests);
+          });
+        },
+        (error) => {
+          this.ngZone.run(() => subscriber.error(error));
+        }
+      );
+
+      return { unsubscribe };
+    });
+  }
+
   // === EMERGENCY REQUEST METHODS ===
   async getRequestCount(): Promise<number> {
     try {
@@ -87,7 +150,6 @@ export class EmergencyRequestService {
         ...doc.data(),
       })) as EmergencyRequest[];
     } catch (error) {
-      console.error('Error getting requests: ', error);
       throw error;
     }
   }
@@ -103,7 +165,6 @@ export class EmergencyRequestService {
         ...doc.data(),
       })) as EmergencyRequest[];
     } catch (error) {
-      console.error('Error getting resolved requests: ', error);
       throw error;
     }
   }
@@ -127,7 +188,6 @@ export class EmergencyRequestService {
 
       return resolvedRequests;
     } catch (error) {
-      console.error('Error getting resolved requests by staff ID: ', error);
       throw error;
     }
   }
@@ -175,7 +235,10 @@ export class EmergencyRequestService {
       const docRef = doc(this.firestore, this.collectionName, requestId);
       const currentSnap = await getDoc(docRef);
 
-      if (!currentSnap.exists()) return;
+      if (!currentSnap.exists()) {
+        console.warn(`Request ${requestId} does not exist.`);
+        return;
+      }
 
       const currentData = currentSnap.data() as EmergencyRequest;
 
@@ -183,12 +246,17 @@ export class EmergencyRequestService {
         staffUpdatedAt: new Date(),
       };
 
+      // Only update status if accepting and still pending
       if (accept && currentData.status === 'Pending') {
         updateData.status = 'Responding';
       }
 
-      if (staffInfo.uid) updateData.staffId = staffInfo.uid;
+      // Update staff ID
+      if (staffInfo.uid) {
+        updateData.staffId = staffInfo.uid;
+      }
 
+      // Update staff name and full name
       if (staffInfo.first_name || staffInfo.last_name) {
         updateData.staffFirstName = staffInfo.first_name || '';
         updateData.staffLastName = staffInfo.last_name || '';
@@ -197,18 +265,30 @@ export class EmergencyRequestService {
         }`.trim();
       }
 
-      if (staffInfo.email) updateData.staffEmail = staffInfo.email;
-      if (staffInfo.lat !== undefined) updateData.staffLat = staffInfo.lat;
-      if (staffInfo.lng !== undefined) updateData.staffLng = staffInfo.lng;
+      // Update email
+      if (staffInfo.email) {
+        updateData.staffEmail = staffInfo.email;
+      }
 
-      await this.ngZone.run(() => updateDoc(docRef, updateData));
+      // Update location
+      if (typeof staffInfo.lat === 'number') {
+        updateData.staffLat = staffInfo.lat;
+      }
+
+      if (typeof staffInfo.lng === 'number') {
+        updateData.staffLng = staffInfo.lng;
+      }
+
+      // Perform update
+      await updateDoc(docRef, updateData);
+
       console.log(
-        `Staff info updated for request ${requestId}${
-          accept ? ' (accepted)' : ''
+        `✅ Emergency request ${requestId} updated successfully ${
+          accept ? '(accepted)' : '(location updated)'
         }`
       );
     } catch (error) {
-      console.error('Error updating emergency request with staff info:', error);
+      console.error('❌ Failed to update emergency request:', error);
       throw error;
     }
   }

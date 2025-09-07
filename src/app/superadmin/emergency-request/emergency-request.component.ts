@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import { Firestore, doc, getDoc } from '@angular/fire/firestore';
 import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-emergency-request',
@@ -30,7 +31,7 @@ export class EmergencyRequestComponent implements AfterViewInit, OnDestroy {
   markers: L.Marker[] = [];
   activeFilter: string = 'All';
 
-  staffLocation: L.LatLngExpression = [12.37752449490026, 121.03153380797781];
+  staffLocation: L.LatLngExpression = [12.3622, 121.0671]; // San Jose Occidental Mindoro
   staffMarker?: L.Marker;
   routeLine?: L.Polyline;
 
@@ -40,36 +41,44 @@ export class EmergencyRequestComponent implements AfterViewInit, OnDestroy {
   staffDetailsMap: Record<string, { first_name: string; last_name: string }> =
     {};
 
+  readonly GEOFENCE_RADIUS_METERS = 10000; // 10km radius
+  geofenceCircle?: L.Circle;
+
   constructor(
     private requestService: EmergencyRequestService,
     private firestore: Firestore,
     private ngZone: NgZone,
-    private router: Router
+    private router: Router,
+    private snackBar: MatSnackBar
   ) {}
 
   ngAfterViewInit(): void {
     this.initializeMap();
     this.subscribeToRequests();
-    this.startTrackingStaffLocation();
   }
 
   ngOnDestroy(): void {
-    if (this.watchId !== undefined) {
-      navigator.geolocation.clearWatch(this.watchId);
-    }
     this.requestSubscription?.unsubscribe();
   }
 
   initializeMap(): void {
     this.map = L.map(this.mapContainer.nativeElement).setView(
-      [14.5995, 120.9842],
-      12
+      this.staffLocation,
+      13
     );
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(this.map);
 
+    // Add Geofence circle
+    this.geofenceCircle = L.circle(this.staffLocation, {
+      radius: this.GEOFENCE_RADIUS_METERS,
+      color: 'red',
+      fillOpacity: 0.1,
+    }).addTo(this.map);
+
+    // Staff Marker
     this.staffMarker = L.marker(this.staffLocation, {
       icon: L.icon({
         iconUrl: 'assets/ambulance.png',
@@ -117,9 +126,6 @@ export class EmergencyRequestComponent implements AfterViewInit, OnDestroy {
         },
       });
   }
-  async ViewRequest(req: EmergencyRequest) {
-    this.router.navigate(['/superAdmin/EmergencyRequest', req.id]);
-  }
 
   getStaffFullName(staffId?: string): string {
     if (!staffId) return '';
@@ -130,11 +136,37 @@ export class EmergencyRequestComponent implements AfterViewInit, OnDestroy {
   applyFilter(status: string): void {
     this.activeFilter = status;
 
-    this.filteredRequests =
-      status === 'All'
-        ? this.requests
-        : this.requests.filter((req) => req.status === status);
+    const geofenceCenter = L.latLng(this.staffLocation);
 
+    const previousFilteredCount = this.filteredRequests.length;
+
+    // Filter based on geofence + status
+    this.filteredRequests = this.requests.filter((req) => {
+      const insideGeofence =
+        req.latitude && req.longitude
+          ? geofenceCenter.distanceTo([req.latitude, req.longitude]) <=
+            this.GEOFENCE_RADIUS_METERS
+          : false;
+
+      const matchesStatus = status === 'All' || req.status === status;
+      return insideGeofence && matchesStatus;
+    });
+
+    const outOfBoundsCount =
+      this.requests.length - this.filteredRequests.length;
+
+    if (
+      outOfBoundsCount > 0 &&
+      this.filteredRequests.length !== previousFilteredCount
+    ) {
+      this.snackBar.open(
+        `${outOfBoundsCount} request(s) are outside of San Jose and hidden.`,
+        'Close',
+        { duration: 4000 }
+      );
+    }
+
+    // Clear previous markers
     this.markers.forEach((marker) => this.map.removeLayer(marker));
     this.markers = [];
 
@@ -158,13 +190,63 @@ export class EmergencyRequestComponent implements AfterViewInit, OnDestroy {
       }
     });
 
-    if (this.markers.length > 0 && this.staffMarker) {
-      const group = L.featureGroup([...this.markers, this.staffMarker]);
-      this.map.fitBounds(group.getBounds().pad(0.2));
-    } else if (this.staffMarker) {
-      this.map.setView(this.staffLocation, 12);
-    }
+    const group = L.featureGroup([
+      ...this.markers,
+      this.staffMarker!,
+      this.geofenceCircle!,
+    ]);
+
+    this.map.fitBounds(group.getBounds().pad(0.2));
   }
+
+  async ViewRequest(req: EmergencyRequest) {
+    this.router.navigate(['/superAdmin/EmergencyRequest', req.id]);
+  }
+
+  // getStaffFullName(staffId?: string): string {
+  //   if (!staffId) return '';
+  //   const staff = this.staffDetailsMap[staffId];
+  //   return staff ? `${staff.first_name} ${staff.last_name}` : 'Unknown Staff';
+  // }
+
+  // applyFilter(status: string): void {
+  //   this.activeFilter = status;
+
+  //   this.filteredRequests =
+  //     status === 'All'
+  //       ? this.requests
+  //       : this.requests.filter((req) => req.status === status);
+
+  //   this.markers.forEach((marker) => this.map.removeLayer(marker));
+  //   this.markers = [];
+
+  //   this.filteredRequests.forEach((req) => {
+  //     if (req.latitude && req.longitude) {
+  //       const marker = L.marker([req.latitude, req.longitude], {
+  //         icon: L.icon({
+  //           iconUrl: 'assets/logo22.png',
+  //           iconSize: [70, 60],
+  //           iconAnchor: [15, 40],
+  //         }),
+  //         title: req.name,
+  //       }).bindPopup(
+  //         `<strong>${req.name}</strong><br>${
+  //           req.address
+  //         }<br>Staff: ${this.getStaffFullName(req.staffId)}`
+  //       );
+
+  //       marker.addTo(this.map);
+  //       this.markers.push(marker);
+  //     }
+  //   });
+
+  //   if (this.markers.length > 0 && this.staffMarker) {
+  //     const group = L.featureGroup([...this.markers, this.staffMarker]);
+  //     this.map.fitBounds(group.getBounds().pad(0.2));
+  //   } else if (this.staffMarker) {
+  //     this.map.setView(this.staffLocation, 12);
+  //   }
+  // }
 
   centerMapOnRequest(request: EmergencyRequest): void {
     if (!request.latitude || !request.longitude) return;

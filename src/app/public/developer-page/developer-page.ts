@@ -1,28 +1,39 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-
-import { Clipboard } from '@angular/cdk/clipboard'; // Optional for clipboard copy
-import { MatSnackBar } from '@angular/material/snack-bar'; // Optional for notifications
+import { Clipboard } from '@angular/cdk/clipboard';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { UserService } from '../../core/user.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-developer-page',
-  imports: [ReactiveFormsModule],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './developer-page.html',
-  styleUrl: './developer-page.scss',
+  styleUrls: ['./developer-page.scss'],
 })
-export class DeveloperPage {
+export class DeveloperPage implements OnInit {
   generatedKey = new FormControl('');
   isSaving = false;
+  showLogoutDropdown = false;
 
   constructor(
     private userService: UserService,
     private clipboard: Clipboard,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private router: Router
   ) {}
 
-  // Generate random access key (e.g. 16 characters alphanumeric)
+  ngOnInit(): void {
+    // Optionally preload key from localStorage
+    const storedKey = localStorage.getItem('developer-access-key');
+    if (storedKey) {
+      this.generatedKey.setValue(storedKey);
+    }
+  }
+
+  // 🔐 Generate random key
   generateAccessKey() {
     const chars =
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -33,7 +44,7 @@ export class DeveloperPage {
     this.generatedKey.setValue(key);
   }
 
-  // Copy to clipboard
+  // 📋 Copy key to clipboard
   copyKey() {
     if (this.generatedKey.value) {
       this.clipboard.copy(this.generatedKey.value);
@@ -41,7 +52,7 @@ export class DeveloperPage {
     }
   }
 
-  // Save generated key to Firestore
+  // 💾 Save key to Firestore
   async saveKey() {
     if (!this.generatedKey.value) return;
     this.isSaving = true;
@@ -57,5 +68,25 @@ export class DeveloperPage {
     } finally {
       this.isSaving = false;
     }
+  }
+
+  // 🔽 Toggle logout dropdown
+  toggleLogoutDropdown() {
+    this.showLogoutDropdown = !this.showLogoutDropdown;
+  }
+
+  closeLogoutDropdown() {
+    setTimeout(() => {
+      this.showLogoutDropdown = false;
+    }, 150);
+  }
+
+  // 🚪 Logout handler
+  logout() {
+    localStorage.removeItem('developer-access-key');
+    this.generatedKey.reset();
+    this.showLogoutDropdown = false;
+    this.snackBar.open('Logged out', '', { duration: 1500 });
+    this.router.navigate(['/login']);
   }
 }

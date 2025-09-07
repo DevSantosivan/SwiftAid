@@ -1,10 +1,36 @@
+<div class="navbar">
+  <h2>Developer Page</h2>
+  <div
+    class="profile-container"
+    (click)="toggleLogoutDropdown()"
+    tabindex="0"
+    (blur)="closeLogoutDropdown()"
+  >
+    <div class="profile-icon">
+      <!-- Circle icon with initials or emoji -->
+      👤
+    </div>
+    <div class="logout-dropdown" *ngIf="showLogoutDropdown">
+      <button (click)="logout()" type="button">Logout</button>
+    </div>
+  </div>
+</div>
 <div class="container">
-  <div class="developer-page-container">
-    <h2>Developer Access Key Generator</h2>
+  <h2>Developer Access Key Generator</h2>
+  <p>
+    Generate a one-time Super Admin access key. This key allows developers to
+    create their own administrator account. After generating, copy and securely
+    share the key with the intended developer.
+  </p>
 
-    <button (click)="generateAccessKey()" type="button">
-      Generate Access Key
-    </button>
+  <div class="developer-page-container">
+    <div class="header">
+      <h3>Your Generated Key</h3>
+      <span>
+        Click the <i class="bx bx-code-alt"></i> button to generate a one-time
+        Super Admin access key.
+      </span>
+    </div>
 
     <div class="key-display">
       <input
@@ -13,12 +39,17 @@
         readonly
         placeholder="Access key will appear here"
       />
+
       <button
         (click)="copyKey()"
         [disabled]="!generatedKey.value"
         type="button"
       >
-        Copy
+        <i class="bx bx-copy"></i>
+      </button>
+
+      <button (click)="generateAccessKey()" type="button">
+        <i class="bx bx-code-alt"></i>
       </button>
     </div>
 

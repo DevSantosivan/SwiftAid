@@ -15,6 +15,7 @@ import { UserService } from '../../core/user.service';
 import { getAuth } from 'firebase/auth';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NavigationService } from '../../core/navigation.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-map-request-details',
@@ -35,12 +36,13 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
   currentUserRole: string = '';
 
   map!: L.Map;
-  staffLocation: L.LatLngExpression = [12.3775, 121.0315];
+  staffLocation: L.LatLngExpression = [0, 0];
   staffMarker?: L.Marker;
   requestMarker?: L.Marker;
   routeLine?: L.Polyline;
   currentStaff: any = null;
   private watchId?: number;
+  private requestSubscription?: Subscription;
   backLabel: string = 'Back To Emergency Request List';
   staffAddress: string = 'Fetching address...'; // For readable address
   proximityMessage: string = ''; // Message to show when close to the request
@@ -84,6 +86,26 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
 
     await this.loadCurrentStaff();
 
+    // Subscribe to real-time updates of requests assigned to current staff
+    if (this.currentStaff?.uid) {
+      this.requestSubscription = this.requestService
+        .subscribeToLocationUpdatesByStaffId(this.currentStaff.uid)
+        .subscribe({
+          next: (requests) => {
+            const updatedRequest = requests.find(
+              (r) => r.id === this.request.id
+            );
+            if (updatedRequest) {
+              this.request = updatedRequest;
+              this.updateRequestMarkerAndRoute();
+            }
+          },
+          error: (error) => {
+            console.error('Error in location updates subscription:', error);
+          },
+        });
+    }
+
     setTimeout(async () => {
       this.initializeMap();
       await this.setInitialStaffLocation();
@@ -95,6 +117,9 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.watchId !== undefined) {
       navigator.geolocation.clearWatch(this.watchId);
+    }
+    if (this.requestSubscription) {
+      this.requestSubscription.unsubscribe();
     }
   }
 
@@ -179,16 +204,56 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
     this.map.fitBounds(group.getBounds().pad(0.2));
   }
 
+  updateRequestMarkerAndRoute() {
+    if (!this.map || !this.request.latitude || !this.request.longitude) return;
+
+    const requestLoc = L.latLng(this.request.latitude, this.request.longitude);
+
+    if (this.requestMarker) {
+      this.requestMarker.setLatLng(requestLoc);
+    } else {
+      this.requestMarker = L.marker(requestLoc, {
+        icon: L.icon({
+          iconUrl: 'assets/logo22.png',
+          iconSize: [70, 60],
+          iconAnchor: [35, 40],
+        }),
+      })
+        .addTo(this.map)
+        .bindPopup(
+          `<strong>${this.request.name}</strong><br>${this.request.address}`
+        );
+    }
+
+    if (this.routeLine && this.staffLocation) {
+      this.routeLine.setLatLngs([L.latLng(this.staffLocation), requestLoc]);
+    } else if (this.staffLocation) {
+      this.routeLine = L.polyline([L.latLng(this.staffLocation), requestLoc], {
+        color: 'red',
+        weight: 4,
+        opacity: 0.7,
+        dashArray: '10,6',
+      }).addTo(this.map);
+    }
+
+    // Adjust map bounds to fit markers
+    const group = L.featureGroup([this.staffMarker!, this.requestMarker]);
+    this.map.fitBounds(group.getBounds().pad(0.2));
+  }
+
   trackStaffLocation(): void {
     if (!navigator.geolocation) return;
 
     this.watchId = navigator.geolocation.watchPosition(
       async (position) => {
         this.ngZone.run(async () => {
-          this.staffLocation = [
-            position.coords.latitude,
-            position.coords.longitude,
-          ];
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+
+          // Log current device location sa console
+          console.log('Current device location:', { lat, lng });
+
+          this.staffLocation = [lat, lng];
           this.staffMarker?.setLatLng(this.staffLocation);
 
           if (
@@ -207,27 +272,28 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
             ]);
           }
 
+          // Update currentStaff's lat/lng locally
+          if (this.currentStaff) {
+            this.currentStaff.staffLat = lat;
+            this.currentStaff.staffLng = lng;
+          }
+
           // Check proximity and display message if close
-          this.checkProximityToRequest(
-            position.coords.latitude,
-            position.coords.longitude
-          );
+          this.checkProximityToRequest(lat, lng);
 
           try {
-            await this.requestService.updateRequestWithStaffInfo(
-              this.request.id!,
-              {
-                uid: this.currentStaff?.uid,
-                first_name: this.currentStaff?.first_name,
-                last_name: this.currentStaff?.last_name,
-                email: this.currentStaff?.email,
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-              },
-              false
-            );
-          } catch {
-            // fail silently
+            if (
+              this.currentStaff?.uid &&
+              this.request?.staffId === this.currentStaff.uid
+            ) {
+              await this.requestService.updateLocationByStaffId(
+                this.currentStaff.uid,
+                lat,
+                lng
+              );
+            }
+          } catch (error) {
+            console.error('Failed to update staff location:', error);
           }
         });
       },

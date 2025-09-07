@@ -1,38 +1,128 @@
+.navbar {
+  width: 100%;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  background-color: #222;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  position: fixed;
+  h2 {
+    font-size: 30px;
+    color: #cccc;
+    margin: 10px 20px;
+  }
+}
+
+.profile-container {
+  position: relative;
+  cursor: pointer;
+  outline: none;
+}
+
+.profile-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #4caf50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  user-select: none;
+}
+
+.logout-dropdown {
+  position: absolute;
+  top: 45px;
+  right: 0;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  min-width: 100px;
+  z-index: 1000;
+}
+
+.logout-dropdown button {
+  background: none;
+  border: none;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.logout-dropdown button:hover {
+  background-color: #eee;
+}
+
 .container {
   width: 100%;
   height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
+  text-align: center;
 }
 .developer-page-container {
-  max-width: 400px;
+  width: 50%;
+
   margin: 2rem auto;
   padding: 2rem;
   background-color: #ffffff;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #dbd8d8;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   text-align: center;
 }
-
-.developer-page-container h2 {
-  font-weight: 700;
-  font-size: 1.8rem;
+.header {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: start;
+  justify-content: start;
+  span {
+    width: 100%;
+  }
+}
+p {
+  width: 40%;
+  font-weight: 400;
+  font-size: 0.9rem;
   margin-bottom: 1.5rem;
   color: #222;
 }
+h2 {
+  font-weight: 700;
+  font-size: 2.8rem;
+  margin-bottom: 1.5rem;
+  color: #222;
+}
+h3 {
+  width: 100%;
+  text-align: start;
+}
 
 .developer-page-container button {
-  background-color: red; /* Bootstrap blue */
+  background-color: #333; /* Bootstrap blue */
   border: none;
   color: white;
+  height: 45px;
   padding: 0.55rem 1.25rem;
   margin: 0.5rem 0.25rem;
   border-radius: 4px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  i {
+    font-size: 17px;
+  }
 }
 
 .developer-page-container button:disabled {
@@ -41,18 +131,20 @@
 }
 
 .developer-page-container button:hover:not(:disabled) {
-  background-color: #0056b3;
+  filter: brightness(0.8);
 }
 
 .key-display {
   display: flex;
   margin: 1.2rem 0;
-  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
 }
 
 .key-display input[type="text"] {
   flex-grow: 1;
-  padding: 0.5rem 0.75rem;
+  height: 45px;
+  padding: 0rem 0.55rem;
   font-size: 1rem;
   border: 1.5px solid #ccc;
   border-radius: 4px;
@@ -63,6 +155,6 @@
 
 .key-display input[type="text"]:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #212122b6;
   background-color: #fff;
 }

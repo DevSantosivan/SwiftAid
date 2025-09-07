@@ -1,17 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { MapRequest } from './map-request';
+import { LiveTracking } from './live-tracking';
 
-describe('MapRequest', () => {
-  let component: MapRequest;
-  let fixture: ComponentFixture<MapRequest>;
+describe('LiveTracking', () => {
+  let component: LiveTracking;
+  let fixture: ComponentFixture<LiveTracking>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MapRequest],
-    }).compileComponents();
+      imports: [LiveTracking]
+    })
+    .compileComponents();
 
-    fixture = TestBed.createComponent(MapRequest);
+    fixture = TestBed.createComponent(LiveTracking);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -3,13 +3,13 @@ import { Router } from '@angular/router';
 import {
   FormControl,
   FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
   Validators,
+  ReactiveFormsModule,
+  FormsModule,
 } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 
 import { AuthService } from '../../core/auth.service';
-import { CommonModule } from '@angular/common';
 import { LoadingScreenComponent } from '../loading-screen/loading-screen.component';
 
 @Component({
@@ -25,6 +25,7 @@ import { LoadingScreenComponent } from '../loading-screen/loading-screen.compone
   styleUrls: ['./login.component.scss'],
 })
 export class LoginComponent implements OnInit {
+  // Login state
   valid = false;
   email_pass = false;
   success = false;
@@ -33,17 +34,18 @@ export class LoginComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
 
-  // Developer Key State
+  // Developer Access Key modal state
   showDevAccessKeyModal = false;
   devAccessKeyInput = '';
   devAccessKeyError = '';
   readonly DEFAULT_DEV_ACCESS_KEY = 'IVAN-DEVELOPER-KEY';
 
-  // Admin Key State
+  // Admin Access Key modal state
   showAdminAccessKeyModal = false;
   adminAccessKeyInput = '';
   adminAccessKeyError = '';
 
+  // Reactive login form
   loginForm = new FormGroup({
     email: new FormControl('', [Validators.required, Validators.email]),
     password: new FormControl('', Validators.required),
@@ -56,32 +58,49 @@ export class LoginComponent implements OnInit {
     this.isProgressIn = this.authService.getErrorValidation();
   }
 
+  // 🔐 LOGIN FUNCTION
   async logins(): Promise<void> {
-    if (this.loginForm.valid) {
-      const { email, password } = this.loginForm.value;
-      this.isLoading = true;
-      this.email_pass = false;
-      this.errorMessage = '';
-      this.valid = false;
-
-      try {
-        const uid = await this.authService.login(email!, password!);
-        console.log('Logged in user UID:', uid);
-        this.success = true;
-      } catch (err: any) {
-        this.errorMessage = err.message || 'An unexpected error occurred.';
-        this.email_pass = true;
-        this.success = false;
-      } finally {
-        this.isLoading = false;
-      }
-    } else {
+    if (!this.loginForm.valid) {
       this.valid = true;
       this.email_pass = false;
+      return;
+    }
+
+    const { email, password } = this.loginForm.value;
+    this.isLoading = true;
+    this.email_pass = false;
+    this.errorMessage = '';
+    this.valid = false;
+
+    try {
+      const uid = await this.authService.login(email!, password!);
+      console.log('✅ Logged in user UID:', uid);
+      this.success = true;
+    } catch (err: any) {
+      this.errorMessage = err.message || 'An unexpected error occurred.';
+      this.email_pass = true;
+      this.success = false;
+    } finally {
+      this.isLoading = false;
     }
   }
 
-  // === Developer Access ===
+  // Helper: SHA-256 hash function using Web Crypto API
+  private async hashKey(input: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(input);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    return hashHex;
+  }
+
+  // ================================
+  // ✅ DEVELOPER ACCESS KEY METHODS
+  // ================================
+
   openDevAccessKeyModal() {
     this.devAccessKeyInput = '';
     this.devAccessKeyError = '';
@@ -95,26 +114,30 @@ export class LoginComponent implements OnInit {
   async verifyDevAccessKey() {
     this.devAccessKeyError = '';
     const trimmedKey = this.devAccessKeyInput.trim();
+
     if (!trimmedKey) {
       this.devAccessKeyError = 'Access key cannot be empty';
       return;
     }
 
     this.isLoading = true;
-    try {
-      if (trimmedKey === this.DEFAULT_DEV_ACCESS_KEY) {
-        this.closeDevAccessKeyModal();
-        this.router.navigate(['/developer-page'], {
-          queryParams: { key: trimmedKey },
-        });
-        return;
-      }
 
-      const isValid = await this.authService.validateAccessKey(trimmedKey);
+    try {
+      const isValid =
+        trimmedKey === this.DEFAULT_DEV_ACCESS_KEY ||
+        (await this.authService.validateAccessKey(trimmedKey));
+
       if (isValid) {
+        // Hash the key before storing and navigating
+        const hashedKey = await this.hashKey(trimmedKey);
+
+        // Store hashed key in localStorage (optional, useful for guards)
+        localStorage.setItem('developer-access-key', hashedKey);
+
+        // Close modal and navigate with hashed key
         this.closeDevAccessKeyModal();
         this.router.navigate(['/developer-page'], {
-          queryParams: { key: trimmedKey },
+          queryParams: { key: hashedKey },
         });
       } else {
         this.devAccessKeyError = 'Invalid or used developer key';
@@ -126,7 +149,10 @@ export class LoginComponent implements OnInit {
     }
   }
 
-  // === Admin Access ===
+  // =============================
+  // ✅ ADMIN ACCESS KEY METHODS
+  // =============================
+
   openAdminAccessKeyModal() {
     this.adminAccessKeyInput = '';
     this.adminAccessKeyError = '';
@@ -140,15 +166,19 @@ export class LoginComponent implements OnInit {
   async verifyAdminAccessKey() {
     this.adminAccessKeyError = '';
     const trimmedKey = this.adminAccessKeyInput.trim();
+
     if (!trimmedKey) {
       this.adminAccessKeyError = 'Admin key cannot be empty';
       return;
     }
 
     this.isLoading = true;
+
     try {
       const isValid = await this.authService.validateAccessKey(trimmedKey);
+
       if (isValid) {
+        // Navigate to registration with key (raw or hashed if you want)
         this.closeAdminAccessKeyModal();
         this.router.navigate(['/register'], {
           queryParams: { key: trimmedKey },
