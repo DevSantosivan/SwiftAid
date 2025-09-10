@@ -1,13 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import {
+  Component,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  AfterViewInit,
+} from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 import 'leaflet-control-geocoder';
-import { Barangay } from '../../model/baranggay';
 import { BarangayService } from '../../core/barangay.service';
-
 import { IncidentService, Incident } from '../../core/incident.service';
 import { Subscription } from 'rxjs';
+import { Barangay } from '../../model/baranggay';
 
 @Component({
   selector: 'app-info',
@@ -16,7 +21,7 @@ import { Subscription } from 'rxjs';
   templateUrl: './info.component.html',
   styleUrls: ['./info.component.scss'],
 })
-export class InfoComponent implements OnInit, OnDestroy {
+export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
   activeTab: string = 'barangay';
 
   // Modals and states
@@ -50,13 +55,22 @@ export class InfoComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.fetchBarangays();
 
-    // Subscribe to Firestore incident updates
     this.incidentSub = this.incidentService.getAll().subscribe({
       next: (incidents) => {
         this.allIncidents = incidents;
       },
       error: (err) => console.error('Error fetching incidents:', err),
     });
+  }
+
+  ngAfterViewInit(): void {
+    // Wait for the barangays to load before initializing maps
+    setTimeout(() => {
+      this.allBaranggay.forEach((barangay) => {
+        this.initBarangayMap(barangay);
+        this.reverseGeocode(barangay);
+      });
+    }, 500);
   }
 
   ngOnDestroy(): void {
@@ -68,7 +82,6 @@ export class InfoComponent implements OnInit, OnDestroy {
   }
 
   // ===== BARANGAY LOGIC =====
-
   async fetchBarangays() {
     try {
       this.allBaranggay = await this.barangayService.getAll();
@@ -89,7 +102,13 @@ export class InfoComponent implements OnInit, OnDestroy {
       this.editingBarangayId = null;
     }
 
-    setTimeout(() => this.initMap(), 100);
+    // Wait for modal to render
+    setTimeout(() => {
+      if (this.map) {
+        this.map.remove(); // remove previous map instance
+      }
+      this.initMap();
+    }, 300); // 300ms gives enough time for the modal div to exist
   }
 
   closeModal() {
@@ -107,24 +126,23 @@ export class InfoComponent implements OnInit, OnDestroy {
       captain_name: '',
       latitude: 14.5995,
       longitude: 120.9842,
-      latLng: '',
+      latLng: { lat: 14.5995, lng: 120.9842 },
+      address: '',
       createdAt: new Date(),
     };
   }
 
   initMap() {
-    this.map = L.map('map').setView(
-      [this.newBarangay.latitude!, this.newBarangay.longitude!],
-      13
-    );
+    const lat = this.newBarangay.latitude ?? 14.5995;
+    const lng = this.newBarangay.longitude ?? 120.9842;
+
+    this.map = L.map('map').setView([lat, lng], 13);
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: 'Map data © OpenStreetMap contributors',
     }).addTo(this.map);
 
-    const marker = L.marker(
-      [this.newBarangay.latitude!, this.newBarangay.longitude!],
-      { draggable: true }
-    ).addTo(this.map);
+    const marker = L.marker([lat, lng], { draggable: true }).addTo(this.map);
 
     marker.on('dragend', () => {
       const pos = marker.getLatLng();
@@ -150,7 +168,7 @@ export class InfoComponent implements OnInit, OnDestroy {
   setLatLng(lat: number, lng: number) {
     this.newBarangay.latitude = lat;
     this.newBarangay.longitude = lng;
-    this.newBarangay.latLng = `${lat},${lng}`;
+    this.newBarangay.latLng = { lat, lng };
   }
 
   async submitBarangay() {
@@ -215,8 +233,40 @@ export class InfoComponent implements OnInit, OnDestroy {
     this.openDropdownIndex = null;
   }
 
-  // ===== INCIDENT LOGIC =====
+  // ===== BARANGAY CARD MAPS =====
+  initBarangayMap(barangay: Barangay) {
+    if (barangay.latitude === undefined || barangay.longitude === undefined)
+      return;
 
+    const map = L.map('map-' + barangay.id).setView(
+      [barangay.latitude, barangay.longitude],
+      16
+    );
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: 'Map data © OpenStreetMap contributors',
+    }).addTo(map);
+
+    L.marker([barangay.latitude, barangay.longitude])
+      .addTo(map)
+      .bindPopup(`<b>${barangay.baranggay}</b>`)
+      .openPopup();
+  }
+
+  reverseGeocode(barangay: Barangay) {
+    if (barangay.latitude === undefined || barangay.longitude === undefined)
+      return;
+
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${barangay.latitude}&lon=${barangay.longitude}`;
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => {
+        barangay.address = data.display_name;
+      })
+      .catch((err) => console.error('Reverse geocode failed:', err));
+  }
+
+  // ===== INCIDENT LOGIC =====
   openIncidentModal() {
     this.showAddIncidentModal = true;
   }
@@ -243,13 +293,11 @@ export class InfoComponent implements OnInit, OnDestroy {
       this.isSubmitting = true;
       try {
         if (this.newIncident.id) {
-          // Update existing incident
           await this.incidentService.update(
             this.newIncident.id,
             this.newIncident
           );
         } else {
-          // Add new incident
           await this.incidentService.add(this.newIncident);
         }
         this.closeIncidentModal();

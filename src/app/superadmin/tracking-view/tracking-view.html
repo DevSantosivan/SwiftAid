@@ -1,0 +1,104 @@
+<div class="content-body">
+  <div class="content_1">
+    <h2>Live Tracking</h2>
+    <div class="tracking-view-wrapper">
+      <!-- Left: Map -->
+      <div class="map-section">
+        <div id="tracking-map"></div>
+      </div>
+
+      <!-- Right: Info Panel -->
+      <div class="info-panel">
+        <!-- Tabs -->
+        <div class="tabs">
+          <button
+            [class.active]="activeTab === 'details'"
+            (click)="activeTab = 'details'"
+          >
+            Details
+          </button>
+          <button
+            [class.active]="activeTab === 'userProfile'"
+            (click)="activeTab = 'userProfile'"
+          >
+            User Profile
+          </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div *ngIf="activeTab === 'details'" class="tab-content">
+          <h3>Emergency Details</h3>
+
+          <div class="info-row">
+            <span class="label">Request ID:</span>
+            <span>{{ request?.id || '-' }}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="label">Status:</span>
+            <span>{{ request?.status || '-' }}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="label">Event:</span>
+            <span>{{ request?.event || '-' }}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="label">Description:</span>
+            <span>{{ request?.description || '-' }}</span>
+          </div>
+
+          <div class="info" *ngIf="request?.image">
+            <span class="label">Proof</span>
+            <br />
+            <img
+              [src]="request?.image"
+              alt="Emergency Image"
+              class="emergency-image"
+            />
+          </div>
+        </div>
+
+        <div *ngIf="activeTab === 'userProfile'" class="tab-content">
+          <h3>User Profile</h3>
+
+          <div class="info-row">
+            <span class="label">Name:</span>
+            <span>{{ request?.name || '-' }}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="label">Email:</span>
+            <span>{{ request?.email || '-' }}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="label">Contact Number:</span>
+            <span>{{ request?.contactNumber || '-' }}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="label">Address:</span>
+            <span>{{ request?.address || '-' }}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="label">Staff Assigned:</span>
+            <span>{{ request?.staffFullName || '-' }}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="label">Staff Email:</span>
+            <span>{{ request?.staffEmail || '-' }}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="label">Last Updated:</span>
+            <span>{{ request?.staffUpdatedAt || '-' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

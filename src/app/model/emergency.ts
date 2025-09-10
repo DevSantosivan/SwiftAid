@@ -1,5 +1,5 @@
 export interface EmergencyRequest {
-  id?: string;
+  id: string;
   name: string;
   address: string;
   contactNumber: string;

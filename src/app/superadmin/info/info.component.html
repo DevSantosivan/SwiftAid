@@ -31,47 +31,43 @@
       </button>
 
       <div class="grid-item">
-        <div
-          *ngFor="let barangay of allBaranggay; let i = index"
-          class="content-container"
-        >
-          <div class="info">
-            <div class="header" (click)="$event.stopPropagation()">
-              <button
-                style="border: none; cursor: pointer"
-                class="dropdown-toggle"
-                (click)="toggleDropdown(barangay.id, $event)"
-              >
-                <i
-                  style="background-color: white; border: none; font-size: 15px"
-                  class="bx bx-dots-vertical-rounded"
-                ></i>
-              </button>
+        <div *ngFor="let barangay of allBaranggay" class="content-container">
+          <div class="barangay-card">
+            <!-- MAP Section -->
+            <div class="map-container" id="map-{{ barangay.id }}"></div>
 
-              <div
-                class="dropdown-menu"
-                *ngIf="openDropdownIndex === barangay.id"
-                (click)="$event.stopPropagation()"
-              >
-                <ul>
-                  <li (click)="editBarangay(barangay)">
-                    <i class="bx bx-edit-alt"></i> Edit
-                  </li>
-                  <li (click)="deleteBarangay(barangay.id)">
-                    <i class="bx bx-trash-alt"></i> Delete
-                  </li>
-                </ul>
+            <!-- Details Section -->
+            <div class="barangay-details">
+              <!-- Profile Image -->
+              <div class="barangay-profile">
+                <img
+                  [src]="
+                    barangay.baranggay_img
+                      ? barangay.baranggay_img
+                      : 'assets/images/default-profile.png'
+                  "
+                  alt="{{ barangay.baranggay }}"
+                />
               </div>
+
+              <h2>{{ barangay.baranggay }}</h2>
+              <p>Captain: {{ barangay.captain_name }}</p>
+              <p>Contact: {{ barangay.barangay_contact }}</p>
+              <p *ngIf="barangay.address">Address: {{ barangay.address }}</p>
+              <p *ngIf="!barangay.address && barangay.latLng">
+                Latitude: {{ barangay.latLng.lat }}, Longitude:
+                {{ barangay.latLng.lng }}
+              </p>
             </div>
 
-            <div class="info-body">
-              <div class="image">
-                <img [src]="barangay.baranggay_img" />
-              </div>
-              <h2 class="title">{{ barangay.baranggay }}</h2>
-              <p>{{ barangay.captain_name }}</p>
-              <span>{{ barangay.barangay_contact }}</span>
-              <p *ngIf="barangay.latLng">📍 {{ barangay.latLng }}</p>
+            <!-- Edit/Delete Buttons -->
+            <div class="card-actions">
+              <button (click)="editBarangay(barangay)">
+                <i class="bx bx-edit-alt"></i> Edit
+              </button>
+              <button (click)="deleteBarangay(barangay.id)">
+                <i class="bx bx-trash-alt"></i> Delete
+              </button>
             </div>
           </div>
         </div>

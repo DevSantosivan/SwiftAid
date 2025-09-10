@@ -38,9 +38,8 @@ export class ViewRequestDetails implements AfterViewInit, OnDestroy {
   requestMarker?: L.Marker;
   routeLine?: L.Polyline;
   currentStaff: any = null;
-  private watchId?: number;
 
-  staffAddress: string = 'Fetching address...'; // 🆕 For readable address
+  staffAddress: string = 'Fetching address...'; // For readable address
 
   constructor(
     private requestService: EmergencyRequestService,
@@ -66,14 +65,11 @@ export class ViewRequestDetails implements AfterViewInit, OnDestroy {
       this.initializeMap();
       await this.setInitialStaffLocation();
       this.renderRequestMarker();
-      this.trackStaffLocation();
     }, 100);
   }
 
   ngOnDestroy(): void {
-    if (this.watchId !== undefined) {
-      navigator.geolocation.clearWatch(this.watchId);
-    }
+    // No geolocation watch to clear anymore
   }
 
   initializeMap(): void {
@@ -90,27 +86,11 @@ export class ViewRequestDetails implements AfterViewInit, OnDestroy {
   }
 
   async setInitialStaffLocation(): Promise<void> {
-    if (this.currentStaff?.staffLat && this.currentStaff?.staffLng) {
-      this.staffLocation = [
-        this.currentStaff.staffLat,
-        this.currentStaff.staffLng,
-      ];
+    if (this.request?.staffLat && this.request?.staffLng) {
+      this.staffLocation = [this.request.staffLat, this.request.staffLng];
     } else {
-      try {
-        const position = await new Promise<GeolocationPosition>(
-          (resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-            });
-          }
-        );
-        this.staffLocation = [
-          position.coords.latitude,
-          position.coords.longitude,
-        ];
-      } catch {
-        // silent fallback
-      }
+      // fallback location
+      this.staffLocation = [12.3775, 121.0315];
     }
 
     this.staffMarker = L.marker(this.staffLocation, {
@@ -121,10 +101,10 @@ export class ViewRequestDetails implements AfterViewInit, OnDestroy {
       }),
     })
       .addTo(this.map)
-      .bindPopup('Your Location');
+      .bindPopup('Staff Location');
 
     const latLng = this.staffLocation as [number, number];
-    this.staffAddress = await this.reverseGeocode(latLng[0], latLng[1]); // 🆕 Initial address fetch
+    this.staffAddress = await this.reverseGeocode(latLng[0], latLng[1]);
   }
 
   renderRequestMarker(): void {
@@ -159,66 +139,6 @@ export class ViewRequestDetails implements AfterViewInit, OnDestroy {
       this.routeLine,
     ]);
     this.map.fitBounds(group.getBounds().pad(0.2));
-  }
-
-  trackStaffLocation(): void {
-    if (!navigator.geolocation) return;
-
-    this.watchId = navigator.geolocation.watchPosition(
-      async (position) => {
-        this.ngZone.run(async () => {
-          this.staffLocation = [
-            position.coords.latitude,
-            position.coords.longitude,
-          ];
-          this.staffMarker?.setLatLng(this.staffLocation);
-
-          if (
-            this.map &&
-            this.routeLine &&
-            this.request.latitude &&
-            this.request.longitude
-          ) {
-            const requestLoc = L.latLng(
-              this.request.latitude,
-              this.request.longitude
-            );
-            this.routeLine.setLatLngs([
-              L.latLng(this.staffLocation),
-              requestLoc,
-            ]);
-          }
-
-          // 🆕 Reverse Geocode on movement
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          this.staffAddress = await this.reverseGeocode(lat, lng);
-
-          try {
-            await this.requestService.updateRequestWithStaffInfo(
-              this.request.id!,
-              {
-                uid: this.currentStaff?.uid,
-                first_name: this.currentStaff?.first_name,
-                last_name: this.currentStaff?.last_name,
-                email: this.currentStaff?.email,
-                lat,
-                lng,
-              },
-              false
-            );
-          } catch {
-            // fail silently
-          }
-        });
-      },
-      () => {},
-      {
-        enableHighAccuracy: true,
-        maximumAge: 3000,
-        timeout: 10000,
-      }
-    );
   }
 
   async reverseGeocode(lat: number, lng: number): Promise<string> {

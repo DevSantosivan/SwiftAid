@@ -3,12 +3,13 @@ export interface Barangay {
 
   baranggay: string;
   baranggay_img: string;
-  latLng?: string; // Can be parsed into lat/lng if needed
+  latLng?: { lat: number; lng: number };
   barangay_contact: string;
   captain_name: string;
+  address: string;
 
   // Optional fields to align with structure or potential future use
-  latitude?: number;
+  latitude?: number; // <- optional
   longitude?: number;
   createdAt?: any;
   updatedAt?: any;

@@ -1,6 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormsModule,
+  ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 import { UserService } from '../../core/user.service';
 
 import { account } from '../../model/users';
@@ -27,6 +33,9 @@ export class AccountComponent implements OnInit {
   accountToView: account | null = null;
   accountToEdit: account | null = null;
 
+  // NEW: Reactive form for editing
+  editForm: FormGroup | null = null;
+
   defaultAvatar =
     'https://i.pinimg.com/736x/32/e4/61/32e46132a367eb48bb0c9e5d5b659c88.jpg';
 
@@ -42,8 +51,12 @@ export class AccountComponent implements OnInit {
 
   // Central loading flag for blocking UI
   blockingInProgress: boolean = false;
+  Math: any;
 
-  constructor(private accountService: UserService) {}
+  currentPage: number = 1;
+  itemsPerPage: number = 9; // or 10, depende sa gusto mo
+
+  constructor(private accountService: UserService, private fb: FormBuilder) {}
 
   ngOnInit(): void {
     this.accountService.getAllAccounts().subscribe((accounts) => {
@@ -51,6 +64,21 @@ export class AccountComponent implements OnInit {
       this.updateSelectedResidents();
       this.updateSelectedStaff();
     });
+  }
+
+  goToPage(page: number) {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+  }
+
+  get paginatedResidents() {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    return this.filteredResidents.slice(startIndex, endIndex);
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.filteredResidents.length / this.itemsPerPage);
   }
 
   private matchesSearch(acc: any): boolean {
@@ -86,10 +114,27 @@ export class AccountComponent implements OnInit {
     );
   }
 
+  get totalResidentAccountsCount(): number {
+    return this.residentAccounts.length;
+  }
+
   get blockAccounts() {
-    return this.allAccounts.filter(
-      (acc) => acc.role === 'resident' && acc.blocked
-    );
+    return this.allAccounts.filter((acc) => acc.role === 'resident');
+  }
+
+  get blockedResidentAccountsCount(): number {
+    return this.blockAccounts.length;
+  }
+  get pendingResidentAccountsCount(): number {
+    return this.residentAccounts.filter(
+      (acc) => acc.account_status.toLowerCase() === 'pending'
+    ).length;
+  }
+
+  get registeredResidentAccountsCount(): number {
+    return this.residentAccounts.filter(
+      (acc) => acc.account_status.toLowerCase() === 'approved'
+    ).length;
   }
 
   get staffAccounts() {
@@ -205,37 +250,99 @@ export class AccountComponent implements OnInit {
     this.accountToView = null;
   }
 
+  // --- EDIT with Reactive Form ---
   editAccount(account: account) {
     this.accountToEdit = { ...account };
+
+    this.editForm = this.fb.group({
+      fullName: [account.fullName, Validators.required],
+      email: [account.email, [Validators.required, Validators.email]],
+      contactNumber: [account.contactNumber, Validators.required],
+      address: [account.address, Validators.required],
+      office_id: [account.office_id],
+      role: [account.role, Validators.required],
+      profileImageUrl: [account.profileImageUrl || this.defaultAvatar],
+      nationalIdImageUrl: [account.validIdImageUrl || null], // Added
+      birthCertImageUrl: [account.validIdImageUrl || null], // Added
+      // add other fields as needed
+    });
   }
 
   closeEdit() {
     this.accountToEdit = null;
+    this.editForm = null;
   }
 
   onAvatarChange(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
 
-    if (file && this.accountToEdit) {
+    if (file && this.editForm) {
       const reader = new FileReader();
       reader.onload = () => {
-        this.accountToEdit!.profileImageUrl = reader.result as string;
+        this.editForm!.patchValue({ profileImageUrl: reader.result });
+        if (this.accountToEdit) {
+          this.accountToEdit.profileImageUrl = reader.result as string;
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  onNationalIdChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (file && this.editForm) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.editForm!.patchValue({ nationalIdImageUrl: reader.result });
+        if (this.accountToEdit) {
+          this.accountToEdit.validIdImageUrl = reader.result as string;
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+  triggerProfileImageUpload() {
+    const input = document.getElementById(
+      'profileImageInput'
+    ) as HTMLElement | null;
+    if (input) {
+      input.click();
+    }
+  }
+
+  onBirthCertChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (file && this.editForm) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.editForm!.patchValue({ birthCertImageUrl: reader.result });
+        if (this.accountToEdit) {
+          this.accountToEdit.validIdImageUrl = reader.result as string;
+        }
       };
       reader.readAsDataURL(file);
     }
   }
 
   async saveEdit() {
-    if (!this.accountToEdit) return;
+    if (!this.editForm || !this.editForm.valid || !this.accountToEdit) return;
 
     this.blockingInProgress = true;
+
+    const updatedUser = {
+      ...this.accountToEdit,
+      ...this.editForm.value,
+    };
+
     try {
-      await this.accountService.updateUser(
-        this.accountToEdit.id,
-        this.accountToEdit
-      );
+      await this.accountService.updateUser(updatedUser.id, updatedUser);
       this.accountToEdit = null;
+      this.editForm = null;
       this.showSuccess('User updated successfully.');
     } catch (error) {
       console.error('Update failed:', error);

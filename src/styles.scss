@@ -5,6 +5,15 @@
   box-sizing: border-box;
   font-family: "Montserrat", sans-serif;
 }
+h3 {
+  font-size: 16px;
+  color: #333;
+}
+p {
+  font-size: 13px;
+  color: #333;
+  margin-bottom: 10px;
+}
 
 /* Content Body */
 .content-body {
@@ -337,5 +346,11 @@
   flex-direction: column;
 }
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}

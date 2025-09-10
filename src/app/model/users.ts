@@ -23,4 +23,5 @@ export interface account {
   account_status: 'pending' | 'approved' | 'rejected';
   blocked?: boolean; // Optional - for block modal logic
   blockReason?: string;
+  createdAt: number;
 }

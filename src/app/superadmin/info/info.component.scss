@@ -4,6 +4,88 @@
 .content-body {
   padding: 20px;
 }
+/* ===== Barangay Card ===== */
+.barangay-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+
+  .map-container {
+    width: 100%;
+    height: 200px;
+  }
+
+  .barangay-details {
+    padding: 15px;
+    text-align: center;
+
+    /* Profile Image */
+    .barangay-profile {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 10px auto;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid #4caf50;
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    h2 {
+      font-size: 18px;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+
+    p {
+      font-size: 14px;
+      margin: 3px 0;
+      color: #555;
+    }
+  }
+
+  .card-actions {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px;
+    border-top: 1px solid #eee;
+
+    button {
+      background: none;
+      border: none;
+      color: #4caf50;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: 0.3s;
+
+      &:hover {
+        color: #388e3c;
+      }
+
+      i {
+        font-size: 16px;
+      }
+    }
+  }
+}
+
+/* Optional: Grid Layout for Barangay Cards */
+.grid-item {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
 .custom-tabs {
   margin-top: 40px;
   display: flex;

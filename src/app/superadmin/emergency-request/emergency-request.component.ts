@@ -1,58 +1,50 @@
-import {
-  Component,
-  AfterViewInit,
-  ViewChild,
-  ElementRef,
-  OnDestroy,
-  NgZone,
-} from '@angular/core';
+import { Component, OnDestroy, NgZone, OnInit } from '@angular/core';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { EmergencyRequest } from '../../model/emergency';
-import * as L from 'leaflet';
 import { CommonModule } from '@angular/common';
-import { Firestore, doc, getDoc } from '@angular/fire/firestore';
+import { Firestore, doc, getDoc, Timestamp } from '@angular/fire/firestore';
 import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { FormsModule } from '@angular/forms';
+import * as L from 'leaflet';
 
 @Component({
   selector: 'app-emergency-request',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './emergency-request.component.html',
-  styleUrl: './emergency-request.component.scss',
+  styleUrls: ['./emergency-request.component.scss'],
 })
-export class EmergencyRequestComponent implements AfterViewInit, OnDestroy {
-  @ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef;
-
-  map!: L.Map;
+export class EmergencyRequestComponent implements OnInit, OnDestroy {
   requests: EmergencyRequest[] = [];
   filteredRequests: EmergencyRequest[] = [];
-  markers: L.Marker[] = [];
   activeFilter: string = 'All';
 
-  staffLocation: L.LatLngExpression = [12.3622, 121.0671]; // San Jose Occidental Mindoro
-  staffMarker?: L.Marker;
-  routeLine?: L.Polyline;
+  filterStartDate?: string;
+  filterEndDate?: string;
+  currentPage: number = 1;
+  itemsPerPage: number = 5;
 
-  private watchId?: number;
+  map!: L.Map;
+  markers: Map<string, L.Marker> = new Map();
+  activeMarker?: L.Marker;
+
   private requestSubscription?: Subscription;
 
   staffDetailsMap: Record<string, { first_name: string; last_name: string }> =
     {};
 
-  readonly GEOFENCE_RADIUS_METERS = 10000; // 10km radius
+  readonly GEOFENCE_RADIUS_METERS = 10000; // 10 km
   geofenceCircle?: L.Circle;
 
   constructor(
     private requestService: EmergencyRequestService,
     private firestore: Firestore,
     private ngZone: NgZone,
-    private router: Router,
-    private snackBar: MatSnackBar
+    private router: Router
   ) {}
 
-  ngAfterViewInit(): void {
+  ngOnInit(): void {
     this.initializeMap();
     this.subscribeToRequests();
   }
@@ -61,33 +53,61 @@ export class EmergencyRequestComponent implements AfterViewInit, OnDestroy {
     this.requestSubscription?.unsubscribe();
   }
 
+  get totalPages(): number {
+    return Math.ceil(this.filteredRequests.length / this.itemsPerPage);
+  }
+
+  get paginatedRequests(): EmergencyRequest[] {
+    const start = (this.currentPage - 1) * this.itemsPerPage;
+    return this.filteredRequests.slice(start, start + this.itemsPerPage);
+  }
+
+  goToNextPage(): void {
+    if (this.currentPage < this.totalPages) this.currentPage++;
+  }
+
+  goToPreviousPage(): void {
+    if (this.currentPage > 1) this.currentPage--;
+  }
+
   initializeMap(): void {
-    this.map = L.map(this.mapContainer.nativeElement).setView(
-      this.staffLocation,
-      13
-    );
+    const sanJoseCenter: L.LatLngExpression = [12.3622, 121.0671];
+
+    // Initialize map
+    this.map = L.map('requestMap').setView(sanJoseCenter, 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19,
     }).addTo(this.map);
 
-    // Add Geofence circle
-    this.geofenceCircle = L.circle(this.staffLocation, {
+    // Geofence circle
+    this.geofenceCircle = L.circle(sanJoseCenter, {
       radius: this.GEOFENCE_RADIUS_METERS,
       color: 'red',
+      weight: 3,
+      fillColor: 'red',
       fillOpacity: 0.1,
     }).addTo(this.map);
 
-    // Staff Marker
-    this.staffMarker = L.marker(this.staffLocation, {
-      icon: L.icon({
-        iconUrl: 'assets/ambulance.png',
-        iconSize: [70, 60],
-        iconAnchor: [15, 40],
-      }),
-    })
-      .addTo(this.map)
-      .bindPopup('<strong>Staff Location</strong>');
+    this.map.setMaxBounds(this.geofenceCircle.getBounds());
+  }
+
+  get pendingCount(): number {
+    return this.filteredRequests.filter((r) => r.status === 'Pending').length;
+  }
+
+  get inProgressCount(): number {
+    return this.filteredRequests.filter((r) => r.status === 'Responding')
+      .length;
+  }
+
+  get resolvedCount(): number {
+    return this.filteredRequests.filter((r) => r.status === 'Resolved').length;
+  }
+
+  get totalCount(): number {
+    return this.filteredRequests.length;
   }
 
   subscribeToRequests(): void {
@@ -96,9 +116,21 @@ export class EmergencyRequestComponent implements AfterViewInit, OnDestroy {
       .subscribe({
         next: async (requests) => {
           this.ngZone.run(async () => {
-            this.requests = requests;
+            // Convert timestamp
+            this.requests = requests.map((req) => {
+              let timestampDate: Date | null = null;
+              if (req.timestamp instanceof Timestamp) {
+                timestampDate = req.timestamp.toDate();
+              } else if (typeof req.timestamp === 'string') {
+                timestampDate = new Date(req.timestamp);
+              } else if (req.timestamp instanceof Date) {
+                timestampDate = req.timestamp;
+              }
+              return { ...req, timestamp: timestampDate };
+            });
 
-            const staffIdsToFetch = requests
+            // Fetch staff details
+            const staffIdsToFetch = this.requests
               .map((r) => r.staffId)
               .filter((id): id is string => !!id && !this.staffDetailsMap[id]);
 
@@ -118,11 +150,8 @@ export class EmergencyRequestComponent implements AfterViewInit, OnDestroy {
               }
             }
 
-            this.applyFilter(this.activeFilter || 'All');
+            this.applyFilter(this.activeFilter);
           });
-        },
-        error: (error) => {
-          console.error('Error receiving realtime emergency requests:', error);
         },
       });
   }
@@ -135,200 +164,90 @@ export class EmergencyRequestComponent implements AfterViewInit, OnDestroy {
 
   applyFilter(status: string): void {
     this.activeFilter = status;
+    this.currentPage = 1;
 
-    const geofenceCenter = L.latLng(this.staffLocation);
+    const from = this.filterStartDate ? new Date(this.filterStartDate) : null;
+    const to = this.filterEndDate ? new Date(this.filterEndDate) : null;
 
-    const previousFilteredCount = this.filteredRequests.length;
-
-    // Filter based on geofence + status
     this.filteredRequests = this.requests.filter((req) => {
-      const insideGeofence =
-        req.latitude && req.longitude
-          ? geofenceCenter.distanceTo([req.latitude, req.longitude]) <=
-            this.GEOFENCE_RADIUS_METERS
-          : false;
-
       const matchesStatus = status === 'All' || req.status === status;
-      return insideGeofence && matchesStatus;
+      const requestDate = req.timestamp instanceof Date ? req.timestamp : null;
+      const matchesDate =
+        (!from || (requestDate && requestDate >= from)) &&
+        (!to || (requestDate && requestDate <= to));
+      return matchesStatus && matchesDate;
     });
 
-    const outOfBoundsCount =
-      this.requests.length - this.filteredRequests.length;
-
-    if (
-      outOfBoundsCount > 0 &&
-      this.filteredRequests.length !== previousFilteredCount
-    ) {
-      this.snackBar.open(
-        `${outOfBoundsCount} request(s) are outside of San Jose and hidden.`,
-        'Close',
-        { duration: 4000 }
-      );
-    }
-
-    // Clear previous markers
-    this.markers.forEach((marker) => this.map.removeLayer(marker));
-    this.markers = [];
-
-    this.filteredRequests.forEach((req) => {
-      if (req.latitude && req.longitude) {
-        const marker = L.marker([req.latitude, req.longitude], {
-          icon: L.icon({
-            iconUrl: 'assets/logo22.png',
-            iconSize: [70, 60],
-            iconAnchor: [15, 40],
-          }),
-          title: req.name,
-        }).bindPopup(
-          `<strong>${req.name}</strong><br>${
-            req.address
-          }<br>Staff: ${this.getStaffFullName(req.staffId)}`
-        );
-
-        marker.addTo(this.map);
-        this.markers.push(marker);
-      }
-    });
-
-    const group = L.featureGroup([
-      ...this.markers,
-      this.staffMarker!,
-      this.geofenceCircle!,
-    ]);
-
-    this.map.fitBounds(group.getBounds().pad(0.2));
+    this.updateMarkers();
   }
 
-  async ViewRequest(req: EmergencyRequest) {
+  onDateFilterChange(): void {
+    this.applyFilter(this.activeFilter);
+  }
+
+  ViewRequest(req: EmergencyRequest) {
     this.router.navigate(['/superAdmin/EmergencyRequest', req.id]);
   }
 
-  // getStaffFullName(staffId?: string): string {
-  //   if (!staffId) return '';
-  //   const staff = this.staffDetailsMap[staffId];
-  //   return staff ? `${staff.first_name} ${staff.last_name}` : 'Unknown Staff';
-  // }
+  updateMarkers() {
+    // Clear existing markers
+    this.markers.forEach((m) => m.remove());
+    this.markers.clear();
 
-  // applyFilter(status: string): void {
-  //   this.activeFilter = status;
+    this.filteredRequests.forEach((req) => {
+      if (req.latitude && req.longitude) {
+        const profileIcon = L.divIcon({
+          className: 'profile-marker',
+          html: `<div style="
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-image: url('${req.image || 'assets/logo22.png'}');
+            background-size: cover;
+            background-position: center;
+            border: 3px solid white;
+          "></div>`,
+          iconSize: [40, 40],
+          iconAnchor: [20, 20],
+          popupAnchor: [0, -20],
+        });
 
-  //   this.filteredRequests =
-  //     status === 'All'
-  //       ? this.requests
-  //       : this.requests.filter((req) => req.status === status);
+        const marker = L.marker([req.latitude, req.longitude], {
+          icon: profileIcon,
+        }).addTo(this.map);
 
-  //   this.markers.forEach((marker) => this.map.removeLayer(marker));
-  //   this.markers = [];
+        marker.bindPopup(
+          `<b>${req.name}</b><br>Status: ${
+            req.status
+          }<br>Staff: ${this.getStaffFullName(req.staffId)}`
+        );
 
-  //   this.filteredRequests.forEach((req) => {
-  //     if (req.latitude && req.longitude) {
-  //       const marker = L.marker([req.latitude, req.longitude], {
-  //         icon: L.icon({
-  //           iconUrl: 'assets/logo22.png',
-  //           iconSize: [70, 60],
-  //           iconAnchor: [15, 40],
-  //         }),
-  //         title: req.name,
-  //       }).bindPopup(
-  //         `<strong>${req.name}</strong><br>${
-  //           req.address
-  //         }<br>Staff: ${this.getStaffFullName(req.staffId)}`
-  //       );
-
-  //       marker.addTo(this.map);
-  //       this.markers.push(marker);
-  //     }
-  //   });
-
-  //   if (this.markers.length > 0 && this.staffMarker) {
-  //     const group = L.featureGroup([...this.markers, this.staffMarker]);
-  //     this.map.fitBounds(group.getBounds().pad(0.2));
-  //   } else if (this.staffMarker) {
-  //     this.map.setView(this.staffLocation, 12);
-  //   }
-  // }
-
-  centerMapOnRequest(request: EmergencyRequest): void {
-    if (!request.latitude || !request.longitude) return;
-
-    const requestLatLng = L.latLng(request.latitude, request.longitude);
-
-    this.markers.forEach((marker) => this.map.removeLayer(marker));
-    this.markers = [];
-
-    if (this.routeLine) {
-      this.map.removeLayer(this.routeLine);
-      this.routeLine = undefined;
-    }
-
-    const marker = L.marker(requestLatLng, {
-      icon: L.icon({
-        iconUrl: 'assets/logo22.png',
-        iconSize: [70, 60],
-        iconAnchor: [15, 40],
-      }),
-    })
-      .addTo(this.map)
-      .bindPopup(
-        `
-        <div>
-          <img src="${request.image || 'assets/logo22.png'}" 
-               alt="${request.name}" 
-               style="width: 100%; height: 100px; object-fit: cover; margin-bottom: 5px;">
-          <div><strong>${request.name}</strong></div>
-          <div>${request.address}</div>
-          <div>Staff: ${this.getStaffFullName(request.staffId)}</div>
-        </div>
-      `
-      )
-      .openPopup();
-
-    this.markers.push(marker);
-
-    const points = [this.staffLocation, requestLatLng];
-    this.routeLine = L.polyline(points, {
-      color: 'red',
-      weight: 4,
-      opacity: 0.7,
-      dashArray: '10,6',
-    }).addTo(this.map);
-
-    const group = L.featureGroup([
-      ...this.markers,
-      this.staffMarker!,
-      this.routeLine,
-    ]);
-    this.map.fitBounds(group.getBounds().pad(0.2));
+        this.markers.set(req.id, marker);
+      }
+    });
   }
 
-  startTrackingStaffLocation(): void {
-    if (!navigator.geolocation) {
-      console.warn('Geolocation is not supported by this browser.');
-      return;
+  highlightMarker(req: EmergencyRequest) {
+    // Reset previous marker
+    if (this.activeMarker) {
+      const prevDiv = this.activeMarker.getElement();
+      if (prevDiv) {
+        const circle = prevDiv.querySelector('div') as HTMLElement;
+        if (circle) circle.style.border = '3px solid white';
+      }
     }
 
-    this.watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        const newLatLng: L.LatLngExpression = [
-          position.coords.latitude,
-          position.coords.longitude,
-        ];
+    const marker = this.markers.get(req.id);
+    if (marker) {
+      const iconDiv = marker.getElement();
+      if (iconDiv) {
+        const circle = iconDiv.querySelector('div') as HTMLElement;
+        if (circle) circle.style.border = '3px solid red'; // highlight
+      }
 
-        this.staffLocation = newLatLng;
-
-        if (this.staffMarker) {
-          this.staffMarker.setLatLng(newLatLng);
-        }
-
-        if (this.routeLine && this.markers.length > 0) {
-          const requestLatLng = this.markers[0].getLatLng();
-          this.routeLine.setLatLngs([newLatLng, requestLatLng]);
-        }
-      },
-      (error) => {
-        console.error('Error watching position:', error);
-      },
-      { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
-    );
+      marker.openPopup();
+      this.map.setView(marker.getLatLng(), 14, { animate: true });
+      this.activeMarker = marker;
+    }
   }
 }

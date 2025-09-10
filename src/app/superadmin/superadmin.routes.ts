@@ -13,6 +13,7 @@ import { HistoryCallComponent } from '../admin/history-call/history-call.compone
 import { IncidentHistory } from './incident-history/incident-history';
 import { AccountVerification } from './account-verification/account-verification';
 import { AccountVerificationDetails } from './account-verification-details/account-verification-details';
+import { LiveTracking } from './live-tracking/live-tracking';
 
 export const SuperAdminRoutes: Routes = [
   {
@@ -23,9 +24,23 @@ export const SuperAdminRoutes: Routes = [
       { path: 'Dashboard', component: DashboardComponent },
       { path: 'Verification', component: AccountVerification },
       { path: 'EmergencyRequest', component: EmergencyRequestComponent },
+      {
+        path: 'LiveTracking',
+        children: [
+          { path: '', component: LiveTracking },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./tracking-view/tracking-view').then(
+                (m) => m.TrackingView
+              ),
+          },
+        ],
+      },
 
       { path: 'Team', component: TeamComponent },
       { path: 'IncidentHistory', component: IncidentHistory },
+
       { path: 'Team-Details', component: TeamStaffComponent },
       { path: 'Account', component: AccountComponent },
       { path: 'Feedback', component: FeedbackComponent },

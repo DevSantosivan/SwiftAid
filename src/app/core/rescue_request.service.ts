@@ -58,6 +58,31 @@ export class EmergencyRequestService {
     }
   }
 
+  getRespondingRequestsLive(): Observable<EmergencyRequest[]> {
+    return new Observable((subscriber) => {
+      const ref = collection(this.firestore, this.collectionName);
+      const q = query(ref, where('status', '==', 'Responding'));
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          this.ngZone.run(() => {
+            const requests = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            })) as EmergencyRequest[];
+            subscriber.next(requests);
+          });
+        },
+        (error) => {
+          this.ngZone.run(() => subscriber.error(error));
+        }
+      );
+
+      return { unsubscribe };
+    });
+  }
+
   subscribeToLocationUpdatesByStaffId(
     staffId: string
   ): Observable<EmergencyRequest[]> {
