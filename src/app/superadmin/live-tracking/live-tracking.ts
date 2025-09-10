@@ -7,7 +7,7 @@ import {
   ElementRef,
 } from '@angular/core';
 import * as L from 'leaflet';
-import 'leaflet-routing-machine';
+import 'leaflet-routing-machine'; // Import leaflet-routing-machine here
 import { Subscription } from 'rxjs';
 import { EmergencyRequest } from '../../model/emergency';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
@@ -24,9 +24,12 @@ import { RouterLink } from '@angular/router';
 export class LiveTracking implements AfterViewInit, OnDestroy {
   respondingRequests: EmergencyRequest[] = [];
 
+  // Map references
   private maps = new Map<string, L.Map>();
   private staffMarkers = new Map<string, L.Marker>();
   private requestMarkers = new Map<string, L.Marker>();
+
+  // Use routing controls map instead of routeLines
   private routingControls = new Map<string, L.Routing.Control>();
 
   private subscription?: Subscription;
@@ -40,7 +43,7 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
       .getRespondingRequestsLive()
       .subscribe((requests) => {
         this.respondingRequests = requests;
-        setTimeout(() => this.updateMaps(), 0);
+        setTimeout(() => this.updateMaps(), 0); // allow DOM to settle
       });
   }
 
@@ -50,6 +53,7 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
     this.maps.clear();
     this.staffMarkers.clear();
     this.requestMarkers.clear();
+
     this.routingControls.forEach((rc) => rc.remove());
     this.routingControls.clear();
   }
@@ -63,6 +67,7 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
 
       let map = this.maps.get(request.id);
 
+      // Initialize map if not exists
       if (!map) {
         map = L.map(containerRef.nativeElement, {
           zoomControl: false,
@@ -78,10 +83,13 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
         }).addTo(map);
 
         this.maps.set(request.id, map);
-        setTimeout(() => map?.invalidateSize(), 100);
+
+        setTimeout(() => {
+          map?.invalidateSize();
+        }, 100);
       }
 
-      // Staff marker
+      // --- Add/Update Staff Marker ---
       this.updateMarker(
         this.staffMarkers,
         request.id,
@@ -91,7 +99,7 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
         map
       );
 
-      // Resident marker
+      // --- Add/Update Request Marker ---
       this.updateMarker(
         this.requestMarkers,
         request.id,
@@ -101,7 +109,7 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
         map
       );
 
-      // Routing line
+      // --- Draw Route Using Routing Machine ---
       this.updateRouteUsingRoutingMachine(request, map);
     });
   }

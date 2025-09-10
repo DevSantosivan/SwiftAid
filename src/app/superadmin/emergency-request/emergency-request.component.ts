@@ -1,4 +1,12 @@
-import { Component, OnDestroy, NgZone, OnInit } from '@angular/core';
+import {
+  Component,
+  OnDestroy,
+  NgZone,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  AfterViewInit,
+} from '@angular/core';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { EmergencyRequest } from '../../model/emergency';
 import { CommonModule } from '@angular/common';
@@ -8,6 +16,9 @@ import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 
+import { Chart, registerables } from 'chart.js';
+Chart.register(...registerables);
+
 @Component({
   selector: 'app-emergency-request',
   standalone: true,
@@ -15,7 +26,9 @@ import * as L from 'leaflet';
   templateUrl: './emergency-request.component.html',
   styleUrls: ['./emergency-request.component.scss'],
 })
-export class EmergencyRequestComponent implements OnInit, OnDestroy {
+export class EmergencyRequestComponent
+  implements OnInit, OnDestroy, AfterViewInit
+{
   requests: EmergencyRequest[] = [];
   filteredRequests: EmergencyRequest[] = [];
   activeFilter: string = 'All';
@@ -37,6 +50,9 @@ export class EmergencyRequestComponent implements OnInit, OnDestroy {
   readonly GEOFENCE_RADIUS_METERS = 10000; // 10 km
   geofenceCircle?: L.Circle;
 
+  @ViewChild('pieChartCanvas') pieChartCanvas!: ElementRef<HTMLCanvasElement>;
+  pieChart!: Chart;
+
   constructor(
     private requestService: EmergencyRequestService,
     private firestore: Firestore,
@@ -49,8 +65,15 @@ export class EmergencyRequestComponent implements OnInit, OnDestroy {
     this.subscribeToRequests();
   }
 
+  ngAfterViewInit(): void {
+    this.createPieChart();
+  }
+
   ngOnDestroy(): void {
     this.requestSubscription?.unsubscribe();
+    if (this.pieChart) {
+      this.pieChart.destroy();
+    }
   }
 
   get totalPages(): number {
@@ -73,7 +96,6 @@ export class EmergencyRequestComponent implements OnInit, OnDestroy {
   initializeMap(): void {
     const sanJoseCenter: L.LatLngExpression = [12.3622, 121.0671];
 
-    // Initialize map
     this.map = L.map('requestMap').setView(sanJoseCenter, 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -81,7 +103,6 @@ export class EmergencyRequestComponent implements OnInit, OnDestroy {
       maxZoom: 19,
     }).addTo(this.map);
 
-    // Geofence circle
     this.geofenceCircle = L.circle(sanJoseCenter, {
       radius: this.GEOFENCE_RADIUS_METERS,
       color: 'red',
@@ -116,7 +137,6 @@ export class EmergencyRequestComponent implements OnInit, OnDestroy {
       .subscribe({
         next: async (requests) => {
           this.ngZone.run(async () => {
-            // Convert timestamp
             this.requests = requests.map((req) => {
               let timestampDate: Date | null = null;
               if (req.timestamp instanceof Timestamp) {
@@ -129,7 +149,6 @@ export class EmergencyRequestComponent implements OnInit, OnDestroy {
               return { ...req, timestamp: timestampDate };
             });
 
-            // Fetch staff details
             const staffIdsToFetch = this.requests
               .map((r) => r.staffId)
               .filter((id): id is string => !!id && !this.staffDetailsMap[id]);
@@ -179,6 +198,8 @@ export class EmergencyRequestComponent implements OnInit, OnDestroy {
     });
 
     this.updateMarkers();
+
+    this.updatePieChartData();
   }
 
   onDateFilterChange(): void {
@@ -190,7 +211,6 @@ export class EmergencyRequestComponent implements OnInit, OnDestroy {
   }
 
   updateMarkers() {
-    // Clear existing markers
     this.markers.forEach((m) => m.remove());
     this.markers.clear();
 
@@ -228,7 +248,6 @@ export class EmergencyRequestComponent implements OnInit, OnDestroy {
   }
 
   highlightMarker(req: EmergencyRequest) {
-    // Reset previous marker
     if (this.activeMarker) {
       const prevDiv = this.activeMarker.getElement();
       if (prevDiv) {
@@ -242,12 +261,56 @@ export class EmergencyRequestComponent implements OnInit, OnDestroy {
       const iconDiv = marker.getElement();
       if (iconDiv) {
         const circle = iconDiv.querySelector('div') as HTMLElement;
-        if (circle) circle.style.border = '3px solid red'; // highlight
+        if (circle) circle.style.border = '3px solid red';
       }
 
       marker.openPopup();
       this.map.setView(marker.getLatLng(), 14, { animate: true });
       this.activeMarker = marker;
+    }
+  }
+
+  createPieChart() {
+    if (this.pieChart) {
+      this.pieChart.destroy();
+    }
+
+    this.pieChart = new Chart(this.pieChartCanvas.nativeElement, {
+      type: 'doughnut',
+      data: {
+        labels: ['Pending', 'In Progress', 'Resolved'],
+        datasets: [
+          {
+            data: [this.pendingCount, this.inProgressCount, this.resolvedCount],
+            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              font: { size: 14 },
+            },
+          },
+          tooltip: {
+            enabled: true,
+          },
+        },
+      },
+    });
+  }
+
+  updatePieChartData() {
+    if (this.pieChart) {
+      this.pieChart.data.datasets[0].data = [
+        this.pendingCount,
+        this.inProgressCount,
+        this.resolvedCount,
+      ];
+      this.pieChart.update();
     }
   }
 }

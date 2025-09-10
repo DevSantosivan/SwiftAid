@@ -5,26 +5,11 @@
     <br />
     <div class="request-top-section">
       <div class="request-summary-grid">
-        <div class="card pending">
-          <h2>{{ pendingCount }}</h2>
-          <p>Pending</p>
-        </div>
-        <div class="card in-progress">
-          <h2>{{ inProgressCount }}</h2>
-          <p>In Progress</p>
-        </div>
-        <div class="card resolved">
-          <h2>{{ resolvedCount }}</h2>
-          <p>Resolved</p>
-        </div>
-        <div class="card total">
-          <h2>{{ totalCount }}</h2>
-          <p>Total Requests</p>
-        </div>
+        <div style="width: 300px; height: 300px">
+          <p>Total Requests : {{ filteredRequests.length }}</p>
+          <canvas #pieChartCanvas></canvas>
 
-        <div class="card total">
-          <h2>{{ filteredRequests.length }}</h2>
-          <p>Total Requests</p>
+          <br />
         </div>
       </div>
 

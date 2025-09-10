@@ -70,5 +70,26 @@
   .status {
     border: 1px solid #cccccc8e;
     padding: 8px;
+    background-color: red;
+    border-radius: 8px;
+    color: #fff;
   }
+}
+
+.leaflet-routing-container .leaflet-routing-instruction {
+  white-space: normal !important; /* allow wrapping */
+  padding-left: 10px; /* indent instructions */
+  margin-bottom: 4px; /* spacing between steps */
+  text-align: left; /* consistent left alignment */
+  font-size: 14px; /* adjust font size if needed */
+}
+
+.leaflet-routing-container .leaflet-routing-leg {
+  padding: 5px 10px;
+}
+
+.leaflet-routing-container .leaflet-routing-header {
+  font-weight: bold;
+  font-size: 16px;
+  margin-bottom: 6px;
 }
