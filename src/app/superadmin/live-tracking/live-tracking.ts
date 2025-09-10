@@ -7,6 +7,7 @@ import {
   ElementRef,
 } from '@angular/core';
 import * as L from 'leaflet';
+import 'leaflet-routing-machine';
 import { Subscription } from 'rxjs';
 import { EmergencyRequest } from '../../model/emergency';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
@@ -23,11 +24,10 @@ import { RouterLink } from '@angular/router';
 export class LiveTracking implements AfterViewInit, OnDestroy {
   respondingRequests: EmergencyRequest[] = [];
 
-  // Map references
   private maps = new Map<string, L.Map>();
   private staffMarkers = new Map<string, L.Marker>();
   private requestMarkers = new Map<string, L.Marker>();
-  private routeLines = new Map<string, L.Polyline>();
+  private routingControls = new Map<string, L.Routing.Control>();
 
   private subscription?: Subscription;
 
@@ -40,7 +40,7 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
       .getRespondingRequestsLive()
       .subscribe((requests) => {
         this.respondingRequests = requests;
-        setTimeout(() => this.updateMaps(), 0); // allow DOM to settle
+        setTimeout(() => this.updateMaps(), 0);
       });
   }
 
@@ -50,7 +50,8 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
     this.maps.clear();
     this.staffMarkers.clear();
     this.requestMarkers.clear();
-    this.routeLines.clear();
+    this.routingControls.forEach((rc) => rc.remove());
+    this.routingControls.clear();
   }
 
   private updateMaps(): void {
@@ -62,7 +63,6 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
 
       let map = this.maps.get(request.id);
 
-      // Initialize map if not exists
       if (!map) {
         map = L.map(containerRef.nativeElement, {
           zoomControl: false,
@@ -78,13 +78,10 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
         }).addTo(map);
 
         this.maps.set(request.id, map);
-
-        setTimeout(() => {
-          map?.invalidateSize();
-        }, 100);
+        setTimeout(() => map?.invalidateSize(), 100);
       }
 
-      // --- Add/Update Staff Marker ---
+      // Staff marker
       this.updateMarker(
         this.staffMarkers,
         request.id,
@@ -94,7 +91,7 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
         map
       );
 
-      // --- Add/Update Request Marker ---
+      // Resident marker
       this.updateMarker(
         this.requestMarkers,
         request.id,
@@ -104,8 +101,8 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
         map
       );
 
-      // --- Draw Route Line ---
-      this.updateRouteLine(request, map);
+      // Routing line
+      this.updateRouteUsingRoutingMachine(request, map);
     });
   }
 
@@ -115,7 +112,6 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
     lat?: number,
     lng?: number,
     iconUrl: string = 'assets/default-icon.png',
-
     map?: L.Map
   ): void {
     if (!lat || !lng || !map) return;
@@ -138,41 +134,67 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
     }
   }
 
-  private updateRouteLine(request: EmergencyRequest, map: L.Map): void {
+  private updateRouteUsingRoutingMachine(
+    request: EmergencyRequest,
+    map: L.Map
+  ): void {
     const { id, staffLat, staffLng, latitude, longitude } = request;
-
     if (
+      !id ||
       staffLat == null ||
       staffLng == null ||
       latitude == null ||
-      longitude == null ||
-      !id
+      longitude == null
     )
       return;
 
-    const latlngs: L.LatLngTuple[] = [
-      [staffLat, staffLng],
-      [latitude, longitude],
-    ];
+    const from = L.latLng(staffLat, staffLng);
+    const to = L.latLng(latitude, longitude);
 
-    let routeLine = this.routeLines.get(id);
-
-    if (!routeLine) {
-      routeLine = L.polyline(latlngs, {
-        color: 'red',
-        weight: 3,
-        opacity: 0.7,
-        dashArray: '6, 4',
-      }).addTo(map);
-
-      this.routeLines.set(id, routeLine);
-    } else {
-      routeLine.setLatLngs(latlngs);
+    // Remove old route if exists
+    const existingControl = this.routingControls.get(id);
+    if (existingControl) {
+      map.removeControl(existingControl);
+      this.routingControls.delete(id);
     }
 
-    const bounds = L.latLngBounds(latlngs);
-    if (!map.getBounds().contains(bounds)) {
-      map.fitBounds(bounds.pad(0.3));
-    }
+    const routingControl = (L.Routing.control as any)({
+      waypoints: [from, to],
+      routeWhileDragging: false,
+      showAlternatives: false,
+      fitSelectedRoutes: true,
+      addWaypoints: false,
+      createMarker: () => null,
+      lineOptions: {
+        styles: [{ color: '#ff4e42', weight: 4, dashArray: '6, 4' }],
+      },
+    }).addTo(map);
+
+    routingControl.on('routesfound', (e: any) => {
+      const route = e.routes[0];
+      const distance = route.summary.totalDistance; // in meters
+      const time = route.summary.totalTime; // in seconds
+
+      const eta = this.formatETA(time);
+      console.log(
+        `Request ${id} ETA: ${eta}, Distance: ${this.formatDistance(distance)}`
+      );
+      // Optionally store ETA per request to display in the card
+    });
+
+    this.routingControls.set(id, routingControl);
+  }
+
+  private formatETA(seconds: number): string {
+    const minutes = Math.round(seconds / 60);
+    return minutes < 60
+      ? `${minutes} mins`
+      : `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+  }
+
+  private formatDistance(meters: number): string {
+    return meters < 1000
+      ? `${Math.round(meters)} m`
+      : `${(meters / 1000).toFixed(1)} km`;
   }
 }

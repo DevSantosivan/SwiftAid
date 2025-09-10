@@ -34,7 +34,7 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
   // Barangay data
   allBaranggay: Barangay[] = [];
   newBarangay: Barangay = this.getEmptyBarangay();
-  map: any;
+  map: L.Map | null = null;
 
   // Incident data
   allIncidents: Incident[] = [];
@@ -77,8 +77,28 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
     this.incidentSub?.unsubscribe();
   }
 
+  // ===== TAB SWITCHING =====
   setTab(tabName: string): void {
     this.activeTab = tabName;
+
+    if (tabName === 'barangay') {
+      setTimeout(() => {
+        this.allBaranggay.forEach((barangay) => {
+          if (!barangay.id) return;
+
+          const mapId = 'map-' + barangay.id;
+          const mapElement = document.getElementById(mapId);
+
+          if (mapElement && (mapElement as any)._leaflet_map) {
+            const map = (mapElement as any)._leaflet_map as L.Map;
+            map.invalidateSize();
+          } else {
+            this.initBarangayMap(barangay);
+            this.reverseGeocode(barangay);
+          }
+        });
+      }, 300); // wait for DOM re-render
+    }
   }
 
   // ===== BARANGAY LOGIC =====
@@ -107,15 +127,18 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
       if (this.map) {
         this.map.remove(); // remove previous map instance
       }
-      this.initMap();
-    }, 300); // 300ms gives enough time for the modal div to exist
+      this.initModalMap();
+    }, 300);
   }
 
   closeModal() {
     this.showAddModal = false;
     this.newBarangay = this.getEmptyBarangay();
     this.editingBarangayId = null;
-    if (this.map) this.map.remove();
+    if (this.map) {
+      this.map.remove();
+      this.map = null;
+    }
   }
 
   getEmptyBarangay(): Barangay {
@@ -132,9 +155,20 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
     };
   }
 
-  initMap() {
+  // ===== MODAL MAP =====
+  initModalMap() {
     const lat = this.newBarangay.latitude ?? 14.5995;
     const lng = this.newBarangay.longitude ?? 120.9842;
+
+    const mapContainer = document.getElementById('map');
+    if (!mapContainer) return;
+
+    if ((mapContainer as any)._leaflet_map) {
+      this.map = (mapContainer as any)._leaflet_map as L.Map;
+      this.map.invalidateSize();
+      this.map.setView([lat, lng], 13);
+      return;
+    }
 
     this.map = L.map('map').setView([lat, lng], 13);
 
@@ -154,15 +188,19 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
       this.setLatLng(e.latlng.lat, e.latlng.lng);
     });
 
-    const geocoder = (L.Control as any)
+    (L.Control as any)
       .geocoder({ defaultMarkGeocode: false })
       .on('markgeocode', (e: any) => {
         const center = e.geocode.center;
-        this.map.setView(center, 16);
+        this.map!.setView(center, 16);
         marker.setLatLng(center);
         this.setLatLng(center.lat, center.lng);
       })
       .addTo(this.map);
+
+    (mapContainer as any)._leaflet_map = this.map;
+
+    setTimeout(() => this.map?.invalidateSize(), 300);
   }
 
   setLatLng(lat: number, lng: number) {
@@ -235,10 +273,20 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // ===== BARANGAY CARD MAPS =====
   initBarangayMap(barangay: Barangay) {
-    if (barangay.latitude === undefined || barangay.longitude === undefined)
-      return;
+    if (!barangay.latitude || !barangay.longitude) return;
 
-    const map = L.map('map-' + barangay.id).setView(
+    const mapId = 'map-' + barangay.id;
+    const mapElement = document.getElementById(mapId);
+
+    if (!mapElement) return;
+
+    if ((mapElement as any)._leaflet_map) {
+      const existingMap = (mapElement as any)._leaflet_map as L.Map;
+      existingMap.invalidateSize();
+      return;
+    }
+
+    const map = L.map(mapId).setView(
       [barangay.latitude, barangay.longitude],
       16
     );
@@ -249,8 +297,9 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
 
     L.marker([barangay.latitude, barangay.longitude])
       .addTo(map)
-      .bindPopup(`<b>${barangay.baranggay}</b>`)
-      .openPopup();
+      .bindPopup(`<b>${barangay.baranggay}</b>`);
+
+    (mapElement as any)._leaflet_map = map;
   }
 
   reverseGeocode(barangay: Barangay) {
