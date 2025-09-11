@@ -11,54 +11,37 @@ body {
 /* Flex wrapper: cards + map */
 .request-top-section {
   display: flex;
-  gap: 1.5rem;
+
   margin-bottom: 2rem;
 
   /* Cards grid */
   .request-summary-grid {
-    flex: 1; /* takes 1 part */
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* 2 columns */
-    gap: 1rem;
+    flex: 1; /* give this more space */
+    display: flex; /* change from grid to flex for easier control */
+    flex-direction: column;
+    align-items: flex-start; /* left align content */
 
-    .card {
-      color: #222;
+    /* Chart container */
+    .chart-container {
+      width: 100%; /* take full width of grid container */
+      max-width: 600px; /* max width for the chart */
+      height: 400px; /* bigger height */
       padding: 1rem;
-      border-radius: 12px;
-      text-align: center;
       border: 1px solid #ccc;
-      cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      border-radius: 12px;
+      box-sizing: border-box;
+    }
 
-      &.pending {
-        border-left: 6px solid orange;
-      }
-      &.in-progress {
-        border-left: 6px solid blue;
-      }
-      &.resolved {
-        border-left: 6px solid green;
-      }
-      &.total {
-        border-left: 6px solid gray;
-      }
-
-      h2 {
-        font-size: 1rem;
-        margin-bottom: 0.5rem;
-      }
-
-      p {
-        font-size: 1rem;
-        opacity: 0.8;
-      }
+    p {
+      margin-bottom: 0.5rem;
+      font-weight: 600;
     }
   }
 
   /* Map container */
   .map-container {
-    flex: 2; /* map takes more space */
-    height: 300px; /* fixed height */
+    flex: 2; /* keep map bigger */
+    height: 400px; /* slightly taller for balance */
 
     #requestMap {
       width: 100%;
@@ -67,6 +50,13 @@ body {
       border: 1px solid #ccc;
     }
   }
+}
+
+/* Ensure canvas fills the chart container */
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 
 /* Responsive: stack on small screens */
@@ -184,32 +174,31 @@ body {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      height: 28px;
-      min-width: 85px;
-      padding: 0 12px;
-      border-radius: 5px;
+      padding: 5px 20px !important;
+      border-radius: 20px;
       font-weight: 600;
-      font-size: 13px;
-      color: #fff;
+      padding: 0 12px;
+      user-select: none;
+      color: #333;
       white-space: nowrap;
       text-transform: capitalize;
-
+      width: 60%;
       transition: background-color 0.3s ease;
     }
 
     .status-badge.pending {
-      color: #333;
-      background-color: #ff99003b; /* Orange */
+      background-color: #ffecb3;
+      color: #f57c00;
     }
 
     .status-badge.in-progress {
-      color: #333;
-      background-color: #2195f325; /* Blue */
+      background-color: #bbdefb;
+      color: #1e88e5;
     }
 
     .status-badge.resolved {
-      color: #333;
-      background-color: #5cc45f2d; /* Green */
+      background-color: #c8e6c9;
+      color: #388e3c;
     }
 
     .action-buttons {

@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Auth } from '@angular/fire/auth';
 import {
   Router,
@@ -11,16 +11,9 @@ import { Chart, registerables } from 'chart.js';
 import { UserService } from '../../core/user.service';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { NotificationService } from '../../core/notification.service';
-import {
-  Firestore,
-  collection,
-  getDocs,
-  DocumentData,
-} from '@angular/fire/firestore';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../core/auth.service';
-import { AdminComponent } from '../../admin/admin.component';
+import { Subscription } from 'rxjs';
 import { AdminNavbarComponent } from '../../admin/admin-navbar/admin-navbar.component';
 
 Chart.register(...registerables);
@@ -39,7 +32,7 @@ Chart.register(...registerables);
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   // Charts references
   chart: any;
   pieChart: any;
@@ -49,50 +42,63 @@ export class HomeComponent implements OnInit {
   isCollapsed = false;
 
   // Notification states
-  hasUnreadNotifications = false; // For Notification collection
+  hasUnreadNotifications = false;
   unreadNotificationCount = 0;
 
-  hasUnreadEmergencyRequests = false; // For EmergencyRequest collection
+  hasUnreadEmergencyRequests = false;
   unreadEmergencyRequestCount = 0;
 
-  hasPendingAccounts: boolean = false;
-  pendingAccountCount: number = 0;
+  hasPendingAccounts = false;
+  pendingAccountCount = 0;
+
+  // New real-time notification flags & counts
+  hasUnreadRespondingRequests = false;
+  unreadRespondingRequestCount = 0;
+
+  hasUnreadPendingRequests = false;
+  unreadPendingRequestCount = 0;
 
   // User and data counts
   userCount = 0;
   emergencyRequestCount = 0;
 
   // Mobile view detection
-  isMobileView: boolean = false;
+  isMobileView = false;
+
+  // Subscriptions for real-time listeners
+  private respondingSub?: Subscription;
+  private pendingSub?: Subscription;
 
   constructor(
     private authentication: Auth,
     private router: Router,
     private userService: UserService,
-    private emergencyRequestService: EmergencyRequestService,
-    private firestore: Firestore
+    private emergencyRequestService: EmergencyRequestService
   ) {}
 
   ngOnInit() {
     this.checkScreenWidth();
 
-    (async () => {
-      try {
-        // Load counts in parallel
-        await Promise.all([
-          this.loadUnreadNotificationCount(),
-          this.loadUnreadEmergencyRequestCount(),
-          this.loadUserCount(),
-          this.loadEmergencyRequestCount(),
-          this.loadPendingAccountCount(),
-        ]);
-      } catch (error) {
-        console.error('Error initializing dashboard:', error);
-      }
-    })();
+    // Load one-time counts in parallel
+    Promise.all([
+      this.loadUnreadNotificationCount(),
+      this.loadUnreadEmergencyRequestCount(),
+      this.loadUserCount(),
+      this.loadEmergencyRequestCount(),
+      this.loadPendingAccountCount(),
+    ]).catch(console.error);
+
+    // Setup real-time subscriptions for responding & pending requests
+    this.subscribeToRespondingEmergencyRequests();
+    this.subscribeToPendingEmergencyRequests();
   }
 
-  // Helper method to set isMobileView based on window width
+  ngOnDestroy(): void {
+    // Cleanup subscriptions on destroy
+    this.respondingSub?.unsubscribe();
+    this.pendingSub?.unsubscribe();
+  }
+
   private checkScreenWidth() {
     this.isMobileView = window.innerWidth <= 768;
   }
@@ -101,7 +107,7 @@ export class HomeComponent implements OnInit {
     this.isCollapsed = !this.isCollapsed;
   }
 
-  // Load unread notifications count from Notification collection
+  // Load unread notifications count (one-time)
   async loadUnreadNotificationCount() {
     try {
       const currentUser = this.authentication.currentUser;
@@ -115,19 +121,15 @@ export class HomeComponent implements OnInit {
         await this.emergencyRequestService.getUnreadNotificationCountForUser(
           currentUser.uid
         );
-
       this.unreadNotificationCount = count;
       this.hasUnreadNotifications = count > 0;
-
-      console.log('Unread notifications:', count);
     } catch (error) {
-      console.error('Failed to fetch unread notification count:', error);
       this.hasUnreadNotifications = false;
       this.unreadNotificationCount = 0;
     }
   }
 
-  // Load unread emergency request count from EmergencyRequest collection
+  // Load unread emergency request count (one-time)
   async loadUnreadEmergencyRequestCount() {
     try {
       const currentUser = this.authentication.currentUser;
@@ -140,46 +142,76 @@ export class HomeComponent implements OnInit {
       const count = await this.emergencyRequestService.getUnreadEmergency(
         currentUser.uid
       );
-
       this.unreadEmergencyRequestCount = count;
       this.hasUnreadEmergencyRequests = count > 0;
-
-      console.log('Unread emergency requests:', count);
     } catch (error) {
-      console.error('Failed to fetch unread emergency request count:', error);
       this.hasUnreadEmergencyRequests = false;
       this.unreadEmergencyRequestCount = 0;
     }
   }
 
-  // Load total user count
+  // Real-time subscription for Responding emergency requests
+  subscribeToRespondingEmergencyRequests() {
+    const currentUser = this.authentication.currentUser;
+    if (!currentUser) return;
+
+    this.respondingSub = this.emergencyRequestService
+      .getUnreadRespondingRequests(currentUser.uid)
+      .subscribe({
+        next: (count) => {
+          this.unreadRespondingRequestCount = count;
+          this.hasUnreadRespondingRequests = count > 0;
+        },
+        error: (error) => {
+          this.hasUnreadRespondingRequests = false;
+          this.unreadRespondingRequestCount = 0;
+        },
+      });
+  }
+
+  // Real-time subscription for Pending emergency requests
+  subscribeToPendingEmergencyRequests() {
+    this.pendingSub = this.emergencyRequestService
+      .getUnreadPendingRequests()
+      .subscribe({
+        next: (count) => {
+          this.unreadPendingRequestCount = count;
+          this.hasUnreadPendingRequests = count > 0;
+        },
+        error: (error) => {
+          this.hasUnreadPendingRequests = false;
+          this.unreadPendingRequestCount = 0;
+        },
+      });
+  }
+
+  // Load total user count (one-time)
   async loadUserCount() {
     try {
       this.userCount = await this.userService.getUserCount();
     } catch (error) {
-      console.error('Failed to fetch user count:', error);
       this.userCount = 0;
     }
   }
+
+  // Load pending resident accounts count (one-time)
   async loadPendingAccountCount() {
     try {
       const accounts = await this.userService.getPendingResidentAccounts();
       this.pendingAccountCount = accounts.length;
       this.hasPendingAccounts = accounts.length > 0;
     } catch (error) {
-      console.error('Failed to fetch pending accounts:', error);
       this.pendingAccountCount = 0;
       this.hasPendingAccounts = false;
     }
   }
 
-  // Load total emergency request count
+  // Load total emergency request count (one-time)
   async loadEmergencyRequestCount() {
     try {
       this.emergencyRequestCount =
         await this.emergencyRequestService.getRequestCount();
     } catch (error) {
-      console.error('Failed to fetch emergency request count:', error);
       this.emergencyRequestCount = 0;
     }
   }

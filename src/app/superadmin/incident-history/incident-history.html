@@ -3,8 +3,9 @@
     <h4>Emergency Request History</h4>
     <p>List of past emergency requests</p>
 
-    <!-- Bulk Select Dropdown -->
-    <!-- <div class="bulk-select-dropdown">
+    <!-- Bulk Select Dropdown (commented out) -->
+    <!--
+    <div class="bulk-select-dropdown">
       <input
         type="checkbox"
         [checked]="isAllSelected()"
@@ -21,19 +22,11 @@
           <button (click)="selectBy('completed')">Completed</button>
         </div>
       </div>
-    </div> -->
+    </div>
+    -->
 
     <!-- Search Bar -->
     <div class="flex-header">
-      <div class="search-bar">
-        <input
-          type="text"
-          placeholder="Search requests..."
-          [(ngModel)]="searchTerm"
-          (input)="applyFilters()"
-        />
-        <button type="button"><i class="bx bx-search"></i></button>
-      </div>
       <div class="export-section">
         <div class="export-buttons">
           <button (click)="exportToWord()" type="button">
@@ -46,71 +39,33 @@
           </button>
         </div>
       </div>
-    </div>
-    <div class="chart-container">
-      <div class="chart-wrapper">
-        <canvas id="requestStatusChart"></canvas>
-        <p class="chart-label">Request Status Distribution</p>
+      <div class="search-bar">
+        <input
+          type="text"
+          placeholder="Search requests..."
+          [(ngModel)]="searchTerm"
+          (input)="applyFilters()"
+        />
+        <button type="button"><i class="bx bx-search"></i></button>
       </div>
-      <div class="chart-wrapper">
-        <canvas id="requestStatusBarChart"></canvas>
-        <p class="chart-label">Monthly Requests by Event</p>
-      </div>
     </div>
 
-    <!-- Tabs -->
-    <ul class="nav nav-tabs">
-      <li class="nav-item">
-        <a
-          class="nav-link"
-          [class.active]="activeTab === 'all'"
-          (click)="setTab('all')"
-        >
-          <i class="bx bx-list-ul"></i> All Requests</a
-        >
-      </li>
-
-      <li class="nav-item">
-        <a
-          class="nav-link"
-          [class.active]="activeTab === 'resolved'"
-          (click)="setTab('resolved')"
-        >
-          <i class="bx bx-check-double"></i> Completed</a
-        >
-      </li>
-      <li class="nav-item">
-        <a
-          class="nav-link"
-          [class.active]="activeTab === 'cancelled'"
-          (click)="setTab('cancelled')"
-        >
-          <i class="bx bx-x-circle"></i> Cancelled</a
-        >
-      </li>
-    </ul>
-
-    <!-- Top Action Bar -->
-    <div class="top-action-bar" *ngIf="selectedRequests.length > 0">
-      <span>{{ selectedRequests.length }} selected</span>
-      <button (click)="deleteSelectedRequests()">
-        <i class="bx bx-trash"></i> Delete
-      </button>
-    </div>
-
-    <!-- Requests List -->
-    <ng-container
-      *ngIf="getCurrentFilteredRequests().length > 0; else noDataTemplate"
+    <!-- Map Container: Show only if requestToView has latitude & longitude -->
+    <div
+      id="incidentMap"
+      style="border-radius: 10px; height: 400px; border: 1px solid #ccc"
+    ></div>
+    <!-- Request List or No Data -->
+    <div
+      *ngIf="filteredAllRequests && filteredAllRequests.length > 0; else noDataTemplate"
     >
       <ng-container
-        *ngTemplateOutlet="
-          requestListTemplate;
-          context: { requests: getCurrentFilteredRequests() }
-        "
-      ></ng-container>
-    </ng-container>
+        *ngTemplateOutlet="requestListTemplate; context: { requests: filteredAllRequests }"
+      >
+      </ng-container>
+    </div>
 
-    <!-- No Data -->
+    <!-- No Data Template -->
     <ng-template #noDataTemplate>
       <div class="no-data">
         <img src="assets/Empty Box.gif" alt="No Data" />
@@ -119,53 +74,69 @@
     </ng-template>
   </div>
 </div>
-
+<br />
 <!-- Request List Template -->
 <ng-template #requestListTemplate let-requests="requests">
+  <br />
   <div class="account-header">
-    <span></span>
-    <span class="col-request-id">Request ID</span>
+    <span class="col-requester">Requester</span>
+    <span class="col-type">Type</span>
+    <span class="col-address">Address</span>
     <span class="col-date">Date</span>
-    <span class="col-event">Event</span>
     <span class="col-status">Status</span>
-    <span class="col-accepted-by">Accepted By</span>
-    <span class="col-action"></span>
+    <span class="col-staff">Staff</span>
+    <span class="col-action">Action</span>
   </div>
+
   <div class="account-list">
     <div
       class="account-row"
       *ngFor="let req of requests"
+      (mouseenter)="onRequestHover(req)"
+      (mouseleave)="onRequestHoverOut()"
       (click)="$event.stopPropagation()"
     >
-      <input
-        type="checkbox"
-        [checked]="isChecked(req)"
-        (change)="setChecked(req, $event)"
-      />
-      <span class="col-request-id">{{ req.id }}</span>
-      <span class="col-date"
-        >{{ req.timestamp?.toDate() | date : "short" }}</span
-      >
-      <!-- Add this for event -->
-      <span class="col-event">{{ req.event || "-" }}</span>
+      <td class="requester-cell">
+        <div class="requester-content">
+          <img
+            [src]="req.image || 'assets/default-marker-icon.png'"
+            alt="Requester image"
+          />
+          <div class="requester-text">
+            <div class="requester-name">{{ req.name }}</div>
+            <div class="requester-contact">{{ req.contactNumber }}</div>
+          </div>
+        </div>
+      </td>
+
+      <span class="col-type">{{ req.event || '-' }}</span>
+      <span class="col-address">{{ req.address || '-' }}</span>
+      <span class="col-date">
+        {{ req.timestamp?.toDate() | date: 'mediumDate' }}
+      </span>
+
       <span
         class="col-status"
         [ngClass]="{
           pending: req.status.toLowerCase() === 'pending',
-          accepted:
-            req.status.toLowerCase() === 'accepted' ||
-            req.status.toLowerCase() === 'responding',
-          completed:
-            req.status.toLowerCase() === 'completed' ||
-            req.status.toLowerCase() === 'resolved',
+          accepted: req.status.toLowerCase() === 'accepted' || req.status.toLowerCase() === 'responding',
+          completed: req.status.toLowerCase() === 'completed' || req.status.toLowerCase() === 'resolved',
           cancelled: req.status.toLowerCase() === 'cancelled'
         }"
       >
-        {{ req.status | titlecase }}
+        {{ req.status === 'responding' ? 'In Progress' : (req.status |
+        titlecase) }}
       </span>
-      <span class="col-accepted-by">{{ req.staffFullName || "-" }}</span>
+
+      <span class="col-staff">{{ req.staffFullName || '-' }}</span>
+
+      <!-- ✅ Moved checkbox and action button to last column -->
       <span class="col-action action-buttons">
-        <button title="View" (click)="viewRequest(req)">
+        <button
+          title="View"
+          [routerLink]="['/superAdmin', 'IncidentHistory', req.id]"
+          [queryParams]="{ from: 'incident' }"
+        >
           <i class="bx bx-show"></i>
         </button>
       </span>
@@ -182,12 +153,12 @@
       <p><strong>Request ID:</strong> {{ requestToView.id }}</p>
       <p>
         <strong>Date:</strong>
-        {{ requestToView.timestamp?.toDate() | date : "fullDate" }}
+        {{ requestToView.timestamp?.toDate() | date : 'fullDate' }}
       </p>
       <p><strong>Status:</strong> {{ requestToView.status | titlecase }}</p>
-      <p><strong>Event Incident</strong> {{ requestToView.event }}</p>
+      <p><strong>Event Incident:</strong> {{ requestToView.event }}</p>
       <p>
-        <strong>Accepted By:</strong> {{ requestToView.staffFullName || "-" }}
+        <strong>Accepted By:</strong> {{ requestToView.staffFullName || '-' }}
       </p>
       <p><strong>Description:</strong> {{ requestToView.description }}</p>
     </div>

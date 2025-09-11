@@ -56,11 +56,10 @@
           <i class="bx bxs-dashboard"></i>
           <span *ngIf="!isCollapsed">Dashboard</span>
         </li>
-
         <li
           [routerLink]="'EmergencyRequest'"
           routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
+          [routerLinkActiveOptions]="{ exact: false }"
         >
           <i class="bx bx-git-pull-request"></i>
           <span *ngIf="!isCollapsed">Emergency Request</span>
@@ -69,7 +68,7 @@
             class="notification-dot"
             [class.collapsed]="isCollapsed"
           >
-            {{ unreadEmergencyRequestCount }}
+            {{ unreadPendingRequestCount }}
           </span>
         </li>
         <li
@@ -77,25 +76,26 @@
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: false }"
         >
-          <i class="bx bx-git-pull-request"></i>
+          <i class="bx bx-navigation"></i>
           <span *ngIf="!isCollapsed">Live Tracking</span>
           <span
             *ngIf="hasUnreadEmergencyRequests"
             class="notification-dot"
             [class.collapsed]="isCollapsed"
           >
-            {{ unreadEmergencyRequestCount }}
+            {{ unreadRespondingRequestCount }}
           </span>
         </li>
 
         <li
-          [routerLink]="['IncidentHistory']"
+          [routerLink]="'IncidentHistory'"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: false }"
         >
           <i class="bx bx-history"></i>
           <span *ngIf="!isCollapsed">Incident History</span>
         </li>
+
         <li
           [routerLink]="['Team']"
           routerLinkActive="active"

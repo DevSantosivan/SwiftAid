@@ -12,7 +12,7 @@ import { EmergencyRequest } from '../../model/emergency';
 import { CommonModule } from '@angular/common';
 import { Firestore, doc, getDoc, Timestamp } from '@angular/fire/firestore';
 import { Subscription } from 'rxjs';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 
@@ -22,7 +22,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-emergency-request',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './emergency-request.component.html',
   styleUrls: ['./emergency-request.component.scss'],
 })
@@ -67,6 +67,9 @@ export class EmergencyRequestComponent
 
   ngAfterViewInit(): void {
     this.createPieChart();
+    const canvas = this.pieChartCanvas.nativeElement;
+    canvas.width = 600; // increase width
+    canvas.height = 450;
   }
 
   ngOnDestroy(): void {
@@ -164,9 +167,7 @@ export class EmergencyRequestComponent
                     last_name: data['last_name'] || '',
                   };
                 }
-              } catch (err) {
-                console.warn(`Failed to fetch user ${staffId}:`, err);
-              }
+              } catch (err) {}
             }
 
             this.applyFilter(this.activeFilter);

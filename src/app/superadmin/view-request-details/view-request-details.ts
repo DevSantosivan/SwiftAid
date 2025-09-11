@@ -17,6 +17,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-view-request-details',
+  standalone: true,
   imports: [CommonModule],
   templateUrl: './view-request-details.html',
   styleUrl: './view-request-details.scss',
@@ -39,7 +40,10 @@ export class ViewRequestDetails implements AfterViewInit, OnDestroy {
   routeLine?: L.Polyline;
   currentStaff: any = null;
 
-  staffAddress: string = 'Fetching address...'; // For readable address
+  staffAddress: string = 'Fetching address...';
+
+  // NEW: For back navigation
+  fromPage: string | null = null;
 
   constructor(
     private requestService: EmergencyRequestService,
@@ -50,6 +54,8 @@ export class ViewRequestDetails implements AfterViewInit, OnDestroy {
   ) {}
 
   async ngAfterViewInit(): Promise<void> {
+    this.fromPage = this.route.snapshot.queryParamMap.get('from'); // get 'from' value
+
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) return;
 
@@ -69,7 +75,7 @@ export class ViewRequestDetails implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // No geolocation watch to clear anymore
+    // Clean up if needed in future
   }
 
   initializeMap(): void {
@@ -89,7 +95,6 @@ export class ViewRequestDetails implements AfterViewInit, OnDestroy {
     if (this.request?.staffLat && this.request?.staffLng) {
       this.staffLocation = [this.request.staffLat, this.request.staffLng];
     } else {
-      // fallback location
       this.staffLocation = [12.3775, 121.0315];
     }
 
@@ -187,9 +192,17 @@ export class ViewRequestDetails implements AfterViewInit, OnDestroy {
       this.isSubmitting = false;
     }
   }
-
   navigateToEmergencyRequest() {
     this.router.navigate(['/superAdmin/EmergencyRequest']);
+  }
+
+  // ✅ Dynamic back navigation function
+  navigateBackToList() {
+    if (this.fromPage === 'incident') {
+      this.router.navigate(['/superAdmin/IncidentHistory']);
+    } else {
+      this.router.navigate(['/superAdmin/EmergencyRequest']);
+    }
   }
 
   navigateToNone() {

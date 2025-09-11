@@ -11,6 +11,7 @@ import {
   where,
   DocumentSnapshot,
   arrayUnion,
+  deleteDoc,
 } from '@angular/fire/firestore';
 import { EmergencyRequest } from '../model/emergency';
 import { Notification } from '../model/notification'; // <-- Import notification interface
@@ -503,6 +504,17 @@ export class EmergencyRequestService {
     }
   }
 
+  async deleteEmergencyRequest(requestId: string): Promise<void> {
+    try {
+      const docRef = doc(this.firestore, this.collectionName, requestId);
+      await deleteDoc(docRef);
+      console.log(`Emergency request ${requestId} deleted successfully.`);
+    } catch (error) {
+      console.error(`Failed to delete emergency request ${requestId}:`, error);
+      throw error;
+    }
+  }
+
   // Mark all notifications as read by the given user (adds userId to readBy array)
   async markAllNotificationsAsReadForUser(userId: string): Promise<void> {
     try {
@@ -566,5 +578,43 @@ export class EmergencyRequestService {
     });
 
     return unread.length;
+  }
+
+  getUnreadRespondingRequests(userId: string): Observable<number> {
+    const notifRef = collection(this.firestore, 'EmergencyRequest');
+
+    return new Observable<number>((observer) => {
+      const unsubscribe = onSnapshot(notifRef, (snapshot) => {
+        const count = snapshot.docs.filter((docSnap) => {
+          const data = docSnap.data() as EmergencyRequest;
+          return (
+            data.status?.toLowerCase() === 'responding' &&
+            !data.readBy?.includes(userId)
+          );
+        }).length;
+
+        observer.next(count);
+      });
+
+      // Cleanup when unsubscribed
+      return () => unsubscribe();
+    });
+  }
+
+  getUnreadPendingRequests(): Observable<number> {
+    const notifRef = collection(this.firestore, 'EmergencyRequest');
+
+    return new Observable<number>((observer) => {
+      const unsubscribe = onSnapshot(notifRef, (snapshot) => {
+        const count = snapshot.docs.filter((docSnap) => {
+          const data = docSnap.data() as EmergencyRequest;
+          return data.status?.toLowerCase() === 'pending';
+        }).length;
+
+        observer.next(count);
+      });
+
+      return () => unsubscribe();
+    });
   }
 }

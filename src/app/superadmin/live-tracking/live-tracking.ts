@@ -184,10 +184,6 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
       const time = route.summary.totalTime; // in seconds
 
       const eta = this.formatETA(time);
-      console.log(
-        `Request ${id} ETA: ${eta}, Distance: ${this.formatDistance(distance)}`
-      );
-      // Optionally store ETA per request to display in the card
     });
 
     this.routingControls.set(id, routingControl);

@@ -152,9 +152,7 @@ export class DashboardComponent implements OnInit {
           this.updateMonthlyEventBarChart(realTimeRequests);
         }
       );
-    } catch (error) {
-      console.error('Error initializing dashboard:', error);
-    }
+    } catch (error) {}
   }
 
   // Charts Config

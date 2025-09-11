@@ -312,7 +312,7 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
       .then((data) => {
         barangay.address = data.display_name;
       })
-      .catch((err) => console.error('Reverse geocode failed:', err));
+      .catch((err) => console.error('Geocoding error:', err));
   }
 
   // ===== INCIDENT LOGIC =====
@@ -353,7 +353,6 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
         this.showSuccessModal = true;
         setTimeout(() => (this.showSuccessModal = false), 2000);
       } catch (error) {
-        console.error('Error submitting incident:', error);
         alert('Failed to submit incident. Please try again.');
       } finally {
         this.isSubmitting = false;
@@ -393,7 +392,6 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
         setTimeout(() => (this.showSuccessModal = false), 2000);
         this.openIncidentDropdownIndex = null;
       } catch (error) {
-        console.error('Error deleting incident:', error);
         alert('Failed to delete incident. Please try again.');
       } finally {
         this.isSubmitting = false;

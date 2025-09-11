@@ -1,15 +1,13 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { EmergencyRequest } from '../../model/emergency';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { AuthService } from '../../core/auth.service';
-import { VerticalAlign } from 'docx';
-import { Chart, registerables } from 'chart.js';
-import { saveAs } from 'file-saver';
-import { HeadingLevel } from 'docx';
 
+import * as L from 'leaflet';
+import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 
 import {
@@ -22,18 +20,20 @@ import {
   TextRun,
   WidthType,
   ImageRun,
+  VerticalAlign,
+  HeadingLevel,
 } from 'docx';
-
-Chart.register(...registerables);
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-incident-history',
   standalone: true,
-  imports: [FormsModule, CommonModule],
+  imports: [FormsModule, CommonModule, RouterLink],
   templateUrl: './incident-history.html',
   styleUrls: ['./incident-history.scss'],
 })
-export class IncidentHistory implements OnInit, OnDestroy {
+export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
+  [x: string]: any;
   activeTab: 'all' | 'resolved' | 'cancelled' = 'all';
 
   allRequests: EmergencyRequest[] = [];
@@ -50,34 +50,179 @@ export class IncidentHistory implements OnInit, OnDestroy {
   showBulkMenu = false;
   searchTerm = '';
 
-  requestStatusChart?: Chart;
-  requestEventBarChart?: Chart;
+  // Leaflet map related
+  private map?: L.Map;
+  private markersLayer?: L.FeatureGroup;
+  hoverMarker?: L.Marker;
 
   constructor(
     private emergencyRequestService: EmergencyRequestService,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) {}
 
-  async ngOnInit() {
+  async ngOnInit(): Promise<void> {
     await this.loadRequests();
   }
 
-  ngOnDestroy() {
-    this.requestStatusChart?.destroy();
-    this.requestEventBarChart?.destroy();
+  ngAfterViewInit(): void {
+    this.initMap();
+  }
+
+  ngOnDestroy(): void {
+    this.map?.remove();
+  }
+
+  // HOVER REQUEST ON MAP
+
+  onRequestHover(req: EmergencyRequest) {
+    if (!this.map) return;
+
+    // Remove previous hover marker
+    if (this.hoverMarker) {
+      this.map.removeLayer(this.hoverMarker);
+    }
+
+    // Only add marker if valid coords
+    if (req.latitude != null && req.longitude != null) {
+      // Create a custom DivIcon with circular image
+      const iconHtml = `
+      <div style="
+        width: 40px; 
+        height: 40px; 
+        border-radius: 50%; 
+        overflow: hidden; 
+        border: 2px solid #555;
+        box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      ">
+        <img 
+          src="${req.image || 'assets/default-marker-icon.png'}" 
+          alt="incident" 
+          style="width: 100%; height: 100%; object-fit: cover;"
+        />
+      </div>
+    `;
+
+      const customIcon = L.divIcon({
+        html: iconHtml,
+        className: '', // Remove default styles
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
+        popupAnchor: [0, -40],
+      });
+
+      this.hoverMarker = L.marker([req.latitude, req.longitude], {
+        icon: customIcon,
+        riseOnHover: true,
+      }).addTo(this.map);
+
+      const popupContent = `
+      <strong>${req.name}</strong><br/>
+      Status: ${req.status}<br/>
+      Staff: ${req.staffFullName || ''}
+    `;
+
+      this.hoverMarker.bindPopup(popupContent).openPopup();
+
+      // Center map on hovered marker smoothly
+      this.map.panTo([req.latitude, req.longitude], { animate: true });
+    }
+  }
+
+  onRequestHoverOut() {
+    if (this.hoverMarker && this.map) {
+      this.map.removeLayer(this.hoverMarker);
+      this.hoverMarker = undefined;
+    }
+  }
+
+  // =====================
+  // MAP METHODS
+  // =====================
+
+  private initMap(): void {
+    this.map = L.map('incidentMap', {
+      center: [20, 0], // default center, adjust as needed
+      zoom: 2,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(this.map);
+
+    this.markersLayer = L.featureGroup().addTo(this.map);
+
+    this.updateMapMarkers();
+  }
+
+  private updateMapMarkers(): void {
+    if (!this.map || !this.markersLayer) return;
+
+    this.markersLayer.clearLayers();
+
+    const requestsToMap = this.getCurrentFilteredRequests();
+
+    requestsToMap.forEach((req) => {
+      const lat = (req as any).latitude;
+      const lng = (req as any).longitude;
+
+      if (lat != null && lng != null) {
+        const iconHtml = `
+          <div style="
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid RED;
+            box-shadow: 0 0 15px rgba(247, 11, 11, 0.3);
+          ">
+            <img 
+              src="${req.image || 'assets/default-marker-icon.png'}" 
+              alt="incident" 
+              style="width: 100%; height: 100%; object-fit: cover;"
+            />
+          </div>
+        `;
+
+        const customIcon = L.divIcon({
+          html: iconHtml,
+          className: '',
+          iconSize: [40, 40],
+          iconAnchor: [20, 40],
+          popupAnchor: [0, -40],
+        });
+
+        const marker = L.marker([lat, lng], { icon: customIcon });
+
+        marker.bindPopup(
+          `<b>${req.name}</b><br/>
+           Status: ${req.status}<br/>
+           Event: ${req.event}<br/>
+           Address: ${req.address || 'N/A'}`
+        );
+
+        this.markersLayer!.addLayer(marker);
+      }
+    });
+
+    // Adjust map view to fit markers
+    const bounds = this.markersLayer.getBounds();
+    if (bounds.isValid()) {
+      this.map.fitBounds(bounds, { padding: [50, 50] });
+    }
   }
 
   // =====================
   // DATA LOADING & FILTER
   // =====================
 
-  async loadRequests() {
+  private async loadRequests(): Promise<void> {
     try {
       const fetchedRequests =
         await this.emergencyRequestService.getRequestResolved();
 
       this.resolvedRequests = fetchedRequests.filter((r) =>
-        ['resolved', 'completed'].includes(r.status?.toLowerCase() || '')
+        ['resolved', 'completed'].includes(r.status?.toLowerCase() ?? '')
       );
 
       this.cancelledRequests = fetchedRequests.filter(
@@ -86,12 +231,10 @@ export class IncidentHistory implements OnInit, OnDestroy {
 
       this.allRequests = [...this.resolvedRequests, ...this.cancelledRequests];
       this.applyFilters();
-    } catch (error) {
-      console.error('Error loading requests:', error);
-    }
+    } catch (error) {}
   }
 
-  applyFilters() {
+  applyFilters(): void {
     const term = this.searchTerm.trim().toLowerCase();
 
     this.filteredResolvedRequests = this.filterBySearch(
@@ -104,21 +247,21 @@ export class IncidentHistory implements OnInit, OnDestroy {
     );
     this.filteredAllRequests = this.filterBySearch(this.allRequests, term);
 
-    const current = this.getCurrentFilteredRequests();
+    const currentFiltered = this.getCurrentFilteredRequests();
+
+    // Keep only selected requests that are still visible after filtering
     this.selectedRequests = this.selectedRequests.filter((s) =>
-      current.some((r) => r.id === s.id)
+      currentFiltered.some((r) => r.id === s.id)
     );
 
-    this.updateRequestStatusPieChart(current);
-    this.updateMonthlyEventBarChart(current);
+    this.updateMapMarkers();
   }
 
-  filterBySearch(
+  private filterBySearch(
     requests: EmergencyRequest[],
     term: string
   ): EmergencyRequest[] {
     if (!term) return requests;
-
     return requests.filter((req) =>
       [req.name, req.description, req.status].some((field) =>
         field?.toLowerCase().includes(term)
@@ -126,18 +269,19 @@ export class IncidentHistory implements OnInit, OnDestroy {
     );
   }
 
-  setTab(tab: 'all' | 'resolved' | 'cancelled') {
+  setTab(tab: 'all' | 'resolved' | 'cancelled'): void {
     this.activeTab = tab;
     this.selectedRequests = [];
     this.applyFilters();
   }
 
-  getCurrentFilteredRequests(): EmergencyRequest[] {
+  private getCurrentFilteredRequests(): EmergencyRequest[] {
     switch (this.activeTab) {
       case 'resolved':
         return this.filteredResolvedRequests;
       case 'cancelled':
         return this.filteredCancelledRequests;
+      case 'all':
       default:
         return this.filteredAllRequests;
     }
@@ -151,11 +295,11 @@ export class IncidentHistory implements OnInit, OnDestroy {
     return this.selectedRequests.some((s) => s.id === req.id);
   }
 
-  setChecked(req: EmergencyRequest, event: any) {
-    const checked = event.target.checked;
-    if (checked && !this.isChecked(req)) {
+  setChecked(req: EmergencyRequest, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.checked && !this.isChecked(req)) {
       this.selectedRequests.push(req);
-    } else if (!checked) {
+    } else if (!input.checked) {
       this.selectedRequests = this.selectedRequests.filter(
         (s) => s.id !== req.id
       );
@@ -167,11 +311,11 @@ export class IncidentHistory implements OnInit, OnDestroy {
     return current.length > 0 && current.every((r) => this.isChecked(r));
   }
 
-  toggleSelectAllRequests(event: any) {
+  toggleSelectAllRequests(event: Event): void {
+    const input = event.target as HTMLInputElement;
     const current = this.getCurrentFilteredRequests();
-    const checked = event.target.checked;
 
-    if (checked) {
+    if (input.checked) {
       this.selectedRequests = [
         ...this.selectedRequests,
         ...current.filter((r) => !this.isChecked(r)),
@@ -183,12 +327,12 @@ export class IncidentHistory implements OnInit, OnDestroy {
     }
   }
 
-  toggleBulkMenu(event: MouseEvent) {
+  toggleBulkMenu(event: MouseEvent): void {
     event.stopPropagation();
     this.showBulkMenu = !this.showBulkMenu;
   }
 
-  selectBy(criteria: 'resolved' | 'cancelled' | 'all' | 'none') {
+  selectBy(criteria: 'resolved' | 'cancelled' | 'all' | 'none'): void {
     switch (criteria) {
       case 'resolved':
         this.selectedRequests = [...this.resolvedRequests];
@@ -210,134 +354,22 @@ export class IncidentHistory implements OnInit, OnDestroy {
   // VIEWING / MODAL
   // =====================
 
-  viewRequest(req: EmergencyRequest) {
+  viewRequest(req: EmergencyRequest): void {
     this.requestToView = req;
   }
 
-  closeView() {
+  viewRequestDetails(req: EmergencyRequest) {
+    this.router.navigate(['/superAdmin/EmergencyRequest', req.id]);
+  }
+
+  closeView(): void {
     this.requestToView = undefined;
   }
 
-  deleteSelectedRequests() {
+  deleteSelectedRequests(): void {
+    // Implement actual deletion logic here if needed
     console.log('To delete:', this.selectedRequests);
     this.selectedRequests = [];
-  }
-
-  // =====================
-  // CHARTS
-  // =====================
-
-  updateMonthlyEventBarChart(requests: EmergencyRequest[]) {
-    const monthLabels: string[] = [];
-    const monthMap: Map<string, number> = new Map();
-
-    const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const label = d.toLocaleString('default', {
-        month: 'short',
-        year: 'numeric',
-      });
-      monthLabels.push(label);
-      monthMap.set(label, monthLabels.length - 1);
-    }
-
-    const eventSet = new Set<string>();
-    requests.forEach((r) => r.event && eventSet.add(r.event));
-    const events = Array.from(eventSet);
-
-    const countsPerEvent: { [event: string]: number[] } = {};
-    events.forEach((event) => {
-      countsPerEvent[event] = new Array(monthLabels.length).fill(0);
-    });
-
-    requests.forEach((r) => {
-      if (!r.timestamp || !r.event) return;
-      const date = r.timestamp.toDate
-        ? r.timestamp.toDate()
-        : new Date(r.timestamp);
-      const label = date.toLocaleString('default', {
-        month: 'short',
-        year: 'numeric',
-      });
-      const index = monthMap.get(label);
-      if (index !== undefined) countsPerEvent[r.event][index]++;
-    });
-
-    const colors = [
-      '#FF6384',
-      '#36A2EB',
-      '#6d6b65ff',
-      '#4BC0C0',
-      '#9966FF',
-      '#FF9F40',
-      '#C9CBCF',
-      '#8E44AD',
-    ];
-
-    const datasets = events.map((event, i) => ({
-      label: event,
-      data: countsPerEvent[event],
-      backgroundColor: colors[i % colors.length],
-    }));
-
-    this.requestEventBarChart?.destroy();
-    this.requestEventBarChart = new Chart('requestStatusBarChart', {
-      type: 'bar',
-      data: { labels: monthLabels, datasets },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: 'bottom' },
-          tooltip: { mode: 'index', intersect: false },
-        },
-        scales: {
-          x: { stacked: true, title: { display: true, text: 'Month' } },
-          y: {
-            stacked: true,
-            beginAtZero: true,
-            title: { display: true, text: 'Number of Requests' },
-            ticks: { stepSize: 1 },
-          },
-        },
-      },
-    });
-  }
-
-  updateRequestStatusPieChart(requests: EmergencyRequest[]) {
-    let resolved = 0,
-      cancelled = 0;
-    requests.forEach((r) => {
-      const status = r.status?.toLowerCase();
-      if (['resolved', 'completed'].includes(status)) resolved++;
-      else if (status === 'cancelled') cancelled++;
-    });
-
-    this.requestStatusChart?.destroy();
-    this.requestStatusChart = new Chart('requestStatusChart', {
-      type: 'pie',
-      data: {
-        labels: ['Resolved', 'Cancelled'],
-        datasets: [
-          {
-            data: [resolved, cancelled],
-            backgroundColor: ['#4CAF50', '#F44336'],
-            hoverOffset: 14,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: 'bottom', labels: { boxWidth: 14, padding: 16 } },
-          tooltip: {
-            callbacks: {
-              label: (context) => `${context.label}: ${context.parsed}`,
-            },
-          },
-        },
-      },
-    });
   }
 
   // =====================
@@ -371,7 +403,6 @@ export class IncidentHistory implements OnInit, OnDestroy {
         reader.readAsArrayBuffer(blob);
       });
     } catch (e) {
-      console.error('Error loading image:', e);
       return null;
     }
   }

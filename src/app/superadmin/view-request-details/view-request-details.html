@@ -1,10 +1,14 @@
 <p>view-request-details works!</p>
 <div class="content-body">
   <div class="content_1">
-    <div (click)="navigateToEmergencyRequest()" class="content-header">
+    <div (click)="navigateBackToList()" class="content-header">
       <i style="font-size: 25px" class="bx bx-left-arrow-alt"></i>
-      <span>Back To Emergency Request List</span>
+      <span
+        >Back to {{ fromPage === 'incident' ? 'Incident History' : 'Emergency
+        Requests' }}</span
+      >
     </div>
+
     <br />
     <h4 style="font-size: 15px">Emergency Response Panel</h4>
     <p>Details for Emergency Request Review</p>
