@@ -1,41 +1,17 @@
-import { Component, OnInit } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Component } from '@angular/core';
+import { Router, RouterLinkActive, RouterModule } from '@angular/router';
 import { LoaderComponent } from '../../loader/loader.component';
 
 @Component({
   selector: 'app-navbar',
-  imports: [LoaderComponent],
+  standalone: true,
+  imports: [LoaderComponent, RouterLinkActive, RouterModule],
   templateUrl: './navbar.component.html',
-  styleUrl: './navbar.component.scss',
+  styleUrls: ['./navbar.component.scss'],
 })
 export class NavbarComponent {
   constructor(private route: Router) {}
 
-  ngOnInit(): void {
-    //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
-    //Add 'implements OnInit' to the class.
-  }
-  navigateToServices() {
-    this.isloader = true;
-    setTimeout(() => {
-      this.route.navigate(['/services']);
-      this.isloader = false;
-    }, 1000); // Simulating a delay for the loader
-  }
-  navigateToHome() {
-    this.isloader = true;
-    setTimeout(() => {
-      this.route.navigate(['/home']);
-      this.isloader = false;
-    }, 1000); // Simulating a delay for the loader
-  }
-  navigateToAboutus() {
-    this.isloader = true;
-    setTimeout(() => {
-      this.route.navigate(['/AboutUs']);
-      this.isloader = false;
-    }, 1000); // Simulating a delay for the loader
-  }
   isloader: boolean = false;
 
   loader() {

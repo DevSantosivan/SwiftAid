@@ -11,6 +11,8 @@ import { CommonModule } from '@angular/common';
 
 import { AuthService } from '../../core/auth.service';
 import { LoadingScreenComponent } from '../loading-screen/loading-screen.component';
+import { FooterComponent } from '../footer/footer.component';
+import { Footer } from 'docx';
 
 @Component({
   selector: 'app-login',
@@ -20,6 +22,7 @@ import { LoadingScreenComponent } from '../loading-screen/loading-screen.compone
     CommonModule,
     LoadingScreenComponent,
     FormsModule,
+    FooterComponent,
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
@@ -56,6 +59,10 @@ export class LoginComponent implements OnInit {
   ngOnInit(): void {
     this.isLoggedIn = this.authService.getErrorValidation();
     this.isProgressIn = this.authService.getErrorValidation();
+  }
+
+  goBack() {
+    this.router.navigate(['/home']);
   }
 
   // 🔐 LOGIN FUNCTION

@@ -9,7 +9,9 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  border: 1px solid #cccccc8e;
+}
+.back-btn:hover {
+  text-decoration: underline;
 }
 
 .modal-backdrop {
@@ -110,6 +112,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  background-color: #dddddd3d;
   .login-description {
     width: 100%;
     p {

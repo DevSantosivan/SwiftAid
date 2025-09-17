@@ -13,11 +13,12 @@ import { initializeApp } from 'firebase/app';
 import { environment } from '../../model/environment';
 import { register } from '../../model/registered';
 import { UserService } from '../../core/user.service';
+import { FooterComponent } from '../footer/footer.component';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FooterComponent],
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.scss'],
 })

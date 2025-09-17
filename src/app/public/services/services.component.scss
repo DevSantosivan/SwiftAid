@@ -1,64 +1,166 @@
-.container{
-    margin-top: 140px;
-    width: 100%;
-    padding: 10px 10%;
-    h1{
-      font-size: 40px;
-      color: red;
-      margin-bottom: 10%;
-    }
-    h2{
-      font-size: 50px;
-      color: red;
-    }
-    h3{
-       font-size: 30px;
-       text-transform: capitalize;
-       color: #232222;
-    }
-    p{
-      font-size: 18px;
-      line-height: 30px;
-    }
-  .flex-feautures-image{
-    display: flex;
-    width: 100%;
-    align-items: center;
-   justify-content: space-between;
-    .dirrection{
-        display: flex;
-       
-    }
+/* Hero Section */
+.services-hero {
+  margin-top: 40px;
+  text-align: center;
+  padding: 70px 20px;
+  background: #dddddd3d;
+  color: #000;
 }
 
-.team-flex{
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10%;
-  .team-card{
-    width: 400px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-     span{
-      font-size: 13px;
-     }
-    
-  }
+.services-hero h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  color: #000;
 }
 
-.card-img{
-  width: 200px;
-   height: 200px;
-    overflow: hidden;
+.services-hero h1 span {
+  color: #ff0000;
+}
+
+.services-hero p {
+  font-size: 1.1rem;
+  max-width: 700px;
+  margin: 0 auto;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* Services Grid */
+/* Services Grid */
+.services-container {
+  padding: 40px 15px; /* binawasan para mas dikit */
+  text-align: center;
+  background: #fff;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20px, 1fr));
+  gap: 15px; /* mas maliit na pagitan */
+  justify-items: center;
+}
+
+.service-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px 15px; /* mas compact na padding */
+  border: 1px solid #ddd;
+  max-width: 260px;
+  color: #000;
+  transition: all 0.3s ease;
+}
+
+.service-card:hover {
+  border-color: #ff0000;
+}
+
+.service-card img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  margin-bottom: 15px;
+}
+
+.service-card h3 {
+  font-size: 1.2rem;
   margin-bottom: 10px;
- }
- .card-img img{
-   width: 100%;
-   height: 100%;
- }
+  color: #ff0000;
+}
+
+.service-card p {
+  font-size: 0.95rem;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.service-card button {
+  background: #ff0000;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  color: #fff;
+  cursor: pointer;
+  transition: 0.3s;
+  font-weight: 600;
+}
+
+.service-card button:hover {
+  background: #b30000;
+}
+
+/* How it Works */
+.howitworks-container {
+  background: #fff;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.step-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  color: #000;
+  transition: 0.3s;
+}
+
+.step-card:hover {
+  border-color: #ff0000;
+}
+
+.step-card span {
+  font-size: 40px;
+  color: #ff0000;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.step-card h4 {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  color: #000;
+}
+
+/* CTA */
+.services-cta {
+  text-align: center;
+  padding: 70px 20px;
+  background: #dddddd3d;
+  color: #000;
+}
+
+.services-cta h2 {
+  font-size: 2rem;
+  margin-bottom: 15px;
+  color: #ff0000;
+}
+
+.services-cta p {
+  max-width: 600px;
+  margin: 0 auto 20px;
+  font-size: 1.05rem;
+  color: #333;
+}
+
+.services-cta button {
+  background: #ff0000;
+  color: #fff;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 25px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.services-cta button:hover {
+  background: #b30000;
 }

@@ -1,133 +1,127 @@
 <app-navbar></app-navbar>
-<div class="container-hero">
-  <div class="hero-content">
-    <h2>SwiftAid: <span>Your Lifeline in Crisis</span></h2>
-    <p>
-      A Real-Time Emergency Tracking System for Quick Response Using Geofencing
-      Technology in San Jose
-    </p>
-    <!-- <img
-      src="https://i.pinimg.com/564x/86/85/73/868573142f5d094cf21a67cdf3781870.jpg"
-      alt="Ambulance Illustration"
-      class="hero-image"
-    /> -->
-  </div>
-</div>
-
-<div class="relatives-container">
-  <div class="relatives-grid">
-    <div class="relatives-card">
-      <span class="material-symbols-outlined"> local_hospital </span>
-      <div class="description">
-        <strong>Emergency Ambulance Dispatch</strong>
-        <p>
-          Track and manage ambulance requests in real-time to ensure swift
-          response.
-        </p>
+<div style="background-color: #dddddd3d">
+  <div class="container-hero">
+    <div class="hero-content">
+      <div class="head-tittle">
+        <h3><i class="bx bx-git-pull-request"></i> Emergency Command Center</h3>
       </div>
-    </div>
-    <div class="relatives-card">
-      <span class="material-symbols-outlined"> groups </span>
-      <div class="description">
-        <strong>User Management</strong>
-        <p>
-          Manage registered staff and responders with ease, assigning roles and
-          access.
-        </p>
-      </div>
-    </div>
-    <div class="relatives-card">
-      <span class="material-symbols-outlined"> notifications_active </span>
-      <div class="description">
-        <strong>Real-Time Notifications</strong>
-        <p>
-          Receive instant alerts on new emergency requests for prompt action.
-        </p>
+      <h2><span>SwiftAid:</span> Real-Time Emergency Management</h2>
+      <p>
+        A Real-Time Monitoring and Response System that empowers Administrators
+        to oversee requests and Staff to act quickly in emergencies within San
+        Jose.
+      </p>
+      <div class="button-getStarted">
+        <button>Get Started</button>
       </div>
     </div>
   </div>
-</div>
 
-<div class="about-911-container">
-  <h2>How It Works</h2>
-  <div class="about-911-context">
-    <label for="">What is SwiftAid?</label>
-    <p>
-      What is SwiftAid? Press for Help is a direct line to emergency services.
-      This system ensures that help is dispatched as quickly as possible to
-      assist you in a crisis.
-    </p>
-
-    <label for="">How Does SwiftAid?</label>
-    <p>
-      When you press for help, your request is routed to a trained dispatcher.
-      The dispatcher will gather information from you, assess your situation,
-      and send the appropriate assistance based on your location and the nature
-      of the emergency.
-    </p>
-    <label for="">When Should You SwiftAid?</label>
-    <p>
-      for help for life-threatening emergencies, crimes in progress, fires,
-      medical emergencies, and accidents. When in doubt, always press for help.
-      The dispatcher is there to assist you
-    </p>
-  </div>
-</div>
-
-<div class="tips-container">
-  <label for="">Stay Ready for Anything</label>
-  <h2>Emergency Preparedness Tips</h2>
-  <div class="tips-flex-content">
-    <div class="img-content">
-      <img
-        src="https://1.bp.blogspot.com/-zXToz-3B2KA/Vzu0p35it5I/AAAAAAAAJ00/BnSYdmBjle0s759NzlXSS4qxYbATX7aVACLcB/s1600/emergency.png"
-        width="300"
-        alt=""
-      />
-    </div>
-    <div class="tips-list">
-      <div class="list">
-        <span class="material-symbols-outlined" style="color: orange">
-          cognition
-        </span>
-        <label for="">Create an Emergency Plan</label>
-        <p>
-          Develop a plan that outlines how your family will respond to different
-          types of emergencies.
-        </p>
-      </div>
-      <div class="list">
-        <span class="material-symbols-outlined" style="color: rgb(204, 22, 22)">
-          construction
-        </span>
-        <label for="">Build an Emergency Kit</label>
-        <p>
-          Every home should have a well-stocked emergency kit with essential
-          supplies for at least 72 hours. Here’s what to include:
-        </p>
-      </div>
-      <div class="list">
-        <span class="material-symbols-outlined" style="color: green">
-          info
-        </span>
-        <label for="">Stay Informed</label>
-        <p>Knowledge is your greatest tool in an emergency.</p>
+  <div class="relatives-container">
+    <!-- Carousel Section -->
+    <div class="carousel-wrapper">
+      <div class="carousel-track">
+        <div *ngFor="let item of carouselItems" class="carousel-slide">
+          <img [src]="item" alt="carousel image" />
+        </div>
       </div>
     </div>
+
+    <!-- Feedback Section -->
+    <br />
+    <br />
+    <!-- Features Section -->
+    <div class="about-911-container">
+      <h2>Admin & Staff Responsibilities</h2>
+      <div class="about-911-context">
+        <label for="">Admin Role</label>
+        <p>
+          The Admin monitors all incoming emergency requests in real-time. They
+          manage staff assignments and track response efficiency.
+        </p>
+
+        <label for="">Staff Role</label>
+        <p>
+          Staff are the responders. They accept assigned requests, update their
+          status, and provide real-time feedback on the emergency.
+        </p>
+
+        <label for="">System Advantage</label>
+        <p>
+          SwiftAid gives admins a clear overview of emergencies while ensuring
+          staff can respond quickly and effectively.
+        </p>
+      </div>
+    </div>
+    <br />
+    <br />
+    <!-- Stats Section -->
+    <div class="stats-container">
+      <h2>Emergency Statistics</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <i style="color: red" class="bx bx-git-pull-request"></i>
+
+          <h3>{{ totalRequests }}</h3>
+          <p>Total Requests</p>
+        </div>
+        <div class="stat-card">
+          <span class="material-symbols-outlined" style="color: green">
+            check_circle
+          </span>
+          <h3>{{ resolvedRequests }}</h3>
+          <p>Resolved</p>
+        </div>
+        <div class="stat-card">
+          <span class="material-symbols-outlined" style="color: orange">
+            pending
+          </span>
+          <h3>{{ pendingRequests }}</h3>
+          <p>Residents</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="alert-container">
+      <h1>
+        Effective Monitoring, Faster Response,<br />
+        Safer Community.
+      </h1>
+      <p>
+        With SwiftAid, Admins and Staff work hand-in-hand to ensure every
+        emergency is tracked, responded to, and resolved quickly — protecting
+        lives and strengthening community safety.
+      </p>
+      <button>View Dashboard</button>
+    </div>
+
+    <div class="feedback-section">
+      <h2 class="feedback-title">What Residents Say</h2>
+      <p class="feedback-sub">
+        Real stories from residents who used SwiftAid during emergencies.
+      </p>
+
+      <div class="feedback-grid">
+        <div class="feedback-card" *ngFor="let fb of feedbacks">
+          <div class="feedback-header">
+            <img [src]="fb.avatar" alt="user" class="feedback-avatar" />
+            <div>
+              <h4>{{ fb.user }}</h4>
+              <small>{{ fb.date | date : "MMM d, y, h:mm a" }}</small>
+            </div>
+          </div>
+
+          <p class="feedback-message">“{{ fb.message }}”</p>
+
+          <div class="feedback-meta">
+            <ng-container *ngFor="let star of [].constructor(fb.likes)">
+              <span class="material-symbols-outlined star-icon">star</span>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
-
-<div class="alert-container">
-  <h1>
-    Preparing now can make all <br />
-    the difference when it matters most.
-  </h1>
-  <p>
-    Taking steps to prepare today can save lives and reduce risks when an
-    emergency happens. Being ready ensures you can act quickly and confidently
-    when it matters most.
-  </p>
-  <button>Read more</button>
-</div>
-
 <app-footer></app-footer>

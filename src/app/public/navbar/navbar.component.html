@@ -3,15 +3,25 @@
     <h3 class="flex-logo">
       <img src="assets/logo22.png" alt="" class="logo" />Swift Aid
     </h3>
+    <ul>
+      <li>
+        <a
+          routerLink="/home"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          >Home</a
+        >
+      </li>
+      <li><a routerLink="/about-us" routerLinkActive="active">About Us</a></li>
+      <li><a routerLink="/services" routerLinkActive="active">Services</a></li>
+      <li><a routerLink="/faqs" routerLinkActive="active">FAQs</a></li>
+      <li><a routerLink="/contact" routerLinkActive="active">Contact Us</a></li>
+    </ul>
   </div>
-  <ul>
-    <li (click)="navigateToAboutus()">About Us</li>
-    <li (click)="navigateToServices()">Services</li>
-    <li>FAQs</li>
-    <li>Contact Us</li>
-  </ul>
+
   <div class="btn-container">
-    <button (click)="loader()">Login</button>
+    <button class="btn1" (click)="loader()">Login</button>
+    <button class="btn2" (click)="loader()">Sign Up</button>
   </div>
 </div>
 

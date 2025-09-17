@@ -40,44 +40,65 @@
   text-align: center;
   padding: 40px 20px;
   color: #fff;
-  background: url("https://www.trinetrawireless.com/wp-content/uploads/2017/12/Emergency-Medical-Services.jpg")
-    no-repeat center center/cover;
-}
 
-.container-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.87); /* dark overlay for text readability */
-  z-index: 1;
+  // background: url("https://www.trinetrawireless.com/wp-content/uploads/2017/12/Emergency-Medical-Services.jpg")
+  //   no-repeat center center/cover;
 }
 
 .hero-content {
   position: relative;
   z-index: 2;
-  max-width: 600px;
+
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+.head-tittle {
+  background-color: #eb11111f;
+  padding: 5px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  h3 {
+    color: #e53e3e; /* a softer red */
+    font-size: 15px;
+    font-weight: 500;
+  }
+  i {
+    transform: rotate(180deg);
+  }
+}
+.button-getStarted {
+  button {
+    width: 150px;
+    padding: 15px 0px;
+    border-radius: 0px;
+    border: none;
+    background-color: #e53e3e;
+    color: #fff;
+  }
 }
 
 .hero-content h2 {
-  font-size: 3rem;
-  font-weight: 800;
+  font-size: 3.2rem;
+  font-weight: 700;
   margin-bottom: 0.5em;
-  color: #e53935; /* ambulance red accent */
+  color: #2c2929; /* ambulance red accent */
 }
 
 .hero-content h2 span {
-  color: #fff;
+  color: #e53e3e; /* a softer red */
 }
 
 .hero-content p {
-  font-size: 1.2rem;
+  font-size: 1rem;
   margin-bottom: 1.5em;
-  color: #f0f0f0;
+  color: #4a4a4a;
+  font-weight: 500;
 }
 
 .hero-image {
   width: 100%;
-  max-width: 400px;
+  max-width: 100%;
   margin: 0 auto;
   border-radius: 10px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
@@ -86,7 +107,7 @@
 .image {
   overflow: hidden;
   width: 100%;
-  height: 300px;
+  height: 100%;
   background-color: red;
 
   img {
@@ -112,16 +133,22 @@
       align-items: center;
       justify-content: center;
       width: 100%;
-      height: 200px;
+      height: 100%;
       margin-top: -100px;
-      background-color: #fff;
-      border-radius: 8px;
+      background-color: #2c2929;
+      border-radius: 20px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       padding: 25px;
       display: flex;
       align-items: flex-start;
       gap: 15px;
       transition: transform 0.2s ease;
+      overflow: hidden;
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
     }
     // .relatives-card:hover {
     //   transform: translateY(-5px);
@@ -167,10 +194,10 @@
     margin-top: 20px;
   }
   p {
-    margin-bottom: 10px;
-    font-size: 14px;
-    color: #504c4cf6;
-    letter-spacing: 0.8px;
+    font-size: 1rem;
+    margin-bottom: 1.5em;
+    color: #4a4a4a;
+    font-weight: 500;
   }
 }
 
@@ -214,10 +241,10 @@
           font-size: 35px;
         }
         p {
-          font-size: 13px;
-          color: #504c4cf6;
-          letter-spacing: 0.8px;
-          margin: 10px 0px;
+          font-size: 1rem;
+          margin-bottom: 1.5em;
+          color: #4a4a4a;
+          font-weight: 500;
         }
       }
     }
@@ -237,10 +264,10 @@
     font-weight: 800;
   }
   p {
-    font-size: 13px;
-    color: #504c4cf6;
-    letter-spacing: 0.8px;
-    margin: 10px 0px;
+    font-size: 1rem;
+    margin-bottom: 1.5em;
+    color: #4a4a4a;
+    font-weight: 500;
   }
   button {
     margin-top: 20px;
@@ -250,5 +277,185 @@
     border: none;
     background-color: #2c2929;
     color: #fff;
+  }
+}
+
+.carousel-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%; // adjust
+  overflow: hidden;
+  border-radius: 20px;
+  margin-top: -200px;
+
+  border-top: 10px solid #6d6c6c;
+  border-left: 10px solid #6d6c6c;
+  border-right: 10px solid #6d6c6c;
+  border-bottom: none; /* no border at bottom */
+}
+
+.carousel-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  animation: slide 15s ease-in-out infinite;
+}
+
+.carousel-slide {
+  flex: 0 0 100%;
+  height: 100%;
+  width: 100%;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 20px;
+    display: block;
+  }
+}
+
+/* Keyframes for auto scroll */
+@keyframes slide {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-100%);
+  }
+  45% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(-200%);
+  }
+  70% {
+    transform: translateX(-200%);
+  }
+  75% {
+    transform: translateX(-300%);
+  }
+  95% {
+    transform: translateX(-300%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.stats-container {
+  padding: 40px 10%;
+  text-align: center;
+
+  h2 {
+    color: rgb(238, 30, 30);
+    font-size: 35px;
+    margin-bottom: 20px;
+  }
+
+  .stats-grid {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .stat-card {
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    width: 200px;
+    text-align: center;
+
+    h3 {
+      font-size: 40px;
+      margin: 10px 0;
+    }
+
+    p {
+      font-size: 16px;
+      color: #555;
+    }
+  }
+}
+
+.feedback-container {
+  padding: 40px 20px;
+  background: #f9f9fb;
+  text-align: center;
+}
+
+.feedback-title {
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  color: #222;
+}
+
+.feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.feedback-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: left;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feedback-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+}
+
+.feedback-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.feedback-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.feedback-date {
+  font-size: 0.8rem;
+  color: #777;
+  margin: 0;
+}
+
+.feedback-message {
+  font-size: 1rem;
+  margin: 15px 0;
+  color: #333;
+}
+
+.feedback-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.feedback-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-top: 0.8rem;
+
+  .star-icon {
+    color: #fbc02d; // gold/yellow
+    font-size: 20px;
   }
 }

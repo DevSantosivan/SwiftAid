@@ -1,5 +1,11 @@
 <div class="navbar">
-  <i style="font-size: 40px" class="bx bx-arrow-back"></i>
+  <div
+    style="display: flex; align-items: center; gap: 10px; cursor: pointer"
+    (click)="goBack()"
+  >
+    <i style="font-size: 40px" class="bx bx-arrow-back"></i>
+    <span class="back-btn">Back</span>
+  </div>
   <img src="./../../../assets/logo22.png" width="50" height="50" alt="" />
 </div>
 
@@ -102,3 +108,4 @@
     <button (click)="closeAdminAccessKeyModal()" type="button">Cancel</button>
   </div>
 </div>
+<app-footer></app-footer>

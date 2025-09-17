@@ -27,9 +27,8 @@
 }
 
 /* Services Grid */
-/* Services Grid */
 .services-container {
-  padding: 40px 10%; /* binawasan para mas dikit */
+  padding: 40px 10%;
   text-align: center;
   background: #fff;
 }
@@ -37,14 +36,14 @@
 .services-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(20px, 1fr));
-  gap: 15px; /* mas maliit na pagitan */
+  gap: 15px;
   justify-items: center;
 }
 
 .service-card {
   background: #fff;
   border-radius: 10px;
-  padding: 20px 15px; /* mas compact na padding */
+  padding: 20px 15px;
   border: 1px solid #ddd;
   max-width: 260px;
   color: #000;
@@ -151,7 +150,7 @@
 }
 
 .services-cta button {
-  background: #ff0000;
+  background-color: #222;
   color: #fff;
   border: none;
   padding: 12px 25px;
@@ -162,9 +161,10 @@
 }
 
 .services-cta button:hover {
-  background: #b30000;
+  background-color: #222222c7;
 }
 
+/* Team Section */
 .team {
   text-align: center;
   padding: 50px 20px;
@@ -218,4 +218,114 @@
   padding: 5px 10px;
   border-radius: 20px;
   font-size: 0.8rem;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .services-grid,
+  .steps-grid,
+  .team-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Contact Form Container */
+.services-container .contact-grid {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+
+/* Contact Form Styling */
+.contact-form {
+  flex: 1 1 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 500px;
+}
+
+.contact-form input,
+.contact-form textarea {
+  background-color: #f0f0f0; /* light gray */
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 12px 15px;
+  font-size: 1rem;
+  color: #555;
+  resize: vertical;
+  transition: border-color 0.3s;
+  font-family: inherit;
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+  border-color: #ff0000;
+  outline: none;
+  background-color: #fff;
+  color: #222;
+}
+
+.contact-form textarea {
+  min-height: 120px;
+}
+
+.contact-form button {
+  width: 160px;
+  align-self: flex-start;
+  background-color: #222;
+  color: #fff;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 10px;
+  font-weight: 400;
+
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 14px;
+}
+
+.contact-form button:hover {
+  background-color: #222222c2;
+}
+
+/* Contact Info Styling */
+.contact-info {
+  flex: 1 1 300px;
+  max-width: 350px;
+  text-align: left;
+  color: #333;
+  font-family: inherit;
+}
+
+.contact-info h3 {
+  color: #ff0000;
+  margin-bottom: 10px;
+}
+
+.contact-info p {
+  margin-bottom: 25px;
+  font-size: 1rem;
+  color: #555;
+}
+
+/* Responsive for smaller screens */
+@media (max-width: 768px) {
+  .services-container .contact-grid {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .contact-form,
+  .contact-info {
+    max-width: 100%;
+    flex: none;
+  }
+
+  .contact-form button {
+    width: 100%;
+    text-align: center;
+  }
 }

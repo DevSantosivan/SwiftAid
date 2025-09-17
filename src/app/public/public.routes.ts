@@ -1,17 +1,22 @@
+import { Routes } from '@angular/router';
 import { HomeComponent } from './home/home.component';
-import { NgModule } from '@angular/core';
-import { NavbarComponent } from './navbar/navbar.component';
 import { LoginComponent } from './login/login.component';
 import { AboutUsComponent } from './about-us/about-us.component';
-import { RouterModule, Routes } from '@angular/router';
 import { RegisterComponent } from './register/register.component';
 import { ServicesComponent } from './services/services.component';
 import { DeveloperPage } from './developer-page/developer-page';
 import { DeveloperAccessGuard } from '../guards/developer-access-guard';
+import { Contact } from './contact/contact';
+import { FQAs } from './fqas/fqas';
 
 export const PublicRoutes: Routes = [
   {
     path: '',
+    redirectTo: 'home',
+    pathMatch: 'full',
+  },
+  {
+    path: 'home',
     component: HomeComponent,
   },
   {
@@ -21,15 +26,19 @@ export const PublicRoutes: Routes = [
   {
     path: 'developer-page',
     component: DeveloperPage,
-    canActivate: [DeveloperAccessGuard], // ⬅️ Protect the route
+    canActivate: [DeveloperAccessGuard],
   },
   {
-    path: 'home',
-    component: HomeComponent,
-  },
-  {
-    path: 'AboutUs',
+    path: 'about-us',
     component: AboutUsComponent,
+  },
+  {
+    path: 'faqs',
+    component: FQAs,
+  },
+  {
+    path: 'contact',
+    component: Contact,
   },
   {
     path: 'register',
