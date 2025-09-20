@@ -9,6 +9,7 @@ import { HistoryCallComponent } from './history-call/history-call.component';
 import { Resident } from './resident/resident';
 import { Notification } from './notification/notification';
 import { Setting } from './setting/setting';
+import { AccountComponent } from '../superadmin/account/account.component';
 
 // {
 //     path: '',
@@ -36,7 +37,7 @@ export const AdminRoutes: Routes = [
       { path: 'History', component: HistoryCallComponent },
       {
         path: 'Resident',
-        component: Resident,
+        component: AccountComponent,
       },
       { path: 'Notification', component: Notification },
       { path: 'Settings', component: Setting },

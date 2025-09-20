@@ -8,6 +8,7 @@ import { DeveloperPage } from './developer-page/developer-page';
 import { DeveloperAccessGuard } from '../guards/developer-access-guard';
 import { Contact } from './contact/contact';
 import { FQAs } from './fqas/fqas';
+import { AboutDeveloper } from './about-developer/about-developer';
 
 export const PublicRoutes: Routes = [
   {
@@ -27,6 +28,10 @@ export const PublicRoutes: Routes = [
     path: 'developer-page',
     component: DeveloperPage,
     canActivate: [DeveloperAccessGuard],
+  },
+  {
+    path: 'about-developer',
+    component: AboutDeveloper,
   },
   {
     path: 'about-us',

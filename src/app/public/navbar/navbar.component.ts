@@ -15,10 +15,6 @@ export class NavbarComponent {
   isloader: boolean = false;
 
   loader() {
-    this.isloader = true;
-    setTimeout(() => {
-      this.isloader = false;
-      this.route.navigate(['/login']);
-    }, 3000);
+    this.route.navigate(['/login']);
   }
 }

@@ -29,29 +29,28 @@
 /* Services Grid */
 /* Services Grid */
 .services-container {
-  padding: 40px 15px; /* binawasan para mas dikit */
+  padding: 40px 10%; /* binawasan para mas dikit */
   text-align: center;
   background: #fff;
 }
 
 .services-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20px, 1fr));
-  gap: 15px; /* mas maliit na pagitan */
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: 20px;
 }
 
 .service-card {
+  width: 100%;
   background: #fff;
   border-radius: 10px;
   padding: 20px 15px; /* mas compact na padding */
-  background: #fff;
   border: 1px solid #ddd;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  max-width: 260px;
+
   color: #000;
   transition: all 0.3s ease;
+  margin-bottom: 20px;
 }
 
 .service-card img {
@@ -79,16 +78,19 @@
   padding: 10px 20px;
   border-radius: 20px;
   color: #fff;
-
   cursor: pointer;
   transition: 0.3s;
   font-weight: 600;
 }
 
+.service-card button:hover {
+  background: #b30000;
+}
+
 /* How it Works */
 .howitworks-container {
   background: #fff;
-  padding: 60px 20px;
+  padding: 60px 10%;
   text-align: center;
 }
 
@@ -100,17 +102,16 @@
 }
 
 .step-card {
-  width: 0px 10%;
   background: #fff;
   border-radius: 10px;
   padding: 20px;
   border: 1px solid #ddd;
   color: #000;
   transition: 0.3s;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.step-card:hover {
+  border-color: #ff0000;
 }
 
 .step-card span {
@@ -160,4 +161,59 @@
 
 .services-cta button:hover {
   background: #b30000;
+}
+
+.team {
+  text-align: center;
+  padding: 50px 20px;
+}
+
+.team h2 {
+  font-size: 2rem;
+  margin-bottom: 30px;
+}
+
+.team-container {
+  padding: 0px 10%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.team-card {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.team-card img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin-bottom: 15px;
+}
+
+.team-card h3 {
+  margin: 10px 0 5px;
+}
+
+.team-card .role {
+  font-size: 0.9rem;
+  color: #777;
+  margin-bottom: 10px;
+}
+
+.tech-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: center;
+}
+
+.tech-stack span {
+  background: #eee;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
 }

@@ -1,142 +1,135 @@
 <div class="content-body">
   <div class="content_1">
-    <h4>Emergency Request</h4>
-    <p>List of Request</p>
-    <div class="flex-filter">
-      <div class="flex-filter-request">
-        <span
-          class="filter-box"
-          [class.active]="activeFilter === 'All'"
-          (click)="applyFilter('All')"
-          >All</span
-        >
-        <span
-          class="filter-box"
-          [class.active]="activeFilter === 'Pending'"
-          (click)="applyFilter('Pending')"
-          >Pending</span
-        >
-        <span
-          class="filter-box"
-          [class.active]="activeFilter === 'Responding'"
-          (click)="applyFilter('Responding')"
-          >In Progress</span
-        >
-        <span
-          style="opacity: 0"
-          class="filter-box"
-          [class.active]="activeFilter === 'Resolved'"
-          >Resolved</span
-        >
+    <h3>Emergency Request</h3>
+    <p>Display all request</p>
+    <br />
+    <div class="request-top-section">
+      <div class="request-summary-grid">
+        <div style="width: 100%; height: 400px; max-width: 400px; margin: auto">
+          <p>Total Requests : {{ filteredRequests.length }}</p>
+          <canvas #pieChartCanvas></canvas>
+          <br />
+        </div>
       </div>
-      <div class="map-title">
-        <h3>Map View</h3>
-        <p>Click on a request to center the map</p>
+
+      <div class="map-container">
+        <h3>Map Request</h3>
+        <p>View all request when hover list</p>
+        <div id="requestMap"></div>
       </div>
     </div>
-    <div class="flex-request">
-      <div *ngIf="loadingRequests" class="spinner-container">
-        <div class="spinner"></div>
-        <p>Loading requests...</p>
+    <div class="request-table-container">
+      <div class="header-controls">
+        <label>Filter Status</label>
+        <select [(ngModel)]="activeFilter" (change)="applyFilter(activeFilter)">
+          <option value="All">All</option>
+          <option value="Pending">Pending</option>
+          <option value="Responding">In Progress</option>
+          <option value="Resolved">Resolved</option>
+        </select>
+
+        <label>From:</label>
+        <input
+          type="date"
+          [(ngModel)]="filterStartDate"
+          (change)="onDateFilterChange()"
+        />
+
+        <label>To:</label>
+        <input
+          type="date"
+          [(ngModel)]="filterEndDate"
+          (change)="onDateFilterChange()"
+        />
       </div>
 
-      <div class="list-request">
-        <div
-          *ngFor="let req of filteredRequests"
-          class="request-item"
-          (click)="centerMapOnRequest(req)"
-        >
-          <div class="request-details">
-            <p><i class="bx bx-street-view"></i> {{ req.address }}</p>
-            <div class="img">
-              <img [src]="req.image" alt="Incident Image" />
-            </div>
-
-            <div class="details">
-              <h5>{{ req.name }}</h5>
-              <p>Emergency Type: <strong>{{ req.event }}</strong></p>
-              @if (req.status === 'Pending') {
-              <p>
-                <span class="pending">{{ req.status }}</span>
-              </p>
-              } @if (req.status === 'Responding') {
-              <p>
-                <span class="In-progress">{{ req.status }}</span>
-              </p>
-              } @if (req.status === 'Resolved') {
-              <p>
-                <span class="Resolved">{{ req.status }}</span>
-              </p>
-              }
-
-              <span
-                >Assisted by:
-                <strong
-                  >{{ req.staffFirstName }} {{ req.staffLastName }}</strong
-                ></span
-              >
-              <p class="timestamp">
-                Date : {{ req.timestamp?.toDate() | date : "short" }}
-              </p>
-
-              <div class="request-actions">
-                <button class="view" (click)="ViewRequest(req)">
-                  <i style="rotate: 30deg" class="bx bx-up-arrow-alt"></i> View
-                  Details
-                </button>
-                <button
-                  class="view"
-                  (click)="$event.stopPropagation(); acceptRequest(req)"
-                  [disabled]="req.status !== 'Pending'"
-                >
-                  {{ req.status === 'Pending' ? 'Accept' : 'Accepted' }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div
-          *ngIf="!loadingRequests && filteredRequests.length === 0"
-          class="no-request"
-        >
-          <div class="empty-box">
-            <img src="./../../../assets/notfound.gif" alt="No data" />
-            <p>No <strong>{{ activeFilter }}</strong> requests found.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="map-request">
-        <div class="map-header">
-          <!-- MAP CONTAINER -->
-          <div
-            class="map"
-            #mapContainer
-            style="width: 100%; height: 85vh"
-          ></div>
-
-          <!-- FLOATING INFO BOX -->
-          <div
-            #floatingInfoBox
-            class="floating-info-box"
-            style="
-              display: none;
-              position: absolute;
-              top: 15px;
-              right: 15px;
-              z-index: 999;
-              background: white;
-              padding: 10px 15px;
-              border-radius: 6px;
-              box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-              font-size: 14px;
-            "
+      <table class="custom-dark-table">
+        <thead>
+          <tr>
+            <th>Requester</th>
+            <th>Type</th>
+            <th>Address</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Staff</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let req of paginatedRequests"
+            (mouseenter)="highlightMarker(req)"
           >
-            <strong>Distance:</strong> <span id="distanceText">--</span><br />
-            <strong>Duration:</strong> <span id="durationText">--</span>
-          </div>
+            <td class="user-info">
+              <img [src]="req.image || 'assets/logo22.png'" alt="User" />
+              <span class="user-details"
+                >{{ req.name }} <br />
+                <p>{{ req.email }}</p></span
+              >
+            </td>
+            <td>{{ req.event }}</td>
+            <td>{{ req.address }}</td>
+            <td>{{ req.timestamp | date : "mediumDate" }}</td>
+            <td>
+              <span
+                class="status-badge"
+                [ngClass]="{
+                  pending: req.status === 'Pending',
+                  'in-progress': req.status === 'Responding',
+                  resolved: req.status === 'Resolved'
+                }"
+              >
+                {{ req.status === "Responding" ? "In Progress" : req.status }}
+              </span>
+            </td>
+            <td>{{ getStaffFullName(req.staffId) || "—" }}</td>
+            <td class="action-buttons">
+              <span
+                class="view clickable"
+                [routerLink]="['/admin/EmergencyRequest', req.id]"
+                [queryParams]="{ from: 'emergency' }"
+              >
+                <i class="bx bx-show"></i> View
+              </span>
+
+              <button
+                class="accept"
+                (click)="$event.stopPropagation(); acceptRequest(req)"
+                *ngIf="req.status === 'Pending'"
+              >
+                <i class="bx bxs-user-check"></i>
+                Accept
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="pagination-container">
+        <span>Page {{ currentPage }} of {{ totalPages }}</span>
+        <div class="pagination-controls">
+          <button (click)="goToPreviousPage()" [disabled]="currentPage === 1">
+            ← Previous
+          </button>
+          <button
+            (click)="goToNextPage()"
+            [disabled]="currentPage === totalPages"
+          >
+            Next →
+          </button>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- <div class="mobile-message">
+  <div class="mobile-content-message">
+    <img src="../../../assets/formobile.gif" alt="Mobile view not supported" />
+    <h1>Mobile View Not Supported</h1>
+    <p>
+      This dashboard is not optimized for mobile devices. Please access it from
+      a desktop or laptop for the best experience.
+    </p>
+  </div>
+</div> -->

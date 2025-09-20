@@ -35,24 +35,25 @@
 }
 
 .services-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20px, 1fr));
-  gap: 15px; /* mas maliit na pagitan */
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: 20px;
 }
 
 .service-card {
+  width: 100%;
   background: #fff;
   border-radius: 10px;
   padding: 20px 15px; /* mas compact na padding */
+
   border: 1px solid #ddd;
-  max-width: 260px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
   color: #000;
   transition: all 0.3s ease;
-}
-
-.service-card:hover {
-  border-color: #ff0000;
+  margin-bottom: 20px;
 }
 
 .service-card img {
@@ -78,15 +79,14 @@
   background: #ff0000;
   border: none;
   padding: 10px 20px;
-  border-radius: 20px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   color: #fff;
   cursor: pointer;
   transition: 0.3s;
   font-weight: 600;
-}
-
-.service-card button:hover {
-  background: #b30000;
 }
 
 /* How it Works */
@@ -107,13 +107,12 @@
   background: #fff;
   border-radius: 10px;
   padding: 20px;
+  background: #fff;
   border: 1px solid #ddd;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   color: #000;
   transition: 0.3s;
-}
-
-.step-card:hover {
-  border-color: #ff0000;
 }
 
 .step-card span {

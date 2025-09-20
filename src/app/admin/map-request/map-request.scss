@@ -8,8 +8,316 @@ body {
   z-index: 0;
 }
 
-.submit-status submitting {
+/* Flex wrapper: cards + map */
+.request-top-section {
+  display: flex;
+
+  margin-bottom: 2rem;
+
+  /* Cards grid */
+  .request-summary-grid {
+    flex: 1; /* give this more space */
+    display: flex; /* change from grid to flex for easier control */
+    flex-direction: column;
+    align-items: flex-start; /* left align content */
+
+    /* Chart container */
+    .chart-container {
+      width: 100%; /* take full width of grid container */
+      max-width: 600px; /* max width for the chart */
+      height: 400px; /* bigger height */
+      padding: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      box-sizing: border-box;
+    }
+
+    p {
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+  }
+
+  /* Map container */
+  .map-container {
+    flex: 2; /* keep map bigger */
+    height: 400px; /* slightly taller for balance */
+
+    #requestMap {
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+    }
+  }
 }
+
+/* Ensure canvas fills the chart container */
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 992px) {
+  .request-top-section {
+    flex-direction: column;
+
+    .map-container {
+      height: 400px; /* taller on mobile */
+    }
+  }
+
+  .request-summary-grid {
+    grid-template-columns: 1fr 1fr; /* still 2 columns on tablets */
+  }
+}
+
+.request-table-container {
+  padding: 20px;
+  background-color: #fff;
+  color: #333;
+  font-family: Arial, sans-serif;
+
+  .header-controls {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    align-items: center;
+
+    label {
+      font-weight: 600;
+      color: #555;
+    }
+
+    input,
+    select {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      color: #333;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 14px;
+      min-width: 130px;
+      transition: border-color 0.2s ease-in-out;
+
+      &:focus {
+        outline: none;
+        border-color: red;
+        background-color: #fff;
+      }
+    }
+  }
+
+  .custom-dark-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    color: #333;
+    font-size: 14px;
+
+    thead tr {
+      height: 50px; /* Fixed header row height */
+    }
+
+    thead th {
+      padding: 12px 16px;
+      font-weight: 500;
+      font-size: 13px;
+      border-bottom: 2px solid #ddd;
+      text-align: left;
+      vertical-align: middle; /* Vertically center header text */
+    }
+
+    tbody tr {
+      height: 60px; /* Fixed body row height */
+    }
+
+    tbody td {
+      padding: 12px 16px;
+      font-size: 12px;
+      vertical-align: middle; /* Vertically center content */
+      white-space: nowrap; /* Prevent wrapping */
+    }
+
+    /* Align user-info flex items perfectly */
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: 100%; /* Take full row height */
+
+      img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      span {
+        line-height: 15px; /* Vertically center the name */
+        font-weight: 600;
+        color: #222;
+        display: flex;
+        flex-direction: column;
+
+        p {
+          font-size: 12px;
+          font-weight: 500;
+        }
+      }
+    }
+
+    /* Consistent status badge size */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 20px !important;
+      border-radius: 20px;
+      font-weight: 600;
+      padding: 0 12px;
+      user-select: none;
+      color: #333;
+      white-space: nowrap;
+      text-transform: capitalize;
+      width: 60%;
+      transition: background-color 0.3s ease;
+    }
+
+    .status-badge.pending {
+      background-color: #ebb30c2a;
+      color: #ebb30c;
+    }
+
+    .status-badge.in-progress {
+      background-color: #bbdefb;
+      color: #1e88e5;
+    }
+
+    .status-badge.resolved {
+      border: 1px solid #388e3c;
+      background-color: #c8e6c9;
+      color: #388e3c;
+    }
+
+    /* Action buttons container */
+    .action-buttons {
+      display: flex;
+      gap: 10px; /* space between buttons */
+      align-items: center;
+    }
+
+    /* Common button style */
+    .action-buttons button,
+    .action-buttons span.clickable {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    /* View button */
+    .action-buttons .view {
+      background: #1e40af;
+      color: #ffff;
+      border: 1px solid #bfdbfe;
+    }
+    .accept {
+      background: #424242;
+      color: #ffff;
+      border: 1px solid #bfdbfe;
+    }
+    .action-buttons .view:hover {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    /* Approve button */
+    .action-buttons .approve {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #86efac;
+    }
+    .action-buttons .approve:hover {
+      background: #bbf7d0;
+      color: #14532d;
+    }
+
+    /* Decline button */
+    .action-buttons .decline {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+    }
+    .action-buttons .decline:hover {
+      background: #fecaca;
+      color: #7f1d1d;
+    }
+
+    /* Icon inside button */
+    .action-buttons i {
+      font-size: 16px;
+    }
+  }
+
+  .custom-dark-table tbody tr:hover {
+    background-color: #f2f2f2;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+  }
+}
+
+.profile-marker .marker-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%; /* make it circular */
+  background-size: cover;
+  background-position: center;
+  border: 2px solid red; /* optional outline */
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 0 1rem;
+  font-size: 14px;
+  color: #555;
+
+  .pagination-controls {
+    display: flex;
+    gap: 1rem;
+
+    button {
+      border: none;
+      background: none;
+      font-weight: 600;
+      cursor: pointer;
+      color: red;
+      font-size: 14px;
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        color: #999;
+      }
+
+      &:hover:not(:disabled) {
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
 .loading-request {
   display: flex;
   flex-direction: column;

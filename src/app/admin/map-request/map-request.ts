@@ -1,43 +1,44 @@
 import {
   Component,
+  OnDestroy,
+  NgZone,
+  OnInit,
   ViewChild,
   ElementRef,
   AfterViewInit,
-  NgZone,
-  OnDestroy,
-  ChangeDetectorRef,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { EmergencyRequest } from '../../model/emergency';
-import { UserService } from '../../core/user.service';
-import * as L from 'leaflet';
-import 'leaflet.markercluster';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { debounce } from 'lodash';
+import { CommonModule } from '@angular/common';
+import { Firestore, doc, getDoc, Timestamp } from '@angular/fire/firestore';
 import { Subscription } from 'rxjs';
-import { Router } from '@angular/router';
-import { DatePipe } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import * as L from 'leaflet';
+
+import { Chart, registerables } from 'chart.js';
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-map-request',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './map-request.html',
   styleUrls: ['./map-request.scss'],
-  providers: [DatePipe],
 })
-export class MapRequest implements AfterViewInit, OnDestroy {
-  @ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef;
-
-  map!: L.Map;
+export class MapRequest implements AfterViewInit, OnDestroy, OnInit {
   requests: EmergencyRequest[] = [];
   filteredRequests: EmergencyRequest[] = [];
   activeFilter: string = 'All';
 
+  filterStartDate?: string;
+  filterEndDate?: string;
+  currentPage: number = 1;
+
+  map!: L.Map;
+
   staffLocation: L.LatLngExpression = [12.3622, 121.0671];
   staffMarker?: L.Marker;
-  // Removed staffRadiusCircle from here since no longer used
   routeLine?: L.Polyline;
 
   loadingRequests = false;
@@ -48,368 +49,229 @@ export class MapRequest implements AfterViewInit, OnDestroy {
 
   private watchId?: number;
   private requestSubscription?: Subscription;
+  itemsPerPage: number = 5;
 
-  markerClusterGroup!: L.MarkerClusterGroup;
+  markers: Map<string, L.Marker> = new Map();
+  activeMarker?: L.Marker;
 
-  readonly SAN_JOSE_BOUNDS = L.latLngBounds(
-    L.latLng(12.315, 121.015),
-    L.latLng(12.44, 121.08)
-  );
+  staffDetailsMap: Record<string, { first_name: string; last_name: string }> =
+    {};
 
-  readonly GEOFENCE_RADIUS_METERS = 10000; // 10km radius
+  readonly GEOFENCE_RADIUS_METERS = 10000; // 10 km
   geofenceCircle?: L.Circle;
+
+  @ViewChild('pieChartCanvas') pieChartCanvas!: ElementRef<HTMLCanvasElement>;
+  pieChart!: Chart;
 
   constructor(
     private requestService: EmergencyRequestService,
-    private userService: UserService,
+    private firestore: Firestore,
     private ngZone: NgZone,
-    private router: Router,
-    private cdr: ChangeDetectorRef,
-    private datePipe: DatePipe
+    private router: Router
   ) {}
 
-  async ngAfterViewInit(): Promise<void> {
+  ngOnInit(): void {
     this.initializeMap();
-
-    this.loadingRequests = true;
-    this.isLoading = true;
-    this.cdr.detectChanges();
-
-    await this.loadCurrentStaff();
-
     this.subscribeToRequests();
+    this.loadCurrentStaff(); // preload staff details
+    this.setInitialStaffLocation(); // preload staff location
+  }
 
-    await this.setInitialStaffLocation();
-
-    this.addStaffMarker();
-
-    // Removed updateStaffRadiusCircle here since no longer needed
-
-    // We already set the view inside initializeMap, so no need to call fitBounds here
-
-    this.trackStaffLocation();
+  ngAfterViewInit(): void {
+    this.createPieChart();
+    const canvas = this.pieChartCanvas.nativeElement;
+    canvas.width = 600;
+    canvas.height = 450;
   }
 
   ngOnDestroy(): void {
-    if (this.watchId !== undefined) {
-      navigator.geolocation.clearWatch(this.watchId);
-    }
     this.requestSubscription?.unsubscribe();
+    if (this.pieChart) {
+      this.pieChart.destroy();
+    }
   }
 
-  private initializeMap(): void {
-    // Center the map on the center of San Jose Occidental Mindoro bounds
-    const sanJoseCenter = this.SAN_JOSE_BOUNDS.getCenter();
+  get totalPages(): number {
+    return Math.ceil(this.filteredRequests.length / this.itemsPerPage);
+  }
 
-    this.map = L.map(this.mapContainer.nativeElement).setView(
-      sanJoseCenter,
-      13
-    );
+  get paginatedRequests(): EmergencyRequest[] {
+    const start = (this.currentPage - 1) * this.itemsPerPage;
+    return this.filteredRequests.slice(start, start + this.itemsPerPage);
+  }
 
-    // Add geofence circle around San Jose center only
-    this.geofenceCircle = L.circle(sanJoseCenter, {
-      radius: this.GEOFENCE_RADIUS_METERS,
-      color: 'red',
-      fillOpacity: 0.1,
-    }).addTo(this.map);
+  goToNextPage(): void {
+    if (this.currentPage < this.totalPages) this.currentPage++;
+  }
+
+  goToPreviousPage(): void {
+    if (this.currentPage > 1) this.currentPage--;
+  }
+
+  initializeMap(): void {
+    const sanJoseCenter: L.LatLngExpression = [12.3622, 121.0671];
+
+    this.map = L.map('requestMap').setView(sanJoseCenter, 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19,
     }).addTo(this.map);
 
-    try {
-      this.markerClusterGroup = L.markerClusterGroup();
-      this.map.addLayer(this.markerClusterGroup);
-    } catch (error) {
-      console.error('Error initializing marker cluster:', error);
-    }
+    this.geofenceCircle = L.circle(sanJoseCenter, {
+      radius: this.GEOFENCE_RADIUS_METERS,
+      color: 'red',
+      weight: 3,
+      fillColor: 'red',
+      fillOpacity: 0.1,
+    }).addTo(this.map);
 
-    // Restrict map bounds to San Jose bounds
-    this.map.setMaxBounds(this.SAN_JOSE_BOUNDS);
+    this.map.setMaxBounds(this.geofenceCircle.getBounds());
   }
 
-  private async loadCurrentStaff(): Promise<void> {
-    const auth = getAuth();
-    return new Promise((resolve) => {
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          try {
-            const staff = await this.userService.getUserById(user.uid);
-            this.ngZone.run(() => {
-              this.currentStaff = staff;
-              this.cdr.detectChanges();
-              resolve();
-            });
-          } catch (err) {
-            console.error('Failed to load staff:', err);
-            resolve();
-          }
-        } else {
-          console.warn('No authenticated user');
-          resolve();
-        }
-      });
-    });
+  get pendingCount(): number {
+    return this.filteredRequests.filter((r) => r.status === 'Pending').length;
   }
 
-  private subscribeToRequests(): void {
+  get inProgressCount(): number {
+    return this.filteredRequests.filter((r) => r.status === 'Responding')
+      .length;
+  }
+
+  get resolvedCount(): number {
+    return this.filteredRequests.filter((r) => r.status === 'Resolved').length;
+  }
+
+  get totalCount(): number {
+    return this.filteredRequests.length;
+  }
+
+  subscribeToRequests(): void {
     this.requestSubscription = this.requestService
       .getRequestRealtime()
       .subscribe({
-        next: (requests) => {
-          this.ngZone.run(() => {
-            // Filter & sort requests inside San Jose bounds and with desired statuses
-            this.requests = requests
-              .filter(
-                (r) =>
-                  (r.status === 'Pending' || r.status === 'Responding') &&
-                  r.latitude !== undefined &&
-                  r.longitude !== undefined &&
-                  this.SAN_JOSE_BOUNDS.contains(
-                    L.latLng(r.latitude, r.longitude)
-                  )
-              )
-              .sort((a, b) => {
-                const timeA = new Date(
-                  a.staffUpdatedAt || a.timestamp
-                ).getTime();
-                const timeB = new Date(
-                  b.staffUpdatedAt || b.timestamp
-                ).getTime();
-                return timeB - timeA;
-              });
+        next: async (requests) => {
+          this.ngZone.run(async () => {
+            this.requests = requests.map((req) => {
+              let timestampDate: Date | null = null;
+              if (req.timestamp instanceof Timestamp) {
+                timestampDate = req.timestamp.toDate();
+              } else if (typeof req.timestamp === 'string') {
+                timestampDate = new Date(req.timestamp);
+              } else if (req.timestamp instanceof Date) {
+                timestampDate = req.timestamp;
+              }
+              return { ...req, timestamp: timestampDate };
+            });
+
+            const staffIdsToFetch = this.requests
+              .map((r) => r.staffId)
+              .filter((id): id is string => !!id && !this.staffDetailsMap[id]);
+
+            for (const staffId of staffIdsToFetch) {
+              try {
+                const docRef = doc(this.firestore, `users/${staffId}`);
+                const snap = await getDoc(docRef);
+                if (snap.exists()) {
+                  const data = snap.data();
+                  this.staffDetailsMap[staffId] = {
+                    first_name: data['first_name'] || '',
+                    last_name: data['last_name'] || '',
+                  };
+                }
+              } catch (err) {}
+            }
 
             this.applyFilter(this.activeFilter);
-
-            this.loadingRequests = false;
-            this.isLoading = false;
-            this.cdr.detectChanges();
-          });
-        },
-        error: (error) => {
-          console.error('Realtime requests error:', error);
-          this.ngZone.run(() => {
-            this.loadingRequests = false;
-            this.isLoading = false;
-            this.cdr.detectChanges();
           });
         },
       });
   }
 
-  private async setInitialStaffLocation(): Promise<void> {
-    if (
-      this.currentStaff?.staffLat !== undefined &&
-      this.currentStaff?.staffLng !== undefined
-    ) {
-      this.staffLocation = [
-        this.currentStaff.staffLat,
-        this.currentStaff.staffLng,
-      ];
-    } else {
-      try {
-        const position = await new Promise<GeolocationPosition>(
-          (resolve, reject) =>
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-            })
-        );
-        this.staffLocation = [
-          position.coords.latitude,
-          position.coords.longitude,
-        ];
-      } catch {
-        console.warn('Geolocation not available, using default');
-      }
-    }
+  getStaffFullName(staffId?: string): string {
+    if (!staffId) return '';
+    const staff = this.staffDetailsMap[staffId];
+    return staff ? `${staff.first_name} ${staff.last_name}` : 'Unknown Staff';
   }
-
-  private addStaffMarker(): void {
-    this.staffMarker = L.marker(this.staffLocation, {
-      icon: L.icon({
-        iconUrl: 'assets/ambulance.png',
-        iconSize: [70, 60],
-        iconAnchor: [15, 40],
-      }),
-    })
-      .addTo(this.map)
-      .bindPopup('<strong>Staff Location</strong>');
-  }
-
-  private trackStaffLocation(): void {
-    if (!navigator.geolocation) return;
-
-    this.watchId = navigator.geolocation.watchPosition(
-      async (position) => {
-        this.ngZone.run(async () => {
-          this.staffLocation = [
-            position.coords.latitude,
-            position.coords.longitude,
-          ];
-          this.staffMarker?.setLatLng(this.staffLocation);
-          // Removed call to updateStaffRadiusCircle here
-
-          if (this.currentRequestId && this.currentStaff) {
-            try {
-              await this.requestService.updateRequestWithStaffInfo(
-                this.currentRequestId,
-                {
-                  uid: this.currentStaff.uid,
-                  first_name: this.currentStaff.first_name,
-                  last_name: this.currentStaff.last_name,
-                  email: this.currentStaff.email,
-                  lat: this.staffLocation[0],
-                  lng: this.staffLocation[1],
-                },
-                false
-              );
-            } catch (err) {
-              console.error('Failed to update staff location:', err);
-            }
-          }
-        });
-      },
-      (err) => {
-        console.warn('Watch position error:', err);
-      },
-      { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
-    );
-  }
-
-  // Removed updateStaffRadiusCircle method completely because no radius circle around staff
-
-  private _applyFilterDebounced = debounce((status: string) => {
-    this.activeFilter = status;
-
-    this.filteredRequests =
-      status === 'All'
-        ? this.requests.filter(
-            (r) => r.status === 'Pending' || r.status === 'Responding'
-          )
-        : this.requests.filter((r) => r.status === status);
-
-    this.filteredRequests = this.filteredRequests.filter((r) =>
-      this.SAN_JOSE_BOUNDS.contains(L.latLng(r.latitude!, r.longitude!))
-    );
-
-    this.markerClusterGroup.clearLayers();
-
-    this.filteredRequests.forEach((req) => {
-      if (req.latitude && req.longitude) {
-        const marker = L.marker([req.latitude, req.longitude], {
-          icon: L.icon({
-            iconUrl: 'assets/logo22.png',
-            iconSize: [70, 60],
-            iconAnchor: [15, 40],
-          }),
-          title: req.name,
-        }).bindPopup(this.generatePopupContent(req));
-
-        marker.on('click', () => this.centerMapOnRequest(req));
-        this.markerClusterGroup.addLayer(marker);
-      }
-    });
-
-    if (this.staffMarker) {
-      const layers = [this.staffMarker, ...this.markerClusterGroup.getLayers()];
-      const group = L.featureGroup(layers);
-      this.map.fitBounds(group.getBounds().pad(0.2));
-    }
-  }, 300);
 
   applyFilter(status: string): void {
-    this._applyFilterDebounced(status);
-  }
-  async ViewRequest(req: EmergencyRequest) {
-    this.router.navigate(['/admin/EmergencyRequest', req.id]);
-  }
-  centerMapOnRequest(request: EmergencyRequest): void {
-    if (!request.latitude || !request.longitude) return;
+    this.activeFilter = status;
+    this.currentPage = 1;
 
-    const requestLoc = L.latLng(request.latitude, request.longitude);
+    const from = this.filterStartDate ? new Date(this.filterStartDate) : null;
+    const to = this.filterEndDate ? new Date(this.filterEndDate) : null;
 
-    if (!this.SAN_JOSE_BOUNDS.contains(requestLoc)) {
-      alert('Request is outside San Jose boundary and cannot be displayed.');
-      return;
-    }
-
-    this.markerClusterGroup.clearLayers();
-    if (this.routeLine) this.map.removeLayer(this.routeLine);
-
-    const marker = L.marker(requestLoc, {
-      icon: L.icon({
-        iconUrl: 'assets/logo22.png',
-        iconSize: [70, 60],
-        iconAnchor: [15, 40],
-      }),
-    })
-      .addTo(this.map)
-      .bindPopup(this.generatePopupContent(request, true))
-      .openPopup();
-
-    marker.on('popupopen', () => {
-      const btn = document.getElementById('acceptBtn');
-      if (btn) btn.onclick = () => this.acceptRequest(request);
+    this.filteredRequests = this.requests.filter((req) => {
+      const matchesStatus = status === 'All' || req.status === status;
+      const requestDate = req.timestamp instanceof Date ? req.timestamp : null;
+      const matchesDate =
+        (!from || (requestDate && requestDate >= from)) &&
+        (!to || (requestDate && requestDate <= to));
+      return matchesStatus && matchesDate;
     });
 
-    this.markerClusterGroup.addLayer(marker);
-
-    this.routeLine = L.polyline([this.staffLocation, requestLoc], {
-      color: 'red',
-      weight: 4,
-      opacity: 0.7,
-      dashArray: '10,6',
-    }).addTo(this.map);
-
-    const layers = [marker, this.staffMarker, this.routeLine].filter(
-      Boolean
-    ) as L.Layer[];
-    this.map.fitBounds(L.featureGroup(layers).getBounds().pad(0.2));
+    this.updateMarkers();
+    this.updatePieChartData();
   }
 
-  generatePopupContent(req: EmergencyRequest, detailed = false): string {
-    const formattedDate = this.datePipe.transform(
-      req.timestamp || req.staffUpdatedAt,
-      'MMMM d, y, h:mm a'
-    );
+  onDateFilterChange(): void {
+    this.applyFilter(this.activeFilter);
+  }
 
-    return `
-      <div>
-        ${
-          detailed && req.image
-            ? `<img src="${req.image}" alt="${req.name}" style="width:100%; height:100px; object-fit:cover;">`
-            : ''
+  ViewRequest(req: EmergencyRequest) {
+    this.router.navigate(['/superAdmin/EmergencyRequest', req.id]);
+  }
+
+  private async loadCurrentStaff() {
+    try {
+      const auth = (await import('firebase/auth')).getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const userDoc = await getDoc(doc(this.firestore, `users/${user.uid}`));
+        if (userDoc.exists()) {
+          this.currentStaff = { uid: user.uid, ...userDoc.data() };
         }
-        <strong>${req.name}</strong><br>
-        <em>${req.address || 'No address'}</em><br>
-        Contact: ${req.contactNumber || 'N/A'}<br>
-        Event: ${req.event || 'N/A'}<br>
-        Needs: ${req.needs || 'N/A'}<br>
-        Description: ${req.description || 'N/A'}<br>
-        ${
-          detailed
-            ? `Email: ${req.email || 'N/A'}<br>
-               Staff: ${req.staffFirstName || 'N/A'} ${
-                req.staffLastName || 'N/A'
-              }<br>
-               Status: ${req.status || 'N/A'}<br>
-               Last Updated: ${formattedDate || 'N/A'}<br>
-               <button id="acceptBtn">Accept</button>`
-            : ''
+      }
+    } catch (err) {
+      console.error('Failed to load current staff', err);
+    }
+  }
+
+  private async setInitialStaffLocation() {
+    return new Promise<void>((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject('Geolocation not supported');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          this.staffLocation = [pos.coords.latitude, pos.coords.longitude];
+          resolve();
+        },
+        (err) => {
+          console.error('Error getting location:', err);
+          reject(err);
         }
-      </div>`;
+      );
+    });
   }
 
   async acceptRequest(req: EmergencyRequest) {
-    if (!this.currentStaff || !this.staffLocation) {
-      alert('Staff or location not available.');
-      return;
-    }
-
     try {
+      if (!this.currentStaff) {
+        await this.loadCurrentStaff();
+      }
+      if (!this.staffLocation) {
+        await this.setInitialStaffLocation();
+      }
+
+      if (!this.currentStaff || !this.staffLocation) {
+        alert('Staff or location not available.');
+        return;
+      }
+
       if (req.status === 'Pending') {
         const [lat, lng] = this.staffLocation as [number, number];
-
         await this.requestService.updateRequestWithStaffInfo(
           req.id!,
           {
@@ -429,6 +291,116 @@ export class MapRequest implements AfterViewInit, OnDestroy {
     } catch (err) {
       console.error('Accept request failed:', err);
       alert('Failed to accept request.');
+    }
+  }
+
+  updateMarkers() {
+    this.markers.forEach((m) => m.remove());
+    this.markers.clear();
+
+    this.filteredRequests.forEach((req) => {
+      if (req.latitude && req.longitude) {
+        const profileIcon = L.divIcon({
+          className: 'profile-marker',
+          html: `<div style="
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-image: url('${req.image || 'assets/logo22.png'}');
+            background-size: cover;
+            background-position: center;
+            border: 3px solid white;
+          "></div>`,
+          iconSize: [40, 40],
+          iconAnchor: [20, 20],
+          popupAnchor: [0, -20],
+        });
+
+        const marker = L.marker([req.latitude, req.longitude], {
+          icon: profileIcon,
+        }).addTo(this.map);
+
+        marker.bindPopup(`
+  <div style="text-align: center;">
+    <img src="${req.image || 'assets/logo22.png'}" 
+         alt="User Image" 
+         style="width: 100%; height: 80px; border-radius: 2%; margin-bottom: 5px; object-fit: cover; border: 2px solid #ccc;" />
+    <br>
+    <b>${req.name}</b><br>
+    Status: ${req.status}<br>
+    Staff: ${this.getStaffFullName(req.staffId)}
+  </div>
+`);
+
+        this.markers.set(req.id, marker);
+      }
+    });
+  }
+
+  highlightMarker(req: EmergencyRequest) {
+    if (this.activeMarker) {
+      const prevDiv = this.activeMarker.getElement();
+      if (prevDiv) {
+        const circle = prevDiv.querySelector('div') as HTMLElement;
+        if (circle) circle.style.border = '3px solid white';
+      }
+    }
+
+    const marker = this.markers.get(req.id);
+    if (marker) {
+      const iconDiv = marker.getElement();
+      if (iconDiv) {
+        const circle = iconDiv.querySelector('div') as HTMLElement;
+        if (circle) circle.style.border = '3px solid red';
+      }
+
+      marker.openPopup();
+      this.map.setView(marker.getLatLng(), 14, { animate: true });
+      this.activeMarker = marker;
+    }
+  }
+
+  createPieChart() {
+    if (this.pieChart) {
+      this.pieChart.destroy();
+    }
+
+    this.pieChart = new Chart(this.pieChartCanvas.nativeElement, {
+      type: 'doughnut',
+      data: {
+        labels: ['Pending', 'In Progress', 'Resolved'],
+        datasets: [
+          {
+            data: [this.pendingCount, this.inProgressCount, this.resolvedCount],
+            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              font: { size: 14 },
+            },
+          },
+          tooltip: {
+            enabled: true,
+          },
+        },
+      },
+    });
+  }
+
+  updatePieChartData() {
+    if (this.pieChart) {
+      this.pieChart.data.datasets[0].data = [
+        this.pendingCount,
+        this.inProgressCount,
+        this.resolvedCount,
+      ];
+      this.pieChart.update();
     }
   }
 }

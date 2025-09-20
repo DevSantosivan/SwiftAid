@@ -1,0 +1,48 @@
+.loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1200; // laging nasa ibabaw
+  height: 20px; // medyo makapal para kita
+}
+
+// 🚑 Ambulance stripes (red + blue moving)
+::ng-deep .mat-mdc-progress-bar.ambulance-bar .mdc-linear-progress__bar-inner {
+  background: red !important;
+  border-color: transparent !important; // alisin default
+}
+
+::ng-deep .mat-mdc-progress-bar.ambulance-bar .mdc-linear-progress__buffer {
+  background: red !important;
+  background-size: 200% 100%;
+  animation: ambulanceMove 1s linear infinite;
+}
+
+@keyframes ambulanceMove {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: -40px 0;
+  }
+}
+
+// 🚑 Ambulance icon running on top
+.ambulance-icon {
+  position: fixed;
+  top: -20px; // sakto sa ibabaw ng bar
+  left: -60px; // simula offscreen
+  height: 50px;
+  z-index: 1300;
+  animation: driveAmbulance 10s linear infinite;
+}
+
+@keyframes driveAmbulance {
+  0% {
+    left: -60px;
+  }
+  100% {
+    left: 100%;
+  }
+}

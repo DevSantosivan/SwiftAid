@@ -1,9 +1,15 @@
 <app-navbar></app-navbar>
-<div style="background-color: #dddddd3d">
+<div class="home-container" style="background-color: #dddddd3d">
   <div class="container-hero">
     <div class="hero-content">
       <div class="head-tittle">
-        <h3><i class="bx bx-git-pull-request"></i> Emergency Command Center</h3>
+        <h3>
+          <div class="span-header">
+            <i class="bx bx-radio-circle-marked"></i>
+            New Feature
+          </div>
+          Explore the Lates Dashboard <i class="bx bx-right-arrow-alt"></i>
+        </h3>
       </div>
       <h2><span>SwiftAid:</span> Real-Time Emergency Management</h2>
       <p>
@@ -30,57 +36,134 @@
     <!-- Feedback Section -->
     <br />
     <br />
-    <!-- Features Section -->
-    <div class="about-911-container">
-      <h2>Admin & Staff Responsibilities</h2>
-      <div class="about-911-context">
-        <label for="">Admin Role</label>
-        <p>
-          The Admin monitors all incoming emergency requests in real-time. They
-          manage staff assignments and track response efficiency.
-        </p>
 
-        <label for="">Staff Role</label>
+    <div class="stats-container">
+      <h2 class="section-title">Emergency Statistics</h2>
+      <div class="stats-description">
         <p>
-          Staff are the responders. They accept assigned requests, update their
-          status, and provide real-time feedback on the emergency.
-        </p>
-
-        <label for="">System Advantage</label>
-        <p>
-          SwiftAid gives admins a clear overview of emergencies while ensuring
-          staff can respond quickly and effectively.
+          Stay informed with a real-time summary of emergency request data,
+          giving admins and staff visibility into ongoing operations.
         </p>
       </div>
+
+      <div class="stats-grid">
+        <!-- Total Requests -->
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="bx bx-git-pull-request" style="color: red"></i>
+          </div>
+          <h3>{{ totalRequests }}</h3>
+          <p class="stat-label">Total Requests</p>
+          <p class="stat-subtext">
+            Number of emergency reports submitted by users.
+          </p>
+        </div>
+
+        <!-- Resolved Requests -->
+        <div class="stat-card">
+          <div class="stat-icon">
+            <span class="material-symbols-outlined" style="color: green"
+              >check_circle</span
+            >
+          </div>
+          <h3>{{ resolvedRequests }}</h3>
+          <p class="stat-label">Resolved</p>
+          <p class="stat-subtext">
+            Successfully addressed and closed emergency cases.
+          </p>
+        </div>
+
+        <!-- Pending Requests -->
+        <div class="stat-card">
+          <div class="stat-icon">
+            <span class="material-symbols-outlined" style="color: orange"
+              >pending</span
+            >
+          </div>
+          <h3>{{ pendingRequests }}</h3>
+          <p class="stat-label">Pending</p>
+          <p class="stat-subtext">
+            Emergency requests awaiting staff action or assignment.
+          </p>
+        </div>
+      </div>
     </div>
+    <br />
+    <br />
+    <!-- Features Section -->
+    <div class="about-911-container">
+      <div class="about-911-content">
+        <!-- Left: Text + Cards -->
+        <div class="about-911-left">
+          <h2 class="section-title">Admin & Staff Responsibilities</h2>
+          <p class="section-subtitle">
+            Understanding the distinct roles of Administrators and Staff ensures
+            a smooth, efficient emergency response system. SwiftAid empowers
+            both teams to collaborate seamlessly to save lives.
+          </p>
+
+          <div class="about-911-cards">
+            <div class="about-911-card">
+              <div class="icon">🔧</div>
+              <div class="content">
+                <h4>Admin Role</h4>
+                <p>
+                  The Admin monitors all incoming emergency requests in
+                  real-time. They manage staff assignments and track response
+                  efficiency.
+                </p>
+              </div>
+            </div>
+
+            <div class="about-911-card">
+              <div class="icon">👨‍🚒</div>
+              <div class="content">
+                <h4>Staff Role</h4>
+                <p>
+                  Staff are the responders. They accept assigned requests,
+                  update their status, and provide real-time feedback on the
+                  emergency.
+                </p>
+              </div>
+            </div>
+
+            <div class="about-911-card">
+              <div class="icon">⚡</div>
+              <div class="content">
+                <h4>System Advantage</h4>
+                <p>
+                  SwiftAid gives admins a clear overview of emergencies while
+                  ensuring staff can respond quickly and effectively.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Image -->
+        <!-- Right: Image Grid -->
+        <div class="about-911-right">
+          <div class="image-masonry">
+            <img
+              src="../../../assets/dashboard.png"
+              alt="Admin Monitoring Dashboard"
+            />
+            <img
+              src="../../../assets/emergency_map.png"
+              alt="Staff Responding to Emergency"
+            />
+            <img
+              src="../../../assets/emergency_map1.png"
+              alt="Collaboration Between Admin & Staff"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
     <br />
     <br />
     <!-- Stats Section -->
-    <div class="stats-container">
-      <h2>Emergency Statistics</h2>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <i style="color: red" class="bx bx-git-pull-request"></i>
-
-          <h3>{{ totalRequests }}</h3>
-          <p>Total Requests</p>
-        </div>
-        <div class="stat-card">
-          <span class="material-symbols-outlined" style="color: green">
-            check_circle
-          </span>
-          <h3>{{ resolvedRequests }}</h3>
-          <p>Resolved</p>
-        </div>
-        <div class="stat-card">
-          <span class="material-symbols-outlined" style="color: orange">
-            pending
-          </span>
-          <h3>{{ pendingRequests }}</h3>
-          <p>Residents</p>
-        </div>
-      </div>
-    </div>
 
     <!-- CTA Section -->
     <div class="alert-container">
@@ -95,29 +178,40 @@
       </p>
       <button>View Dashboard</button>
     </div>
-
     <div class="feedback-section">
-      <h2 class="feedback-title">What Residents Say</h2>
+      <h2 class="section-title feedback-title">What Residents Say's</h2>
       <p class="feedback-sub">
         Real stories from residents who used SwiftAid during emergencies.
       </p>
 
-      <div class="feedback-grid">
-        <div class="feedback-card" *ngFor="let fb of feedbacks">
-          <div class="feedback-header">
-            <img [src]="fb.avatar" alt="user" class="feedback-avatar" />
-            <div>
-              <h4>{{ fb.user }}</h4>
-              <small>{{ fb.date | date : "MMM d, y, h:mm a" }}</small>
+      <div class="feedback-carousel">
+        <div class="feedback-track">
+          <div class="feedback-card" *ngFor="let fb of feedbackList">
+            <div class="feedback-header">
+              <img [src]="fb.profilePic" alt="user" class="feedback-avatar" />
+              <div>
+                <h4>{{ maskName(fb.name) }}</h4>
+                <small>
+                  {{
+                    fb.timestamp?.toDate
+                      ? (fb.timestamp.toDate() | date : "MMM d, y, h:mm a")
+                      : (fb.timestamp | date : "MMM d, y, h:mm a")
+                  }}
+                </small>
+              </div>
             </div>
-          </div>
 
-          <p class="feedback-message">“{{ fb.message }}”</p>
+            <p class="feedback-message">“{{ fb.comment }}”</p>
 
-          <div class="feedback-meta">
-            <ng-container *ngFor="let star of [].constructor(fb.likes)">
-              <span class="material-symbols-outlined star-icon">star</span>
-            </ng-container>
+            <div class="feedback-meta">
+              <ng-container *ngFor="let star of [1, 2, 3, 4, 5]; let i = index">
+                <span
+                  class="material-symbols-outlined star-icon"
+                  [class.filled]="i < fb.rating"
+                  >star</span
+                >
+              </ng-container>
+            </div>
           </div>
         </div>
       </div>
