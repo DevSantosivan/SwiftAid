@@ -18,6 +18,8 @@
         <div id="requestMap"></div>
       </div>
     </div>
+
+    <br />
     <div class="request-table-container">
       <div class="header-controls">
         <label>Filter Status</label>
@@ -46,13 +48,13 @@
       <table class="custom-dark-table">
         <thead>
           <tr>
-            <th>Requester</th>
-            <th>Type</th>
-            <th>Address</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Staff</th>
-            <th>Actions</th>
+            <th><i class="bx bx-user"></i> RESIDENT</th>
+            <th><i class="bx bxs-ambulance"></i> Type Of Incident</th>
+            <th><i class="bx bx-check-circle"></i> STATUS</th>
+            <th><i class="bx bxs-location-plus"></i> LOCATION</th>
+            <th><i class="bx bx-time"></i> TIME</th>
+
+            <th>ACTIONS</th>
           </tr>
         </thead>
         <tbody>
@@ -64,12 +66,12 @@
               <img [src]="req.image || 'assets/logo22.png'" alt="User" />
               <span class="user-details"
                 >{{ req.name }} <br />
-                <p>{{ req.email }}</p></span
+                <p>
+                  <i class="bx bxs-phone"></i> {{ req.contactNumber }}
+                </p></span
               >
             </td>
             <td>{{ req.event }}</td>
-            <td>{{ req.address }}</td>
-            <td>{{ req.timestamp | date : "mediumDate" }}</td>
             <td>
               <span
                 class="status-badge"
@@ -81,25 +83,34 @@
               >
                 {{ req.status === "Responding" ? "In Progress" : req.status }}
               </span>
+              <br *ngIf="req.status === 'Resolved'" />
+              <small
+                style="
+                  font-size: 13px;
+                  text-align: center;
+                  display: flex;
+                  align-items: center;
+                  margin: 5px;
+                "
+                *ngIf="req.status === 'Resolved'"
+              >
+                <i class="bx bx-time"></i>
+
+                {{ parseDate(req.staffUpdatedAt) | date : "medium" }}
+              </small>
             </td>
-            <td>
-              {{ getStaffFullName(req.staffId) || "—" }}
-            </td>
+
+            <td style="color: rgba(8, 121, 212, 0.911)">{{ req.address }}</td>
+            <td>{{ req.timestamp | date : "medium" }}</td>
+
             <td class="action-buttons">
               <span
                 class="view clickable"
                 [routerLink]="['/superAdmin/EmergencyRequest', req.id]"
                 [queryParams]="{ from: 'emergency' }"
               >
-                <i class="bx bx-show"></i> View
+                <i class="bx bx-show"></i> View Details
               </span>
-
-              <!-- <button class="approve" *ngIf="req.status === 'Pending'">
-                Approve
-              </button>
-              <button class="decline" *ngIf="req.status === 'Pending'">
-                Decline
-              </button> -->
             </td>
           </tr>
         </tbody>
@@ -123,7 +134,7 @@
   </div>
 </div>
 
-<div class="mobile-message">
+<!-- <div class="mobile-message">
   <div class="mobile-content-message">
     <img src="../../../assets/formobile.gif" alt="Mobile view not supported" />
     <h1>Mobile View Not Supported</h1>
@@ -132,4 +143,4 @@
       a desktop or laptop for the best experience.
     </p>
   </div>
-</div>
+</div> -->

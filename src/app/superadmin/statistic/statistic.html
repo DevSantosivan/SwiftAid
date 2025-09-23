@@ -1,0 +1,68 @@
+<div class="dashboard">
+  <br />
+  <br />
+  <br />
+  <!-- Header Section -->
+  <header class="dashboard-header">
+    <h3>Emergency Response Overview</h3>
+    <p>Quick insight into emergency request trends and statistics.</p>
+  </header>
+
+  <!-- Summary Cards -->
+  <section class="stats-grid">
+    <div class="card stat-card" *ngFor="let stat of stats">
+      <h3>{{ stat.label }}</h3>
+      <p class="stat-value">{{ stat.value }}</p>
+    </div>
+  </section>
+
+  <!-- Recommendations -->
+  <section class="card wide recommendations">
+    <h3>📝 Recommended Actions</h3>
+    <ul>
+      <li *ngFor="let rec of recommendations">
+        <span class="icon">👉</span> {{ rec }}
+      </li>
+    </ul>
+  </section>
+
+  <!-- Charts and Map -->
+  <section class="charts-grid">
+    <!-- Left: Map -->
+    <div class="card map-card">
+      <h3>📍 Emergency Incidents in {{ incidentLocation || 'the Area' }}</h3>
+      <br />
+      <div id="map" class="map-container"></div>
+      <br />
+      <br />
+      <div class="map-total-request">
+        <span>
+          <i class="bx bx-git-pull-request"></i> Displaying {{ requests.length
+          }} ambulance emergency requests on the map
+        </span>
+        <p>
+          Showing current real-time location and status of active
+          ambulance-related requests.
+        </p>
+      </div>
+    </div>
+
+    <!-- Right: Charts -->
+    <div class="right-charts">
+      <div class="card">
+        <h3>Requests by Status</h3>
+        <canvas #statusChartCanvas></canvas>
+      </div>
+
+      <div class="card">
+        <h3>Requests by Street</h3>
+        <canvas #streetChartCanvas></canvas>
+      </div>
+
+      <div class="card">
+        <h3>Requests by Event Type</h3>
+        <canvas #eventChartCanvas></canvas>
+      </div>
+    </div>
+  </section>
+</div>

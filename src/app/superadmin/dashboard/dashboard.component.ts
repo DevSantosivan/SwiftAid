@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Auth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { UserService } from '../../core/user.service';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { NotificationService } from '../../core/notification.service';
@@ -10,7 +11,7 @@ import { DashboardChartService } from '../../core/dashboard-chart.service';
 import { CommonModule } from '@angular/common';
 import { EmergencyRequest } from '../../model/emergency';
 
-Chart.register(...registerables);
+Chart.register(...registerables, ChartDataLabels);
 
 @Component({
   selector: 'app-dashboard',
@@ -171,8 +172,23 @@ export class DashboardComponent implements OnInit {
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          color: '#fff',
+          font: { size: 14, weight: 'bold' },
+          formatter: (value: number, ctx: any) => {
+            const total = ctx.chart.data.datasets[0].data.reduce(
+              (acc: number, curr: number) => acc + curr,
+              0
+            );
+            const percentage = ((value / total) * 100).toFixed(1);
+            return `${value} (${percentage}%)`;
+          },
+        },
+      },
     },
+    plugins: [ChartDataLabels],
   };
 
   public yearlyChartConfig: any = {
@@ -191,10 +207,18 @@ export class DashboardComponent implements OnInit {
     },
     options: {
       responsive: true,
-      scales: {
-        y: { beginAtZero: true },
+      plugins: {
+        datalabels: {
+          align: 'top',
+          anchor: 'end',
+          color: '#000',
+          font: { weight: 'bold' },
+          formatter: (value: number) => value,
+        },
       },
+      scales: { y: { beginAtZero: true } },
     },
+    plugins: [ChartDataLabels],
   };
 
   getMonthLabels(monthCount: number): string[] {
@@ -223,9 +247,9 @@ export class DashboardComponent implements OnInit {
 
     return labels;
   }
+
   getStatusLabel(status: string | undefined): string {
     if (!status) return 'Unknown';
-
     switch (status.toLowerCase()) {
       case 'pending':
       case 'requesting':
@@ -244,7 +268,6 @@ export class DashboardComponent implements OnInit {
 
   getStatusClass(status: string | undefined): string {
     if (!status) return 'unknown';
-
     switch (status.toLowerCase()) {
       case 'pending':
       case 'requesting':
@@ -315,6 +338,11 @@ export class DashboardComponent implements OnInit {
         plugins: {
           legend: { position: 'bottom' },
           tooltip: { mode: 'index', intersect: false },
+          datalabels: {
+            color: '#fff',
+            font: { weight: 'bold' },
+            formatter: (value: number) => value,
+          },
         },
         scales: {
           x: { stacked: true, title: { display: true, text: 'Month' } },
@@ -326,6 +354,7 @@ export class DashboardComponent implements OnInit {
           },
         },
       },
+      plugins: [ChartDataLabels],
     });
   }
 

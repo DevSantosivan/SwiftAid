@@ -46,12 +46,12 @@
       <table class="custom-dark-table">
         <thead>
           <tr>
-            <th>Requester</th>
-            <th>Type</th>
-            <th>Address</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Staff</th>
+            <th><i class="bx bx-user"></i> RESIDENT</th>
+            <th><i class="bx bxs-ambulance"></i> Type Of Incident</th>
+            <th><i class="bx bx-check-circle"></i> STATUS</th>
+            <th><i class="bx bxs-location-plus"></i> LOCATION</th>
+            <th><i class="bx bx-time"></i> TIME</th>
+
             <th>Actions</th>
           </tr>
         </thead>
@@ -64,12 +64,12 @@
               <img [src]="req.image || 'assets/logo22.png'" alt="User" />
               <span class="user-details"
                 >{{ req.name }} <br />
-                <p>{{ req.email }}</p></span
+                <p>
+                  <i class="bx bxs-phone"></i> {{ req.contactNumber }}
+                </p></span
               >
             </td>
             <td>{{ req.event }}</td>
-            <td>{{ req.address }}</td>
-            <td>{{ req.timestamp | date : "mediumDate" }}</td>
             <td>
               <span
                 class="status-badge"
@@ -82,16 +82,10 @@
                 {{ req.status === "Responding" ? "In Progress" : req.status }}
               </span>
             </td>
-            <td>{{ getStaffFullName(req.staffId) || "—" }}</td>
-            <td class="action-buttons">
-              <span
-                class="view clickable"
-                [routerLink]="['/admin/EmergencyRequest', req.id]"
-                [queryParams]="{ from: 'emergency' }"
-              >
-                <i class="bx bx-show"></i> View
-              </span>
+            <td>{{ req.address }}</td>
+            <td>{{ req.timestamp | date : "mediumDate" }}</td>
 
+            <td class="action-buttons">
               <button
                 class="accept"
                 (click)="$event.stopPropagation(); acceptRequest(req)"
@@ -100,6 +94,13 @@
                 <i class="bx bxs-user-check"></i>
                 Accept
               </button>
+              <span
+                class="view clickable"
+                [routerLink]="['/admin/EmergencyRequest', req.id]"
+                [queryParams]="{ from: 'emergency' }"
+              >
+                <i class="bx bx-show"></i> View
+              </span>
             </td>
           </tr>
         </tbody>

@@ -108,6 +108,18 @@ export class UserService {
       id: doc.id,
     }));
   }
+  async getUserProfile(userId: string): Promise<{ profilePicture?: string }> {
+    try {
+      const userDoc = await getDoc(doc(this.db, `users/${userId}`));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        return { profilePicture: data['profile'] || '' }; // Assuming profile is the field name
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+    return {};
+  }
 
   getAllAccounts(): Observable<account[]> {
     const accountsRef = collection(this.db, 'users');

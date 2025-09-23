@@ -1,11 +1,11 @@
 <div class="content-body">
   <div class="content_1">
     <h4>Live Tracking</h4>
-    <p>Track Staff and Resident Live</p>
-
+    <p>Monitor and respond to emergency situation in real-time</p>
+    <br />
     <div class="live-tracking-container">
       <div class="tracking-wrapper">
-        <div
+        <!-- <div
           class="tracking-card"
           *ngFor="let request of respondingRequests; let i = index"
         >
@@ -27,6 +27,58 @@
                 <i class="bx bx-navigation"></i> Live Tracking
               </span>
             </div>
+          </div>
+        </div> -->
+
+        <div
+          style="height: 440px"
+          class="alert-card"
+          *ngFor="let request of respondingRequests; let i = index"
+        >
+          <!-- Map Preview -->
+          <div class="map-preview">
+            <div class="map-container" #mapContainer></div>
+            <div class="map-marker"></div>
+          </div>
+
+          <!-- Request Info -->
+          <div class="alert-info">
+            <p class="alert-id">🔴 Alert #{{ request.id }}</p>
+            <div class="user-info">
+              <img
+                *ngIf="request.image; else placeholder"
+                [src]="request.image"
+                alt="Profile"
+                class="user-img"
+              />
+              <ng-template #placeholder>
+                <i class="bx bx-user-circle user-icon"></i>
+              </ng-template>
+
+              <div class="user-details">
+                <h3>{{ request.name }}</h3>
+                <p class="role">Resident</p>
+              </div>
+            </div>
+
+            <p class="timestamp">
+              🕒 {{ request.timestamp | date : "MMM d, h:mm a" }}
+            </p>
+
+            <p class="status"><span class="dot"></span> {{ request.status }}</p>
+          </div>
+
+          <!-- Actions -->
+          <div class="alert-actions">
+            <!-- Kung SuperAdmin -->
+            <button
+              class="btn-view"
+              [routerLink]="['/superAdmin/LiveTracking', request.id]"
+            >
+              <i style="margin: 0px 10px" class="bx bx-video"></i> View Live
+            </button>
+
+            <!-- Kapag admin -->
           </div>
         </div>
       </div>

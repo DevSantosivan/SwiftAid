@@ -1,18 +1,16 @@
-.content_1{
-    width: 100%;
-  
+.content_1 {
+  width: 100%;
 }
-.content-body{
-    padding: 20px;
+.content-body {
+  padding: 20px;
 }
 .custom-tabs {
-    margin-top: 40px;
+  margin-top: 40px;
   display: flex;
   border-bottom: 1px solid #ccc;
   padding: 0;
   margin-bottom: 16px;
   width: 100%;
-  
 }
 .custom-tabs .nav-item {
   margin-right: 16px;
@@ -53,7 +51,9 @@
   gap: 16px;
   padding: 12px;
   border: 1px solid #ddd;
-  border-radius: 2px;
+
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   background-color: #fff;
 }
 
@@ -130,7 +130,7 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   z-index: 1000;
   animation: slideIn 0.3s ease-out;
-  span{
+  span {
     font-size: 14px;
   }
 }
@@ -145,4 +145,3 @@
     transform: translateY(0);
   }
 }
-

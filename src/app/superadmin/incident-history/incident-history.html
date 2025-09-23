@@ -1,66 +1,110 @@
 <div class="content-body">
-  <div class="content_1">
+  <div style="background-color: #fff; padding: 20px" class="content_1">
     <h4>Emergency Request History</h4>
     <p>List of past emergency requests</p>
 
-    <!-- Bulk Select Dropdown (commented out) -->
-    <!--
-    <div class="bulk-select-dropdown">
-      <input
-        type="checkbox"
-        [checked]="isAllSelected()"
-        (change)="toggleSelectAllRequests($event)"
-      />
-      <div class="dropdown">
-        <button class="dropdown-toggle" (click)="toggleBulkMenu($event)">
-          ▾
-        </button>
-        <div class="dropdown-list" *ngIf="showBulkMenu">
-          <button (click)="selectBy('all')">Select All</button>
-          <button (click)="selectBy('none')">Select None</button>
-          <button (click)="selectBy('accepted')">Accepted by Me</button>
-          <button (click)="selectBy('completed')">Completed</button>
-        </div>
-      </div>
-    </div>
-    -->
-
-    <!-- Search Bar -->
-    <div class="flex-header">
-      <div class="export-section">
-        <div class="export-buttons">
-          <button (click)="exportToWord()" type="button">
-            <i class="bx bxs-file-doc"></i>
-            Export to Word
-          </button>
-          <button (click)="exportToExcel()" type="button">
-            <i class="bx bx-table"></i>
-            Export to Excel
-          </button>
-        </div>
-      </div>
-      <div class="search-bar">
+    <!-- Search Bar with Icon -->
+    <!-- Filter Controls Container -->
+    <div
+      class="filters-container"
+      style="
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: center;
+        margin-bottom: 15px;
+      "
+    >
+      <!-- Search Bar -->
+      <div
+        class="search-bar"
+        style="
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-grow: 1;
+          min-width: 250px;
+        "
+      >
+        <i class="bx bx-search" style="font-size: 22px; color: #888"></i>
         <input
           type="text"
           placeholder="Search requests..."
           [(ngModel)]="searchTerm"
           (input)="applyFilters()"
+          style="
+            padding: 8px;
+            width: 100%;
+            max-width: 300px;
+            border-radius: 5px;
+          "
         />
-        <button type="button"><i class="bx bx-search"></i></button>
+      </div>
+
+      <!-- Date Range Filters -->
+
+      <!-- Export Buttons -->
+      <div style="display: flex">
+        <div class="date-filters">
+          <label for="startDate">From Date </label>
+          <input
+            id="startDate"
+            type="date"
+            [(ngModel)]="filterStartDate"
+            (change)="onDateFilterChange()"
+            style="padding: 6px; border-radius: 4px; border: 1px solid #ccc"
+          />
+
+          <label for="endDate">To Date</label>
+          <input
+            id="endDate"
+            type="date"
+            [(ngModel)]="filterEndDate"
+            (change)="onDateFilterChange()"
+            style="padding: 6px; border-radius: 4px; border: 1px solid #ccc"
+          />
+        </div>
+        <div class="export-buttons" style="margin: 0px 20px">
+          <button
+            (click)="exportToWord()"
+            type="button"
+            style="
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              border: 1px solid #ccc;
+            "
+          >
+            <i class="bx bxs-file-doc"></i> Export to Word
+          </button>
+          <button
+            (click)="exportToExcel()"
+            type="button"
+            style="
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              border: 1px solid #ccc;
+            "
+          >
+            <i class="bx bx-table"></i> Export to Excel
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Map Container: Show only if requestToView has latitude & longitude -->
+    <!-- Map Container -->
     <div
       id="incidentMap"
       style="border-radius: 10px; height: 400px; border: 1px solid #ccc"
     ></div>
+
+    <!-- Date Range Filters -->
+
     <!-- Request List or No Data -->
-    <div
-      *ngIf="filteredAllRequests && filteredAllRequests.length > 0; else noDataTemplate"
-    >
+    <div *ngIf="pagedRequests && pagedRequests.length > 0; else noDataTemplate">
       <ng-container
-        *ngTemplateOutlet="requestListTemplate; context: { requests: filteredAllRequests }"
+        *ngTemplateOutlet="requestListTemplate; context: { requests: pagedRequests }"
       >
       </ng-container>
     </div>
@@ -72,95 +116,147 @@
         <p>No requests available.</p>
       </div>
     </ng-template>
+
+    <!-- Pagination Controls -->
+    <div
+      class="pagination-container"
+      style="
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      "
+    >
+      <span>Page {{ currentPage }} of {{ totalPages }}</span>
+
+      <div class="pagination-buttons" style="display: flex; gap: 10px">
+        <button (click)="goToPreviousPage()" [disabled]="currentPage === 1">
+          ← Previous
+        </button>
+        <button
+          (click)="goToNextPage()"
+          [disabled]="currentPage === totalPages"
+        >
+          Next →
+        </button>
+      </div>
+    </div>
   </div>
 </div>
-<br />
+
+<!-- Request List Template -->
 <!-- Request List Template -->
 <ng-template #requestListTemplate let-requests="requests">
   <br />
-  <div class="account-header">
-    <span class="col-requester">Requester</span>
-    <span class="col-type">Type</span>
-    <span class="col-address">Address</span>
-    <span class="col-date">Date</span>
-    <span class="col-status">Status</span>
-    <span class="col-staff">Staff</span>
-    <span class="col-action">Action</span>
+
+  <!-- Header -->
+  <div
+    class="account-header"
+    style="
+      display: flex;
+      font-weight: bold;
+      padding: 10px 14px;
+      background-color: #fafafa;
+      border-bottom: 2px solid #e0e0e0;
+    "
+  >
+    <span style="flex: 2; display: flex; align-items: center">
+      <i class="bx bx-user" style="margin-right: 6px"></i>Resident
+    </span>
+    <span style="flex: 1; display: flex; align-items: center">
+      <i class="bx bxs-ambulance" style="margin-right: 6px"></i>Type Of Incident
+    </span>
+    <span style="flex: 1; display: flex; align-items: center">
+      <i class="bx bx-check-circle" style="margin-right: 6px"></i>Status
+    </span>
+    <span style="flex: 2; display: flex; align-items: center">
+      <i class="bx bxs-location-plus" style="margin-right: 6px"></i>Location
+    </span>
+    <span style="flex: 1; display: flex; align-items: center">
+      <i class="bx bx-time" style="margin-right: 6px"></i>Time
+    </span>
+    <span style="flex: 0.8; text-align: center">Actions</span>
   </div>
 
+  <!-- Rows -->
   <div class="account-list">
     <div
       class="account-row"
-      *ngFor="let req of requests"
+      *ngFor="let req of requests "
       (mouseenter)="onRequestHover(req)"
-      (mouseleave)="onRequestHoverOut()"
-      (click)="$event.stopPropagation()"
+      style="
+        display: flex;
+        align-items: center;
+        padding: 12px 14px;
+        border-bottom: 1px solid #eee;
+      "
     >
-      <td class="requester-cell">
-        <div class="requester-content">
-          <img
-            [src]="req.image || 'assets/default-marker-icon.png'"
-            alt="Requester image"
-          />
-          <div class="requester-text">
-            <div class="requester-name">{{ req.name }}</div>
-            <div class="requester-contact">{{ req.contactNumber }}</div>
+      <!-- Resident -->
+      <span style="flex: 2; display: flex; align-items: center; gap: 10px">
+        <img
+          [src]="req.profilePicture|| '../../../assets/profile-default.jpg'"
+          alt="Resident image"
+          style="
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+          "
+        />
+        <div>
+          <div style="font-weight: 500">{{ req.name }}</div>
+          <div style="font-size: 12px; color: #666">
+            <i class="bx bx-phone" style="font-size: 14px"></i>
+            {{ req.contactNumber }}
           </div>
         </div>
-      </td>
-
-      <span class="col-type">{{ req.event || '-' }}</span>
-      <span class="col-address">{{ req.address || '-' }}</span>
-      <span class="col-date">
-        {{ req.timestamp?.toDate() | date: 'mediumDate' }}
       </span>
 
-      <span
-        class="col-status"
-        [ngClass]="{
-          pending: req.status.toLowerCase() === 'pending',
-          accepted: req.status.toLowerCase() === 'accepted' || req.status.toLowerCase() === 'responding',
-          completed: req.status.toLowerCase() === 'completed' || req.status.toLowerCase() === 'resolved',
-          cancelled: req.status.toLowerCase() === 'cancelled'
-        }"
-      >
-        {{ req.status === 'responding' ? 'In Progress' : (req.status |
-        titlecase) }}
+      <!-- Incident -->
+      <span style="flex: 1">{{ req.event || '-' }}</span>
+
+      <!-- Status -->
+      <span style="flex: 1; display: flex; flex-direction: column">
+        <span
+          class="status-badge"
+          [ngClass]="{
+            pending: req.status.toLowerCase() === 'pending',
+            accepted: req.status.toLowerCase() === 'accepted' || req.status.toLowerCase() === 'responding',
+            completed: req.status.toLowerCase() === 'completed' || req.status.toLowerCase() === 'resolved',
+            cancelled: req.status.toLowerCase() === 'cancelled'
+          }"
+        >
+          {{ req.status === 'responding' ? 'In Progress' : (req.status |
+          titlecase) }}
+        </span>
+        <span> {{req.staffUpdatedAt?.toDate() | date: 'medium'}}</span>
       </span>
 
-      <span class="col-staff">{{ req.staffFullName || '-' }}</span>
+      <!-- Location -->
+      <span style="flex: 2">
+        <a
+          [href]="'https://www.google.com/maps?q=' + req.latitude + ',' + req.longitude"
+          target="_blank"
+          style="color: #1976d2; text-decoration: none"
+          >{{ req.address || '-' }}</a
+        >
+      </span>
 
-      <!-- ✅ Moved checkbox and action button to last column -->
-      <span class="col-action action-buttons">
+      <!-- Time -->
+      <span style="flex: 1">
+        {{ req.timestamp?.toDate() | date: 'medium' }}
+      </span>
+
+      <!-- Actions -->
+      <span style="flex: 0.8; text-align: center">
         <button
-          title="View"
+          class="view-btn"
           [routerLink]="['/superAdmin', 'IncidentHistory', req.id]"
           [queryParams]="{ from: 'incident' }"
         >
-          <i class="bx bx-show"></i>
+          <i class="bx bx-show"></i> View Details
         </button>
       </span>
     </div>
   </div>
 </ng-template>
-
-<!-- View Request Modal -->
-<div class="isProfilemodal" *ngIf="requestToView">
-  <div class="modal-content view-member-modal">
-    <span class="close" (click)="closeView()">&times;</span>
-    <h3>Request Details</h3>
-    <div>
-      <p><strong>Request ID:</strong> {{ requestToView.id }}</p>
-      <p>
-        <strong>Date:</strong>
-        {{ requestToView.timestamp?.toDate() | date : 'fullDate' }}
-      </p>
-      <p><strong>Status:</strong> {{ requestToView.status | titlecase }}</p>
-      <p><strong>Event Incident:</strong> {{ requestToView.event }}</p>
-      <p>
-        <strong>Accepted By:</strong> {{ requestToView.staffFullName || '-' }}
-      </p>
-      <p><strong>Description:</strong> {{ requestToView.description }}</p>
-    </div>
-  </div>
-</div>

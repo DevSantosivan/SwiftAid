@@ -1,8 +1,6 @@
 .content-body {
   width: 100%;
-  padding: 20px;
-  font-family: Arial, sans-serif;
-  color: #333;
+  height: 100%;
 }
 .content_1 {
   width: 100%;
@@ -15,71 +13,105 @@
   margin-bottom: 1.2rem;
 }
 
-/* Flex header for search and export */
-.flex-header {
+.filters-container {
+  background-color: #fff;
   display: flex;
-  justify-content: end;
+  flex-wrap: nowrap; /* keep all controls in one line */
+  gap: 15px;
   align-items: center;
-  margin-bottom: 1rem;
-  gap: 1rem;
+  justify-content: space-between; /* spread controls across full width */
+  margin-bottom: 15px;
+  width: 100%;
 }
 
-.export-buttons {
-  display: flex;
-}
-
+/* Search Bar */
 .search-bar {
   display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-grow: 1; /* take remaining horizontal space */
+  min-width: 250px;
+  max-width: 400px; /* optional max width */
   border: 1px solid #ccc;
   border-radius: 6px;
-  overflow: hidden;
+  padding: 6px 10px;
   background: #fff;
-  width: 15%;
 }
 
-.search-bar input {
-  flex: 1;
+.search-bar i {
+  font-size: 22px;
+  color: #888;
+}
+
+.search-bar input[type="text"] {
+  width: 100%;
   border: none;
-  padding: 8px 12px;
+  outline: none;
   font-size: 14px;
+  padding: 6px 4px;
+  background: transparent;
+}
+
+/* Date Filters */
+.date-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  font-size: 14px;
+  color: #555;
+  white-space: nowrap; /* prevent date filters from wrapping */
+}
+
+.date-filters label {
+  user-select: none;
+  font-weight: 600;
+}
+
+.date-filters input[type="date"] {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  cursor: pointer;
+  background: #fff;
+  transition: border-color 0.3s ease;
+}
+
+.date-filters input[type="date"]:focus {
+  border-color: #e53935;
   outline: none;
 }
 
-.search-bar button {
-  border: none;
-  padding: 0 16px;
-  cursor: pointer;
-  color: #333333a6;
-  font-size: 18px;
+/* Export Buttons */
+.export-buttons {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.3s;
-  background-color: #fff;
+  gap: 10px;
+  flex-shrink: 0; /* prevent shrinking */
 }
 
-.search-bar button:hover {
-  background-color: #e7e3e3;
-}
-
-/* Export buttons */
-.export-section .export-buttons button {
+.export-buttons button {
   background: #fff;
-  border: 1px solid #ccc;
+
   color: #333;
   padding: 8px 14px;
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
-  margin-left: 8px;
   display: flex;
   align-items: center;
   gap: 6px;
   transition: background-color 0.3s, border-color 0.3s;
+  font-size: 14px;
 }
 
-.export-section .export-buttons button:hover {
+.export-buttons button:hover {
   background-color: #928e8e38;
+  border-color: #888;
+}
+
+.export-buttons i {
+  font-size: 18px;
 }
 
 /* Chart container styling */
@@ -265,6 +297,21 @@
   background-color: #bbdefb;
   color: #1e88e5;
 }
+.view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #1976d2;
+  color: #ffff;
+  border: 1px solid #bfdbfe;
+}
 
 .col-status.completed {
   background-color: #c8e6c9;
@@ -389,5 +436,39 @@
 
   .modal-content {
     width: 95%;
+  }
+}
+
+.status-badge {
+  width: 40%;
+  text-align: center;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: #388e3c3d;
+  color: #388e3c;
+  font-weight: 600;
+}
+::ng-deep .custom-pulse-marker .pulse {
+  width: 20px;
+  height: 20px;
+  background: red;
+  border-radius: 50%;
+  position: relative;
+  animation: pulse 1.5s infinite;
+  box-shadow: 0 0 0 rgba(255, 0, 0, 0.5);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.5);
+  }
+  70% {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 15px rgba(255, 0, 0, 0);
+  }
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
   }
 }

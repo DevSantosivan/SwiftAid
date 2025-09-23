@@ -62,7 +62,7 @@
           [routerLinkActiveOptions]="{ exact: false }"
         >
           <i class="bx bx-git-pull-request"></i>
-          <span *ngIf="!isCollapsed">Emergency Request</span>
+          <span *ngIf="!isCollapsed">Emergency Alert</span>
           <span
             *ngIf="hasUnreadEmergencyRequests"
             class="notification-dot"
@@ -94,6 +94,15 @@
         >
           <i class="bx bx-history"></i>
           <span *ngIf="!isCollapsed">Incident History</span>
+        </li>
+
+        <li
+          [routerLink]="'Statistic-Emergency'"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: false }"
+        >
+          <i class="bx bx-bar-chart-square"></i>
+          <span *ngIf="!isCollapsed">Statistic</span>
         </li>
 
         <li

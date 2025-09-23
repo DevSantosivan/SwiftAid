@@ -12,6 +12,7 @@ import { HistoryCallComponent } from '../admin/history-call/history-call.compone
 import { IncidentHistory } from './incident-history/incident-history';
 import { AccountVerification } from './account-verification/account-verification';
 import { LiveTracking } from './live-tracking/live-tracking';
+import { Statistic } from './statistic/statistic';
 
 export const SuperAdminRoutes: Routes = [
   {
@@ -71,6 +72,7 @@ export const SuperAdminRoutes: Routes = [
           },
         ],
       },
+      { path: 'Statistic-Emergency', component: Statistic },
 
       { path: 'Team', component: TeamComponent },
       { path: 'Team-Details', component: TeamStaffComponent },

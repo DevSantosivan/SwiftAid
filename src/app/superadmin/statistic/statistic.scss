@@ -1,0 +1,68 @@
+.dashboard {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 15px;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* Map wide, right side charts narrow */
+  gap: 20px;
+  align-items: stretch;
+}
+
+.right-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  background: #fff;
+
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 15px;
+}
+
+.map-card {
+  min-height: 400px;
+  padding: 40px;
+
+  #map {
+    height: 70%;
+    min-height: 280px;
+    border-radius: 10px;
+  }
+}
+
+.recommendations {
+  background: #fff8f8;
+  border-left: 6px solid #b71c1c;
+}
+
+.recommendations ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.recommendations li {
+  font-size: 15px;
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+}
+
+.recommendations .icon {
+  margin-right: 10px;
+  font-size: 18px;
+}

@@ -1,6 +1,7 @@
 .content-body {
   width: 100%;
   height: 100%;
+  background: #fdfdfdc0;
 }
 
 body {
@@ -111,6 +112,9 @@ canvas {
   }
 
   .custom-dark-table {
+    i {
+      font-size: 17px;
+    }
     width: 100%;
     border-collapse: collapse;
     background-color: #fff;
@@ -174,21 +178,21 @@ canvas {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 5px 20px !important;
+      padding: 10px 20px !important;
       border-radius: 20px;
       font-weight: 600;
-      padding: 0 12px;
+      padding: 15px 12px;
       user-select: none;
       color: #333;
       white-space: nowrap;
       text-transform: capitalize;
-      width: 60%;
+      width: 40%;
       transition: background-color 0.3s ease;
     }
 
     .status-badge.pending {
-      background-color: #ffecb3;
-      color: #f57c00;
+      background-color: #ebb30c2a;
+      color: #ebb30c;
     }
 
     .status-badge.in-progress {
@@ -201,28 +205,69 @@ canvas {
       color: #388e3c;
     }
 
+    /* Action buttons container */
     .action-buttons {
       display: flex;
+      gap: 10px; /* space between buttons */
       align-items: center;
-      gap: 8px;
+    }
 
-      button {
-        height: 32px;
-        padding: 0 8px;
-        border-radius: 4px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        background-color: transparent;
-        border: none;
-        white-space: nowrap;
+    /* Common button style */
+    .action-buttons button,
+    .action-buttons span.clickable {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 500;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
 
-        i {
-          font-size: 16px;
-          color: #666;
-          cursor: pointer;
-        }
-      }
+    /* View button */
+    .action-buttons .view {
+      background: #1976d2;
+      color: #ffff;
+      border: 1px solid #bfdbfe;
+    }
+    .accept {
+      background: #424242;
+      color: #ffff;
+      border: 1px solid #bfdbfe;
+    }
+    .action-buttons .view:hover {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    /* Approve button */
+    .action-buttons .approve {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #86efac;
+    }
+    .action-buttons .approve:hover {
+      background: #bbf7d0;
+      color: #14532d;
+    }
+
+    /* Decline button */
+    .action-buttons .decline {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+    }
+    .action-buttons .decline:hover {
+      background: #fecaca;
+      color: #7f1d1d;
+    }
+
+    /* Icon inside button */
+    .action-buttons i {
+      font-size: 16px;
     }
   }
 
@@ -288,7 +333,7 @@ canvas {
 
 .spinner {
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
+  border-top: 4px solid #1976d2;
   border-radius: 50%;
   width: 30px;
   height: 30px;
@@ -319,19 +364,21 @@ p {
 }
 
 .In-progress {
-  color: #2196f3;
-  border: 1px solid #2196f3;
+  color: #1976d2;
+  border: 1px solid #1976d2;
   padding: 2px 5px;
   border-radius: 3px;
   font-weight: 500;
 }
 
 .Resolved {
-  color: #4caf50;
-  border: 1px solid #4caf50;
-  padding: 2px 5px;
-  border-radius: 3px;
-  font-weight: 500;
+  width: 40%;
+  text-align: center;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: #388e3c3d;
+  color: #388e3c;
+  font-weight: 600;
 }
 
 .no-request {
@@ -632,5 +679,30 @@ p {
   /* Optional: hide map title on mobile */
   .map-title {
     display: none;
+  }
+}
+
+::ng-deep .custom-pulse-marker .pulse {
+  width: 20px;
+  height: 20px;
+  background: red;
+  border-radius: 50%;
+  position: relative;
+  animation: pulse 1.5s infinite;
+  box-shadow: 0 0 0 rgba(255, 0, 0, 0.5);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.5);
+  }
+  70% {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 15px rgba(255, 0, 0, 0);
+  }
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
   }
 }

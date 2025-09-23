@@ -18,7 +18,6 @@
 </div>
 
 <!-- Profile Sidebar (toggle) -->
-<!-- Profile Sidebar (toggle) -->
 <div
   *ngIf="showSideBar"
   class="user-details-hover"
@@ -35,7 +34,6 @@
       alt="Profile Picture"
       class="user-icon-image"
     />
-
     <ng-template #placeholder>
       <i class="bx bx-user-circle user-icon-large"></i>
     </ng-template>
@@ -45,7 +43,73 @@
 
   <ul>
     <h3 class="email">{{ currentUser?.email || "User Email" }}</h3>
-
     <li (click)="logout()">Logout</li>
   </ul>
+</div>
+
+<!-- Pending Request Modal (one at a time) -->
+
+<div class="modal-overlay" *ngIf="showNewRequestModal && currentRequest">
+  <div class="alert-card">
+    <div class="header">
+      <p>🔔 New Request Alert</p>
+    </div>
+    <!-- Map Preview -->
+    <div class="map-preview">
+      <div class="map-container" id="map-{{ currentRequest.id }}"></div>
+      <div class="map-marker"></div>
+    </div>
+
+    <!-- Request Info -->
+    <div class="alert-info">
+      <p class="alert-id">🔴 Alert #{{ currentRequest.id }}</p>
+      <div class="user-info">
+        <img
+          *ngIf="currentRequest.image; else placeholder"
+          [src]="currentRequest.image"
+          alt="Profile"
+          class="user-img"
+        />
+        <ng-template #placeholder>
+          <i class="bx bx-user-circle user-icon"></i>
+        </ng-template>
+
+        <div class="user-details">
+          <h3>{{ currentRequest.name }}</h3>
+          <p class="role">Resident</p>
+        </div>
+      </div>
+
+      <p class="timestamp">
+        🕒 {{ currentRequest.timestamp | date : "MMM d, h:mm a" }}
+      </p>
+
+      <p class="status">
+        <span class="dot"></span> {{ currentRequest.status }}
+      </p>
+    </div>
+
+    <!-- Actions -->
+    <div class="alert-actions">
+      <!-- Kung SuperAdmin -->
+      <button
+        *ngIf="currentUser?.role === 'superAdmin'"
+        class="btn-view"
+        [routerLink]="['/superAdmin/EmergencyRequest', currentRequest.id]"
+        (click)="viewRequest(currentRequest)"
+      >
+        <i class="bx bx-show"></i> View Details
+      </button>
+
+      <!-- Kapag admin -->
+      <button
+        *ngIf="currentUser?.role === 'admin'"
+        class="btn-view"
+        [routerLink]="['/admin/EmergencyRequest', currentRequest.id]"
+        (click)="viewRequest(currentRequest)"
+      >
+        <i class="bx bx-show"></i> View Details
+      </button>
+    </div>
+  </div>
 </div>

@@ -90,14 +90,14 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
       }
 
       // --- Add/Update Staff Marker ---
-      this.updateMarker(
-        this.staffMarkers,
-        request.id,
-        request.staffLat,
-        request.staffLng,
-        'assets/ambulance.png',
-        map
-      );
+      // this.updateMarker(
+      //   this.staffMarkers,
+      //   request.id,
+      //   request.staffLat,
+      //   request.staffLng,
+      //   'assets/ambulance.png',
+      //   map
+      // );
 
       // --- Add/Update Request Marker ---
       this.updateMarker(
@@ -119,27 +119,32 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
     id: string,
     lat?: number,
     lng?: number,
-    iconUrl: string = 'assets/default-icon.png',
+    p0?: string,
     map?: L.Map
   ): void {
-    if (!lat || !lng || !map) return;
+    if (lat == null || lng == null || !map) return;
 
-    let marker = markerMap.get(id);
     const position: L.LatLngTuple = [lat, lng];
+    let marker = markerMap.get(id);
+
+    const pulsingIcon = L.divIcon({
+      className: 'custom-pulse-marker',
+      html: '<div class="pulse"></div>',
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+    });
 
     if (!marker) {
-      marker = L.marker(position, {
-        icon: L.icon({
-          iconUrl,
-          iconSize: [40, 35],
-          iconAnchor: [20, 25],
-        }),
-      }).addTo(map);
-
+      marker = L.marker(position, { icon: pulsingIcon }).addTo(map);
       markerMap.set(id, marker);
+
+      // Center map sa unang marker
+      map.setView(position, 15);
     } else {
       marker.setLatLng(position);
     }
+
+    map.invalidateSize();
   }
 
   private updateRouteUsingRoutingMachine(
@@ -166,27 +171,27 @@ export class LiveTracking implements AfterViewInit, OnDestroy {
       this.routingControls.delete(id);
     }
 
-    const routingControl = (L.Routing.control as any)({
-      waypoints: [from, to],
-      routeWhileDragging: false,
-      showAlternatives: false,
-      fitSelectedRoutes: true,
-      addWaypoints: false,
-      createMarker: () => null,
-      lineOptions: {
-        styles: [{ color: '#ff4e42', weight: 4, dashArray: '6, 4' }],
-      },
-    }).addTo(map);
+    // const routingControl = (L.Routing.control as any)({
+    //   waypoints: [from, to],
+    //   routeWhileDragging: false,
+    //   showAlternatives: false,
+    //   fitSelectedRoutes: true,
+    //   addWaypoints: false,
+    //   createMarker: () => null,
+    //   lineOptions: {
+    //     styles: [{ color: '#ff4e42', weight: 4, dashArray: '6, 4' }],
+    //   },
+    // }).addTo(map);
 
-    routingControl.on('routesfound', (e: any) => {
-      const route = e.routes[0];
-      const distance = route.summary.totalDistance; // in meters
-      const time = route.summary.totalTime; // in seconds
+    // routingControl.on('routesfound', (e: any) => {
+    //   const route = e.routes[0];
+    //   const distance = route.summary.totalDistance; // in meters
+    //   const time = route.summary.totalTime; // in seconds
 
-      const eta = this.formatETA(time);
-    });
+    //   const eta = this.formatETA(time);
+    // });
 
-    this.routingControls.set(id, routingControl);
+    // this.routingControls.set(id, routingControl);
   }
 
   private formatETA(seconds: number): string {

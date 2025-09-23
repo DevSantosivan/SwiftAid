@@ -15,9 +15,10 @@ import { Subscription } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 import { Chart, registerables } from 'chart.js';
-Chart.register(...registerables);
+Chart.register(...registerables, ChartDataLabels);
 
 @Component({
   selector: 'app-map-request',
@@ -75,6 +76,7 @@ export class MapRequest implements AfterViewInit, OnDestroy, OnInit {
     this.subscribeToRequests();
     this.loadCurrentStaff(); // preload staff details
     this.setInitialStaffLocation(); // preload staff location
+    document.body.style.overflow = 'hidden';
   }
 
   ngAfterViewInit(): void {
@@ -89,6 +91,7 @@ export class MapRequest implements AfterViewInit, OnDestroy, OnInit {
     if (this.pieChart) {
       this.pieChart.destroy();
     }
+    document.body.style.overflow = '';
   }
 
   get totalPages(): number {
@@ -372,7 +375,7 @@ export class MapRequest implements AfterViewInit, OnDestroy, OnInit {
         datasets: [
           {
             data: [this.pendingCount, this.inProgressCount, this.resolvedCount],
-            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
+            backgroundColor: ['#FFCE56', '#36A2EB', '#236e2dff'],
           },
         ],
       },
@@ -388,8 +391,24 @@ export class MapRequest implements AfterViewInit, OnDestroy, OnInit {
           tooltip: {
             enabled: true,
           },
+          datalabels: {
+            color: '#fff',
+            font: {
+              size: 14,
+              weight: 'bold',
+            },
+            formatter: (value: number, ctx: any) => {
+              const total = ctx.chart.data.datasets[0].data.reduce(
+                (acc: number, curr: number) => acc + curr,
+                0
+              );
+              const percentage = ((value / total) * 100).toFixed(1);
+              return `${value} (${percentage}%)`;
+            },
+          },
         },
       },
+      plugins: [ChartDataLabels], // ✅ Attach plugin
     });
   }
 

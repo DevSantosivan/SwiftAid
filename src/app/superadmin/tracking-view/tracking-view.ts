@@ -190,6 +190,6 @@ export class TrackingView implements AfterViewInit, OnDestroy {
   }
 
   goBack() {
-    this.router.navigate(['/live-tracking']);
+    this.router.navigate(['superAdmin/LiveTracking']);
   }
 }

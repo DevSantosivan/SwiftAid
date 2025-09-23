@@ -13,6 +13,9 @@ export interface EmergencyRequest {
   status: string;
   timestamp: any;
 
+  userId: string;
+  profilePicture?: String;
+
   // Staff info fields
   staffId?: string;
 
@@ -21,7 +24,7 @@ export interface EmergencyRequest {
   staffEmail?: string;
   staffLat?: number;
   staffLng?: number;
-  staffUpdatedAt?: any;
+  staffUpdatedAt: any;
   staffFullName?: string;
   readBy?: string[];
 }

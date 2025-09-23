@@ -6,6 +6,8 @@ import {
   ViewChild,
   ElementRef,
   AfterViewInit,
+  Input,
+  HostListener,
 } from '@angular/core';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { EmergencyRequest } from '../../model/emergency';
@@ -16,8 +18,10 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+
 import { Chart, registerables } from 'chart.js';
-Chart.register(...registerables);
+Chart.register(...registerables, ChartDataLabels);
 
 @Component({
   selector: 'app-emergency-request',
@@ -29,6 +33,35 @@ Chart.register(...registerables);
 export class EmergencyRequestComponent
   implements OnInit, OnDestroy, AfterViewInit
 {
+  @Input() fallback: string = 'assets/profile-default.jpg';
+
+  @HostListener('error', ['$event'])
+  onError(event: Event) {
+    const element = event.target as HTMLImageElement;
+    element.src = this.fallback;
+  }
+  parseDate(date: any): Date | null {
+    if (!date) return null;
+
+    // Firestore Timestamp
+    if (date.toDate && typeof date.toDate === 'function') {
+      return date.toDate();
+    }
+
+    // If it's already a Date instance
+    if (date instanceof Date) {
+      return date;
+    }
+
+    // If it's a string, try converting
+    if (typeof date === 'string' || date instanceof String) {
+      const parsedDate = new Date(date.toString());
+      return isNaN(parsedDate.getTime()) ? null : parsedDate;
+    }
+
+    return null;
+  }
+
   requests: EmergencyRequest[] = [];
   filteredRequests: EmergencyRequest[] = [];
   activeFilter: string = 'All';
@@ -218,19 +251,10 @@ export class EmergencyRequestComponent
     this.filteredRequests.forEach((req) => {
       if (req.latitude && req.longitude) {
         const profileIcon = L.divIcon({
-          className: 'profile-marker',
-          html: `<div style="
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-image: url('${req.image || 'assets/logo22.png'}');
-            background-size: cover;
-            background-position: center;
-            border: 3px solid white;
-          "></div>`,
-          iconSize: [40, 40],
-          iconAnchor: [20, 20],
-          popupAnchor: [0, -20],
+          className: 'custom-pulse-marker',
+          html: '<div class="pulse"></div>',
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
         });
 
         const marker = L.marker([req.latitude, req.longitude], {
@@ -246,6 +270,35 @@ export class EmergencyRequestComponent
         this.markers.set(req.id, marker);
       }
     });
+
+    //  if (req.latitude && req.longitude) {
+    //    // ✅ Kung may image, gamitin bilang marker icon
+    //    const profileIcon = req.profilePicture
+    //      ? L.icon({
+    //          iconUrl: String(req.profilePicture),
+    //          iconSize: [40, 40], // size ng image
+    //          iconAnchor: [20, 40], // anchor point (para sa bottom center)
+    //          popupAnchor: [0, -40], // position ng popup relative sa icon
+    //        })
+    //      : L.divIcon({
+    //          className: 'custom-pulse-marker',
+    //          html: '<div class="pulse"></div>',
+    //          iconSize: [20, 20],
+    //          iconAnchor: [10, 10],
+    //        });
+
+    //    const marker = L.marker([req.latitude, req.longitude], {
+    //      icon: profileIcon,
+    //    }).addTo(this.map);
+
+    //    marker.bindPopup(`
+    //     <b>${req.name}</b><br>
+    //     Status: ${req.status}<br>
+    //     Staff: ${this.getStaffFullName(req.staffId)}
+    //   `);
+
+    //    this.markers.set(req.id, marker);
+    //  }
   }
 
   highlightMarker(req: EmergencyRequest) {
@@ -283,7 +336,7 @@ export class EmergencyRequestComponent
         datasets: [
           {
             data: [this.pendingCount, this.inProgressCount, this.resolvedCount],
-            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
+            backgroundColor: ['#FFCE56', '#36A2EB', '#236e2dff'],
           },
         ],
       },
@@ -299,8 +352,24 @@ export class EmergencyRequestComponent
           tooltip: {
             enabled: true,
           },
+          datalabels: {
+            color: '#fff',
+            font: {
+              size: 14,
+              weight: 'bold',
+            },
+            formatter: (value: number, ctx: any) => {
+              const total = ctx.chart.data.datasets[0].data.reduce(
+                (acc: number, curr: number) => acc + curr,
+                0
+              );
+              const percentage = ((value / total) * 100).toFixed(1);
+              return `${value} (${percentage}%)`;
+            },
+          },
         },
       },
+      plugins: [ChartDataLabels], // ✅ Attach plugin
     });
   }
 
