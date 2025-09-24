@@ -1,97 +1,88 @@
 <div class="content-body">
   <div class="content_1">
     <h4>Information Management</h4>
-    <p>List of Barangay and Event</p>
+    <p>User Feedback Overview</p>
 
-    <!-- Tab Navigation -->
-    <ul class="nav custom-tabs">
-      <li class="nav-item">
-        <a
-          class="nav-link"
-          [class.active]="activeTab === 'barangay'"
-          (click)="setTab('barangay')"
-        >
-          <i class="bx bx-home"></i> User Feedback
-        </a>
-      </li>
-      <li class="nav-item">
-        <a
-          class="nav-link"
-          [class.active]="activeTab === 'event'"
-          (click)="setTab('event')"
-        >
-          <i class="bx bx-calendar"></i> Blocked Comments
-        </a>
-      </li>
-    </ul>
-
-    <!-- User Feedback Tab -->
-    <div *ngIf="activeTab === 'barangay'" class="tab-content">
-      <!-- Toolbar with Select All and Delete -->
-      <div class="toolbar" *ngIf="feedbackList.length">
-        <input
-          type="checkbox"
-          [checked]="isAllSelected()"
-          (change)="toggleSelectAll($event)"
-        />
-        <span>Select All</span>
-
-        <button
-          class="delete-btn"
-          *ngIf="selectedIds.length"
-          (click)="deleteSelected()"
-        >
-          Delete ({{ selectedIds.length }})
-        </button>
+    <!-- Overall Ratings -->
+    <div class="overall-ratings">
+      <div class="rating-box">
+        <h5>Officer Performance</h5>
+        <div class="stars">
+          <ng-container *ngFor="let star of [1, 2, 3, 4, 5]; let i = index">
+            <i
+              class="bx"
+              [class.bxs-star]="i < officerRating"
+              [class.bx-star]="i >= officerRating"
+            ></i>
+          </ng-container>
+          <span>{{ officerRating }}/5</span>
+        </div>
       </div>
 
-      <!-- Feedback List -->
-      <div class="user-feedback-container">
-        <div class="feedback-item" *ngFor="let feedback of feedbackList">
-          <input
-            type="checkbox"
-            class="item-checkbox"
-            [checked]="isSelected(feedback.id)"
-            (change)="toggleSelection(feedback.id, $event)"
-          />
-
-          <div class="feedback-content">
-            <div class="feedback-header">
-              <img
-                [src]="feedback.profilePic || defaultProfile"
-                alt="Profile"
-                class="profile-pic"
-              />
-              <div class="user-info">
-                <h4>{{ feedback.name }}</h4>
-                <div class="stars">
-                  <ng-container
-                    *ngFor="let star of [1, 2, 3, 4, 5]; let i = index"
-                  >
-                    <i
-                      class="bx"
-                      [class.bxs-star]="i < feedback.rating"
-                      [class.bx-star]="i >= feedback.rating"
-                    ></i>
-                  </ng-container>
-                  <span class="rating-text">{{ feedback.rating }}/5</span>
-                </div>
-              </div>
-            </div>
-            <p class="comment-text">{{ feedback.comment }}</p>
-          </div>
+      <div class="rating-box">
+        <h5>Service Quality</h5>
+        <div class="stars">
+          <ng-container *ngFor="let star of [1, 2, 3, 4, 5]; let i = index">
+            <i
+              class="bx"
+              [class.bxs-star]="i < serviceRating"
+              [class.bx-star]="i >= serviceRating"
+            ></i>
+          </ng-container>
+          <span>{{ serviceRating }}/5</span>
         </div>
       </div>
     </div>
 
-    <!-- Blocked Comments Tab -->
-    <div *ngIf="activeTab === 'event'" class="tab-content">
-      <p>Blocked Comments content goes here...</p>
+    <!-- My Feedback Section -->
+    <div class="my-feedback" *ngIf="feedbackList.length">
+      <h4>My Feedback</h4>
+      <table class="feedback-table">
+        <thead>
+          <tr>
+            <th>Complaint</th>
+            <th>Resident</th>
+            <th>Officer Rating</th>
+            <th>Service Rating</th>
+            <th>Date</th>
+            <th>Comments</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let feedback of feedbackList">
+            <td>{{ feedback.id }}</td>
+            <td>{{ feedback.name }}</td>
+            <td>
+              <div class="stars">
+                <ng-container
+                  *ngFor="let star of [1, 2, 3, 4, 5]; let i = index"
+                >
+                  <i
+                    class="bx"
+                    [class.bxs-star]="i < feedback.rating"
+                    [class.bx-star]="i >= feedback.rating"
+                  ></i>
+                </ng-container>
+              </div>
+            </td>
+            <td>
+              <div class="stars">
+                <ng-container
+                  *ngFor="let star of [1, 2, 3, 4, 5]; let i = index"
+                >
+                  <i
+                    class="bx"
+                    [class.bxs-star]="i < feedback.rating"
+                    [class.bx-star]="i >= feedback.rating"
+                  ></i>
+                </ng-container>
+              </div>
+            </td>
+            <td>{{ feedback.timestamp | date : "MMM d, y" }}</td>
+            <td>{{ feedback.comment }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
-</div>
-
-<!-- Notification -->
-<div class="notification" *ngIf="showDeleteNotification">
-  <span>🗑️ Deleted successfully!</span>
 </div>

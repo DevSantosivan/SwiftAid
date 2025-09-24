@@ -12,7 +12,7 @@ export interface EmergencyRequest {
   needs: string;
   status: string;
   timestamp: any;
-
+  sex: string;
   userId: string;
   profilePicture?: String;
 

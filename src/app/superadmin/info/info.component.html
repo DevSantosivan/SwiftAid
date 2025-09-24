@@ -82,49 +82,43 @@
 
       <div class="grid-item">
         <div *ngFor="let incident of allIncidents" class="content-container">
-          <div class="info">
-            <div class="header" (click)="$event.stopPropagation()">
-              <button
-                aria-label="Open incident options"
-                class="dropdown-toggle"
-                (click)="toggleIncidentDropdown(incident.id, $event)"
-              >
-                <i class="bx bx-dots-vertical-rounded"></i>
-              </button>
+          <div class="barangay-card">
+            <!-- Incident Details -->
+            <div class="barangay-details">
+              <h2>{{ incident.name }}</h2>
+              <!-- Incident Details -->
+              <div class="barangay-details">
+                <div
+                  class="incident-icon"
+                  style="font-size: 48px; color: red; margin-bottom: 10px"
+                >
+                  <i [class]="incident.icon"></i>
+                </div>
 
-              <div
-                class="dropdown-menu"
-                *ngIf="openIncidentDropdownIndex === incident.id"
-                (click)="$event.stopPropagation()"
-              >
-                <ul>
-                  <li (click)="viewIncident(incident)">
-                    <i class="bx bx-show"></i> View
-                  </li>
-                  <li (click)="editIncident(incident)">
-                    <i class="bx bx-edit-alt"></i> Edit
-                  </li>
-                  <li (click)="deleteIncident(incident.id)">
-                    <i class="bx bx-trash-alt"></i> Delete
-                  </li>
-                </ul>
+                <!-- ✅ Show Types -->
+                <div *ngIf="incident.types?.length">
+                  <h4>Types:</h4>
+                  <ul>
+                    <li *ngFor="let type of incident.types">{{ type.name }}</li>
+                  </ul>
+                </div>
+
+                <div *ngIf="incident.tips?.length" class="tips">
+                  <h4>Tips:</h4>
+                  <ul style="list-style: none">
+                    <li *ngFor="let tip of incident.tips">{{ tip }}</li>
+                  </ul>
+                </div>
               </div>
-            </div>
 
-            <div class="info-body">
-              <div
-                class="icon"
-                style="font-size: 48px; color: #007bff; margin-bottom: 10px"
-              >
-                <i [class]="incident.icon"></i>
-              </div>
-              <h2 class="title">{{ incident.name }}</h2>
-
-              <div *ngIf="incident.tips?.length" class="tips">
-                <h4>Tips:</h4>
-                <ul>
-                  <li *ngFor="let tip of incident.tips">{{ tip }}</li>
-                </ul>
+              <!-- Edit/Delete Buttons -->
+              <div class="card-actions">
+                <button (click)="editIncident(incident)">
+                  <i class="bx bx-edit-alt"></i> Edit
+                </button>
+                <button (click)="deleteIncident(incident.id)">
+                  <i class="bx bx-trash-alt"></i> Delete
+                </button>
               </div>
             </div>
           </div>
@@ -132,138 +126,151 @@
       </div>
     </div>
   </div>
-</div>
 
-<!-- Incident Modal -->
-<div class="modal" [class.show]="showAddIncidentModal">
-  <div class="modal-content">
-    <h2>{{ newIncident.id ? "Edit Incident" : "Add Incident" }}</h2>
-    <form (ngSubmit)="submitIncident()" #incidentForm="ngForm" novalidate>
-      <label for="incidentName">Incident Name</label>
-      <input
-        id="incidentName"
-        type="text"
-        required
-        [(ngModel)]="newIncident.name"
-        name="name"
-        #nameInput="ngModel"
-        [class.invalid]="nameInput.invalid && nameInput.touched"
-      />
-      <div *ngIf="nameInput.invalid && nameInput.touched" class="error-message">
-        Incident name is required.
-      </div>
+  <!-- Incident Modal -->
+  <div class="modal" [class.show]="showAddIncidentModal">
+    <div class="modal-content">
+      <h2>{{ newIncident.id ? "Edit Incident" : "Add Incident" }}</h2>
+      <form (ngSubmit)="submitIncident()" #incidentForm="ngForm" novalidate>
+        <label for="incidentName">Incident Name</label>
+        <input
+          id="incidentName"
+          type="text"
+          required
+          [(ngModel)]="newIncident.name"
+          name="name"
+        />
 
-      <label for="incidentIcon">Icon Class Name</label>
-      <input
-        id="incidentIcon"
-        type="text"
-        required
-        [(ngModel)]="newIncident.icon"
-        name="icon"
-        placeholder="e.g. bx bxs-car-crash"
-        #iconInput="ngModel"
-        [class.invalid]="iconInput.invalid && iconInput.touched"
-      />
-      <div *ngIf="iconInput.invalid && iconInput.touched" class="error-message">
-        Icon class is required.
-      </div>
+        <label for="incidentIcon">Icon Class Name</label>
+        <input
+          id="incidentIcon"
+          type="text"
+          required
+          [(ngModel)]="newIncident.icon"
+          name="icon"
+          placeholder="e.g. bx bxs-car-crash"
+        />
 
-      <label>Tips for this Incident</label>
-      <div class="tips-input-group">
+        <label>Incident Types</label>
+        <div class="types-input-group">
+          <input
+            type="text"
+            [(ngModel)]="newTypeName"
+            name="newType"
+            placeholder="Enter a type (e.g. Vehicle Accident)"
+            (keyup.enter)="addType()"
+          />
+          <button type="button" (click)="addType()">Add Type</button>
+        </div>
+
+        <ul class="type-list">
+          <li *ngFor="let type of newIncident.types; let i = index">
+            {{ type.name }}
+            <button
+              type="button"
+              aria-label="Remove type"
+              (click)="removeType(i)"
+            >
+              <i class="bx bx-x"></i>
+            </button>
+          </li>
+        </ul>
+
+        <label>Tips for this Incident</label>
+        <div class="tips-input-group">
+          <input
+            type="text"
+            [(ngModel)]="newTip"
+            name="newTip"
+            placeholder="Enter a tip"
+            (keyup.enter)="addTip()"
+          />
+          <button type="button" (click)="addTip()">Add Tip</button>
+        </div>
+
+        <ul class="tip-list">
+          <li *ngFor="let tip of newIncident.tips; let i = index">
+            {{ tip }}
+            <button type="button" (click)="removeTip(i)">
+              <i class="bx bx-x"></i>
+            </button>
+          </li>
+        </ul>
+
+        <div class="modal-actions">
+          <button type="submit" [disabled]="incidentForm.invalid">
+            {{ newIncident.id ? "Update" : "Save" }}
+          </button>
+          <button type="button" (click)="closeIncidentModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Barangay Modal -->
+  <div class="modal" [class.show]="showAddModal">
+    <div class="modal-content">
+      <h2>Add Barangay</h2>
+      <form (ngSubmit)="submitBarangay()" #barangayForm="ngForm">
+        <label>Barangay Name</label>
         <input
           type="text"
-          [(ngModel)]="newTip"
-          name="newTip"
-          placeholder="Enter a tip"
-          (keyup.enter)="addTip()"
+          required
+          [(ngModel)]="newBarangay.baranggay"
+          name="baranggay"
         />
-        <button type="button" (click)="addTip()">Add Tip</button>
-      </div>
 
-      <ul class="tip-list">
-        <li *ngFor="let tip of newIncident.tips; let i = index">
-          {{ tip }}
-          <button type="button" aria-label="Remove tip" (click)="removeTip(i)">
-            <i class="bx bx-x"></i>
-          </button>
-        </li>
-      </ul>
+        <label>Captain Name</label>
+        <input
+          type="text"
+          required
+          [(ngModel)]="newBarangay.captain_name"
+          name="captain_name"
+        />
 
-      <div class="modal-actions">
-        <button type="submit" [disabled]="incidentForm.invalid">
-          {{ newIncident.id ? "Update" : "Save" }}
-        </button>
-        <button type="button" (click)="closeIncidentModal()">Cancel</button>
-      </div>
-    </form>
+        <label>Contact</label>
+        <input
+          type="text"
+          required
+          [(ngModel)]="newBarangay.barangay_contact"
+          name="contact"
+        />
+
+        <label>Image URL</label>
+        <input
+          type="text"
+          [(ngModel)]="newBarangay.baranggay_img"
+          name="image"
+        />
+
+        <div id="map" style="height: 300px; margin: 10px 0"></div>
+
+        <p>Latitude: {{ newBarangay.latitude }}</p>
+        <p>Longitude: {{ newBarangay.longitude }}</p>
+
+        <button type="submit">Save</button>
+        <button type="button" (click)="closeModal()">Cancel</button>
+      </form>
+    </div>
   </div>
-</div>
 
-<!-- Add Barangay Modal -->
-<div class="modal" [class.show]="showAddModal">
-  <div class="modal-content">
-    <h2>Add Barangay</h2>
-    <form (ngSubmit)="submitBarangay()" #barangayForm="ngForm">
-      <label>Barangay Name</label>
-      <input
-        type="text"
-        required
-        [(ngModel)]="newBarangay.baranggay"
-        name="baranggay"
-      />
-
-      <label>Captain Name</label>
-      <input
-        type="text"
-        required
-        [(ngModel)]="newBarangay.captain_name"
-        name="captain_name"
-      />
-
-      <label>Contact</label>
-      <input
-        type="text"
-        required
-        [(ngModel)]="newBarangay.barangay_contact"
-        name="contact"
-      />
-
-      <label>Image URL</label>
-      <input type="text" [(ngModel)]="newBarangay.baranggay_img" name="image" />
-
-      <div id="map" style="height: 300px; margin: 10px 0"></div>
-
-      <p>Latitude: {{ newBarangay.latitude }}</p>
-      <p>Longitude: {{ newBarangay.longitude }}</p>
-
-      <button type="submit">Save</button>
-      <button type="button" (click)="closeModal()">Cancel</button>
-    </form>
+  <!-- Loading Modal -->
+  <div class="loading-modal-backdrop" *ngIf="isSubmitting">
+    <div class="loading-modal-content">
+      <div class="spinner"></div>
+      <div>Processing, please wait...</div>
+    </div>
   </div>
-</div>
 
-<!-- modal -->
-<div class="modal-backdrop" *ngIf="isSubmitting">
-  <div class="modal submitting-modal">
-    <img src="../../../assets/loading.gif" alt="Loading" />
-    <p>Submitting barangay data...</p>
-  </div>
-</div>
-
-<!-- Success Modal -->
-<div class="modal-success" *ngIf="showSuccessModal">
-  <p>✅ Barangay submitted successfully!</p>
-</div>
-<div class="loading-overlay" *ngIf="isSubmitting">
-  <div class="spinner"></div>
-</div>
-<div class="mobile-message">
-  <div class="mobile-content-message">
-    <img src="../../../assets/formobile.gif" alt="" />
-    <h1>Mobile View Not Supported</h1>
-    <p>
-      This dashboard is not optimized for mobile devices. Please access it from
-      a desktop or laptop for the best experience.
-    </p>
+  <!-- Mobile Message -->
+  <div class="mobile-message">
+    <div class="mobile-content-message">
+      <img src="../../../assets/formobile.gif" alt="" />
+      <h1>Mobile View Not Supported</h1>
+      <p>
+        This dashboard is not optimized for mobile devices. Please access it
+        from a desktop or laptop for the best experience.
+      </p>
+    </div>
   </div>
 </div>

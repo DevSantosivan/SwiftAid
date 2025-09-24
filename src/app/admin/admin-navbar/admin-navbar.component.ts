@@ -44,6 +44,18 @@ export class AdminNavbarComponent implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     try {
+      // 🔑 Silent unlock (muted autoplay is allowed by browser)
+      this.audio.muted = true;
+      this.audio
+        .play()
+        .then(() => {
+          this.audio.pause();
+          this.audio.muted = false; // ibalik sa normal
+          this.audio.currentTime = 0;
+          console.log('Audio unlocked silently');
+        })
+        .catch((err) => console.warn('Silent unlock failed:', err));
+
       const user = await this.afAuth.currentUser;
       if (!user) {
         console.warn('No user is logged in.');
@@ -160,7 +172,14 @@ export class AdminNavbarComponent implements OnInit, OnDestroy {
         attribution: '© OpenStreetMap contributors',
       }).addTo(map);
 
-      L.marker([req.latitude, req.longitude]).addTo(map);
+      L.marker([req.latitude, req.longitude], {
+        icon: L.divIcon({
+          className: 'custom-pulse-marker',
+          html: '<div class="pulse"></div>',
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
+        }),
+      }).addTo(map);
 
       this.maps[req.id] = map;
 

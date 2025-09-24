@@ -16,10 +16,9 @@ interface EnrichedFeedback {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './feedback.component.html',
-  styleUrl: './feedback.component.scss',
+  styleUrls: ['./feedback.component.scss'], // <-- typo dati, dapat plural
 })
 export class FeedbackComponent implements OnInit {
-  activeTab = 'barangay';
   defaultProfile = 'assets/profile.jpg';
   showDeleteNotification = false;
   selectedIds: string[] = [];
@@ -33,18 +32,27 @@ export class FeedbackComponent implements OnInit {
       this.feedbackList = data.map((item) => ({
         id: item.id,
         name: item.name,
-        profilePic: this.defaultProfile, // You can replace with actual profilePic if available
+        profilePic: this.defaultProfile, // replace if actual profilePic exists
         rating: item.rating,
-        comment: item.feedback, // or item.comment if you changed your model
+        comment: item.feedback,
         timestamp: item.timestamp,
       }));
     });
   }
 
-  setTab(tabName: string): void {
-    this.activeTab = tabName;
+  // --- COMPUTED RATINGS ---
+  get officerRating(): number {
+    if (!this.feedbackList.length) return 0;
+    const sum = this.feedbackList.reduce((acc, f) => acc + f.rating, 0);
+    return +(sum / this.feedbackList.length).toFixed(1); // ex: 4.5
   }
 
+  get serviceRating(): number {
+    // kung may ibang field like serviceRating sa backend, palitan dito
+    return this.officerRating;
+  }
+
+  // --- SELECTION LOGIC ---
   isSelected(id: string): boolean {
     return this.selectedIds.includes(id);
   }
@@ -76,9 +84,6 @@ export class FeedbackComponent implements OnInit {
     this.selectedIds = [];
 
     this.showDeleteNotification = true;
-
-    setTimeout(() => {
-      this.showDeleteNotification = false;
-    }, 3000);
+    setTimeout(() => (this.showDeleteNotification = false), 3000);
   }
 }

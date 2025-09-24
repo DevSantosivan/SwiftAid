@@ -156,8 +156,15 @@
   </div>
 </div>
 
-<div *ngIf="isLoading" class="loading-indicator">
+<!-- <div *ngIf="isLoading" class="loading-indicator">
   <img src="../../../assets/resolve.gif" alt="Loading..." />
+</div> -->
+
+<div class="loading-modal-backdrop" *ngIf="isLoading">
+  <div class="loading-modal-content">
+    <div class="spinner"></div>
+    <div>Processing, please wait...</div>
+  </div>
 </div>
 
 <!-- Success Modal -->

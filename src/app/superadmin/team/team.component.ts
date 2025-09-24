@@ -3,6 +3,7 @@ import { Component, HostListener, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NgZone } from '@angular/core';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { account } from '../../model/users';
 import { register } from '../../model/registered';
@@ -19,7 +20,7 @@ interface AccountWithStatus extends account {
 @Component({
   selector: 'app-team',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatSnackBarModule],
   templateUrl: './team.component.html',
   styleUrls: ['./team.component.scss'],
 })
@@ -28,6 +29,7 @@ export class TeamComponent {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private ngZone = inject(NgZone);
+  private snackBar = inject(MatSnackBar);
 
   teamMembers: AccountWithStatus[] = [];
   filteredMembers: AccountWithStatus[] = [];
@@ -45,10 +47,6 @@ export class TeamComponent {
   // Loading states
   isSaving = false;
   isDeleting = false;
-
-  // Success modal
-  isSuccessModalOpen = false;
-  successMessage = '';
 
   // One object for both Create and Edit
   activeMember: Partial<AccountWithStatus> & { password?: string } = {
@@ -181,7 +179,7 @@ export class TeamComponent {
       this.teamMembers = await this.userService.getAdmins();
       this.filteredMembers = [...this.teamMembers];
 
-      this.showSuccessModal('Member created successfully!');
+      this.showSuccessToast('Member created successfully!');
       this.closeModal();
     } catch (error) {
       console.error('Error creating member:', error);
@@ -209,7 +207,7 @@ export class TeamComponent {
       );
       this.filteredMembers = [...this.teamMembers];
 
-      this.showSuccessModal('Member updated successfully!');
+      this.showSuccessToast('Member updated successfully!');
       this.closeModal();
     } catch (error) {
       console.error('Error updating member:', error);
@@ -240,7 +238,7 @@ export class TeamComponent {
       );
       this.filteredMembers = [...this.teamMembers];
 
-      this.showSuccessModal('Member deleted successfully!');
+      this.showSuccessToast('Member deleted successfully!');
     } catch (error) {
       console.error('Error deleting member:', error);
       alert('Failed to delete member.');
@@ -250,13 +248,11 @@ export class TeamComponent {
     }
   }
 
-  showSuccessModal(message: string) {
-    this.successMessage = message;
-    this.isSuccessModalOpen = true;
-
-    setTimeout(() => {
-      this.isSuccessModalOpen = false;
-      this.successMessage = '';
-    }, 2500);
+  showSuccessToast(message: string): void {
+    this.snackBar.open(message, 'Close', {
+      duration: 3000,
+      verticalPosition: 'bottom',
+      panelClass: ['snackbar-success'],
+    });
   }
 }

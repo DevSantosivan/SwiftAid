@@ -78,14 +78,17 @@
 
 <!-- Loading Overlay -->
 
-<div class="loading-indicator" *ngIf="isSaving || isDeleting">
+<!-- <div class="loading-indicator" *ngIf="isSaving || isDeleting">
   <img src="../../../assets/resolve.gif" alt="Loading..." />
+</div> -->
+
+<div class="loading-modal-backdrop" *ngIf="isSaving || isDeleting">
+  <div class="loading-modal-content">
+    <div class="spinner"></div>
+    <div>Processing, please wait...</div>
+  </div>
 </div>
 <!-- Success Notification -->
-
-<div class="success-modal" *ngIf="isSuccessModalOpen">
-  <p><i class="bx bxs-check-circle"></i> {{ successMessage }}</p>
-</div>
 
 <!-- Shared Create/Edit Member Modal -->
 <div

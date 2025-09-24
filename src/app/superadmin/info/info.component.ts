@@ -13,11 +13,12 @@ import { BarangayService } from '../../core/barangay.service';
 import { IncidentService, Incident } from '../../core/incident.service';
 import { Subscription } from 'rxjs';
 import { Barangay } from '../../model/baranggay';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-info',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, MatSnackBarModule],
   templateUrl: './info.component.html',
   styleUrls: ['./info.component.scss'],
 })
@@ -28,7 +29,6 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
   showAddModal = false;
   showAddIncidentModal = false;
   isSubmitting = false;
-  showSuccessModal = false;
   editingBarangayId: string | null = null;
 
   // Barangay data
@@ -38,8 +38,9 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Incident data
   allIncidents: Incident[] = [];
-  newIncident: Incident = { id: '', name: '', icon: '', tips: [] };
+  newIncident: Incident = { id: '', name: '', icon: '', tips: [], types: [] };
   newTip = '';
+  newTypeName = '';
 
   // Dropdown states
   openDropdownIndex: string | null = null;
@@ -49,12 +50,12 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
 
   constructor(
     private barangayService: BarangayService,
-    private incidentService: IncidentService
+    private incidentService: IncidentService,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
     this.fetchBarangays();
-
     this.incidentSub = this.incidentService.getAll().subscribe({
       next: (incidents) => {
         this.allIncidents = incidents;
@@ -64,7 +65,6 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    // Wait for the barangays to load before initializing maps
     setTimeout(() => {
       this.allBaranggay.forEach((barangay) => {
         this.initBarangayMap(barangay);
@@ -97,7 +97,7 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
             this.reverseGeocode(barangay);
           }
         });
-      }, 300); // wait for DOM re-render
+      }, 300);
     }
   }
 
@@ -107,7 +107,11 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
       this.allBaranggay = await this.barangayService.getAll();
     } catch (error) {
       console.error('Error fetching barangays:', error);
-      alert('Failed to fetch barangays. Please try again later.');
+      this.snackBar.open(
+        'Failed to fetch barangays. Please try again.',
+        'Close',
+        { duration: 3000 }
+      );
     }
   }
 
@@ -122,10 +126,9 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
       this.editingBarangayId = null;
     }
 
-    // Wait for modal to render
     setTimeout(() => {
       if (this.map) {
-        this.map.remove(); // remove previous map instance
+        this.map.remove();
       }
       this.initModalMap();
     }, 300);
@@ -155,7 +158,6 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
     };
   }
 
-  // ===== MODAL MAP =====
   initModalMap() {
     const lat = this.newBarangay.latitude ?? 14.5995;
     const lng = this.newBarangay.longitude ?? 120.9842;
@@ -222,17 +224,25 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
             this.editingBarangayId,
             this.newBarangay
           );
+          this.snackBar.open('Barangay updated successfully!', 'Close', {
+            duration: 3000,
+          });
         } else {
           await this.barangayService.add(this.newBarangay);
+          this.snackBar.open('Barangay added successfully!', 'Close', {
+            duration: 3000,
+          });
         }
 
         await this.fetchBarangays();
         this.closeModal();
-        this.showSuccessModal = true;
-        setTimeout(() => (this.showSuccessModal = false), 2000);
       } catch (error) {
         console.error('Error submitting barangay:', error);
-        alert('Failed to submit barangay. Please try again.');
+        this.snackBar.open(
+          'Failed to submit barangay. Please try again.',
+          'Close',
+          { duration: 3000 }
+        );
       } finally {
         this.isSubmitting = false;
       }
@@ -249,11 +259,16 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
       try {
         await this.barangayService.delete(id);
         await this.fetchBarangays();
-        this.showSuccessModal = true;
-        setTimeout(() => (this.showSuccessModal = false), 2000);
+        this.snackBar.open('Barangay deleted successfully!', 'Close', {
+          duration: 3000,
+        });
       } catch (error) {
         console.error('Error deleting barangay:', error);
-        alert('Failed to delete barangay. Please try again.');
+        this.snackBar.open(
+          'Failed to delete barangay. Please try again.',
+          'Close',
+          { duration: 3000 }
+        );
       } finally {
         this.isSubmitting = false;
       }
@@ -271,13 +286,11 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
     this.openDropdownIndex = null;
   }
 
-  // ===== BARANGAY CARD MAPS =====
   initBarangayMap(barangay: Barangay) {
     if (!barangay.latitude || !barangay.longitude) return;
 
     const mapId = 'map-' + barangay.id;
     const mapElement = document.getElementById(mapId);
-
     if (!mapElement) return;
 
     if ((mapElement as any)._leaflet_map) {
@@ -322,8 +335,9 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
 
   closeIncidentModal() {
     this.showAddIncidentModal = false;
-    this.newIncident = { id: '', name: '', icon: '', tips: [] };
+    this.newIncident = { id: '', name: '', icon: '', tips: [], types: [] };
     this.newTip = '';
+    this.newTypeName = '';
   }
 
   addTip() {
@@ -337,6 +351,21 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
     this.newIncident.tips.splice(index, 1);
   }
 
+  addType() {
+    if (this.newTypeName.trim()) {
+      const newType = {
+        id: Date.now().toString(),
+        name: this.newTypeName.trim(),
+      };
+      this.newIncident.types.push(newType);
+      this.newTypeName = '';
+    }
+  }
+
+  removeType(index: number) {
+    this.newIncident.types.splice(index, 1);
+  }
+
   async submitIncident() {
     if (this.newIncident.name && this.newIncident.icon) {
       this.isSubmitting = true;
@@ -346,14 +375,22 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
             this.newIncident.id,
             this.newIncident
           );
+          this.snackBar.open('Incident updated successfully!', 'Close', {
+            duration: 3000,
+          });
         } else {
           await this.incidentService.add(this.newIncident);
+          this.snackBar.open('Incident added successfully!', 'Close', {
+            duration: 3000,
+          });
         }
         this.closeIncidentModal();
-        this.showSuccessModal = true;
-        setTimeout(() => (this.showSuccessModal = false), 2000);
       } catch (error) {
-        alert('Failed to submit incident. Please try again.');
+        this.snackBar.open(
+          'Failed to submit incident. Please try again.',
+          'Close',
+          { duration: 3000 }
+        );
       } finally {
         this.isSubmitting = false;
       }
@@ -388,11 +425,16 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
       this.isSubmitting = true;
       try {
         await this.incidentService.delete(id);
-        this.showSuccessModal = true;
-        setTimeout(() => (this.showSuccessModal = false), 2000);
+        this.snackBar.open('Incident deleted successfully!', 'Close', {
+          duration: 3000,
+        });
         this.openIncidentDropdownIndex = null;
       } catch (error) {
-        alert('Failed to delete incident. Please try again.');
+        this.snackBar.open(
+          'Failed to delete incident. Please try again.',
+          'Close',
+          { duration: 3000 }
+        );
       } finally {
         this.isSubmitting = false;
       }

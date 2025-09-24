@@ -410,223 +410,389 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
   // EXPORT TO WORD
   // =====================
 
-  private async getImageRun(imageUrl: string): Promise<ImageRun | null> {
-    try {
-      const response = await fetch(imageUrl);
-      if (!response.ok) return null;
-      const blob = await response.blob();
-
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const uint8Array = new Uint8Array(reader.result as ArrayBuffer);
-
-          resolve(
-            new ImageRun({
-              data: uint8Array,
-              transformation: { width: 100, height: 100 },
-            })
-          );
-        };
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(blob);
-      });
-    } catch (e) {
-      return null;
-    }
-  }
-
   async exportToWord() {
     const rows = this.getCurrentFilteredRequests();
     if (rows.length === 0) return alert('No data to export!');
 
-    // Step 1: Group by month
-    const monthlyData: Record<
-      string,
-      { incidents: number; transfers: number; victims: number }
-    > = {};
+    // Sub-types for vehicular accident only
+    const accidentTypes = [
+      'Self Accident',
+      'Collision',
+      'Sideswipe',
+      'Stray Animals',
+      'Pedestrian Accident',
+    ];
 
-    rows.forEach((req) => {
-      const date = req.timestamp?.toDate?.()
-        ? req.timestamp.toDate()
-        : new Date(req.timestamp);
+    // Months
+    const months = [
+      'JANUARY',
+      'FEBRUARY',
+      'MARCH',
+      'APRIL',
+      'MAY',
+      'JUNE',
+      'JULY',
+      'AUGUST',
+      'SEPTEMBER',
+      'OCTOBER',
+      'NOVEMBER',
+      'DECEMBER',
+    ];
 
-      const month = date
-        .toLocaleString('default', { month: 'long' })
-        .toUpperCase();
-
-      if (!monthlyData[month]) {
-        monthlyData[month] = { incidents: 0, transfers: 0, victims: 0 };
-      }
-
-      monthlyData[month].incidents += 1;
-      monthlyData[month].transfers += req.staffFullName ? 1 : 0;
-      monthlyData[month].victims += req.description ? 1 : 0;
-    });
-
-    // Step 2: Build header rows (multi-level like the image)
-    const tableRows: TableRow[] = [];
-
-    // Top header row
-    tableRows.push(
-      new TableRow({
-        tableHeader: true,
-        children: [
-          new TableCell({
-            columnSpan: 2,
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({
-                    text: 'NO. AND TYPE OF INCIDENT ASSISTED',
-                    bold: true,
-                    size: 22,
-                  }),
-                ],
-              }),
-            ],
-            shading: { fill: 'D9E1F2' }, // light blue background
-          }),
-          new TableCell({
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({
-                    text: 'PATIENT TRANSFER',
-                    bold: true,
-                    size: 22,
-                  }),
-                ],
-              }),
-            ],
-            shading: { fill: 'D9E1F2' },
-          }),
-          new TableCell({
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({
-                    text: 'NO. OF VICTIMS/PATIENTS TRANSFERRED TO HOSPITAL',
-                    bold: true,
-                    size: 22,
-                  }),
-                ],
-              }),
-            ],
-            shading: { fill: 'D9E1F2' },
-          }),
-        ],
-      })
+    // Collect all unique event categories (other than vehicle subtypes)
+    const allEvents = Array.from(
+      new Set(
+        rows.map((r) => r.event).filter((ev) => !accidentTypes.includes(ev))
+      )
     );
 
-    // Step 3: Fill rows from grouped data
-    let totalIncidents = 0,
-      totalTransfers = 0,
-      totalVictims = 0;
+    // Group by month
+    const grouped = months.map((month, idx) => {
+      const monthEvents = rows.filter((r) => {
+        const d = r.timestamp?.toDate?.()
+          ? r.timestamp.toDate()
+          : new Date(r.timestamp);
+        return d.getMonth() === idx;
+      });
 
-    Object.entries(monthlyData).forEach(([month, values]) => {
-      totalIncidents += values.incidents;
-      totalTransfers += values.transfers;
-      totalVictims += values.victims;
+      // Count vehicular subtypes
+      const typeCounts: Record<string, number> = {};
+      accidentTypes.forEach((type) => {
+        typeCounts[type] = monthEvents.filter((r) => r.event === type).length;
+      });
 
-      tableRows.push(
+      // Count other events (Heart Attack, Fire Incident, etc.)
+      const otherCounts: Record<string, number> = {};
+      allEvents.forEach((ev) => {
+        otherCounts[ev] = monthEvents.filter((r) => r.event === ev).length;
+      });
+
+      // Total vehicle accidents = sum of vehicular subtypes
+      const totalVehicle = accidentTypes.reduce(
+        (sum, t) => sum + typeCounts[t],
+        0
+      );
+
+      const male = monthEvents.filter((r) => r.sex === 'Male').length;
+      const female = monthEvents.filter((r) => r.sex === 'Female').length;
+      const patients = male + female;
+
+      return {
+        month,
+        totalVehicle,
+        typeCounts,
+        otherCounts,
+        male,
+        female,
+        patients,
+      };
+    });
+
+    // Compute totals
+    const totals = {
+      totalVehicle: grouped.reduce((a, b) => a + b.totalVehicle, 0),
+      typeCounts: {} as Record<string, number>,
+      otherCounts: {} as Record<string, number>,
+      male: grouped.reduce((a, b) => a + b.male, 0),
+      female: grouped.reduce((a, b) => a + b.female, 0),
+      patients: grouped.reduce((a, b) => a + b.patients, 0),
+    };
+    accidentTypes.forEach((type) => {
+      totals.typeCounts[type] = grouped.reduce(
+        (a, b) => a + b.typeCounts[type],
+        0
+      );
+    });
+    allEvents.forEach((ev) => {
+      totals.otherCounts[ev] = grouped.reduce(
+        (a, b) => a + b.otherCounts[ev],
+        0
+      );
+    });
+
+    // ========== TABLE HEADER ==========
+    const header1Cells = [
+      new TableCell({
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: 'MONTH', bold: true })],
+            alignment: AlignmentType.CENTER,
+          }),
+        ],
+        rowSpan: 2,
+      }),
+      new TableCell({
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: 'TOTAL NO. OF VEHICULAR ACCIDENT',
+                bold: true,
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+          }),
+        ],
+        rowSpan: 2,
+      }),
+      new TableCell({
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({ text: 'TYPE OF VEHICULAR ACCIDENT', bold: true }),
+            ],
+            alignment: AlignmentType.CENTER,
+          }),
+        ],
+        columnSpan: accidentTypes.length,
+      }),
+      ...allEvents.map(
+        (ev) =>
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: `TOTAL NO. OF ${ev.toUpperCase()}`,
+                    bold: true,
+                  }),
+                ],
+                alignment: AlignmentType.CENTER,
+              }),
+            ],
+            rowSpan: 2,
+          })
+      ),
+      new TableCell({
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: 'NO. OF MALE', bold: true })],
+            alignment: AlignmentType.CENTER,
+          }),
+        ],
+        rowSpan: 2,
+      }),
+      new TableCell({
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: 'NO. OF FEMALE', bold: true })],
+            alignment: AlignmentType.CENTER,
+          }),
+        ],
+        rowSpan: 2,
+      }),
+      new TableCell({
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({ text: 'TOTAL NO. OF PATIENT', bold: true }),
+            ],
+            alignment: AlignmentType.CENTER,
+          }),
+        ],
+        rowSpan: 2,
+      }),
+    ];
+
+    const header1 = new TableRow({ children: header1Cells });
+
+    const header2 = new TableRow({
+      children: accidentTypes.map(
+        (type) =>
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [new TextRun({ text: type, bold: true })],
+                alignment: AlignmentType.CENTER,
+              }),
+            ],
+          })
+      ),
+    });
+
+    // ========== DATA ROWS ==========
+    const dataRows = grouped.map(
+      (g) =>
         new TableRow({
           children: [
             new TableCell({
               children: [
                 new Paragraph({
+                  text: g.month,
                   alignment: AlignmentType.CENTER,
-                  children: [new TextRun({ text: month, bold: true })],
                 }),
               ],
             }),
             new TableCell({
               children: [
                 new Paragraph({
+                  text: g.totalVehicle.toString(),
                   alignment: AlignmentType.CENTER,
+                }),
+              ],
+            }),
+            ...accidentTypes.map(
+              (type) =>
+                new TableCell({
                   children: [
-                    new TextRun({ text: values.incidents.toString() }),
+                    new Paragraph({
+                      text: g.typeCounts[type].toString(),
+                      alignment: AlignmentType.CENTER,
+                    }),
                   ],
-                }),
-              ],
-            }),
-            new TableCell({
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.CENTER,
+                })
+            ),
+            ...allEvents.map(
+              (ev) =>
+                new TableCell({
                   children: [
-                    new TextRun({ text: values.transfers.toString() }),
+                    new Paragraph({
+                      text: g.otherCounts[ev].toString(),
+                      alignment: AlignmentType.CENTER,
+                    }),
                   ],
+                })
+            ),
+            new TableCell({
+              children: [
+                new Paragraph({
+                  text: g.male.toString(),
+                  alignment: AlignmentType.CENTER,
                 }),
               ],
             }),
             new TableCell({
               children: [
                 new Paragraph({
+                  text: g.female.toString(),
                   alignment: AlignmentType.CENTER,
-                  children: [new TextRun({ text: values.victims.toString() })],
+                }),
+              ],
+            }),
+            new TableCell({
+              children: [
+                new Paragraph({
+                  text: g.patients.toString(),
+                  alignment: AlignmentType.CENTER,
                 }),
               ],
             }),
           ],
         })
-      );
-    });
-
-    // Totals row
-    tableRows.push(
-      new TableRow({
-        children: [
-          new TableCell({
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: 'TOTAL', bold: true })],
-              }),
-            ],
-            shading: { fill: 'F2F2F2' }, // light gray
-          }),
-          new TableCell({
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({ text: totalIncidents.toString(), bold: true }),
-                ],
-              }),
-            ],
-            shading: { fill: 'F2F2F2' },
-          }),
-          new TableCell({
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({ text: totalTransfers.toString(), bold: true }),
-                ],
-              }),
-            ],
-            shading: { fill: 'F2F2F2' },
-          }),
-          new TableCell({
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({ text: totalVictims.toString(), bold: true }),
-                ],
-              }),
-            ],
-            shading: { fill: 'F2F2F2' },
-          }),
-        ],
-      })
     );
 
-    // Step 4: Create the document
+    // ========== TOTAL ROW ==========
+    // ========== TOTAL ROW ==========
+    const totalRow = new TableRow({
+      children: [
+        new TableCell({
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: 'TOTAL',
+                  bold: true,
+                  color: 'FF0000', // red text
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+            }),
+          ],
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: totals.totalVehicle.toString(),
+                  bold: true,
+                  color: 'FF0000', // red text
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+            }),
+          ],
+        }),
+        ...accidentTypes.map(
+          (type) =>
+            new TableCell({
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: totals.typeCounts[type].toString(),
+                      bold: true,
+                      color: 'FF0000', // red text
+                    }),
+                  ],
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+            })
+        ),
+        ...allEvents.map(
+          (ev) =>
+            new TableCell({
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: totals.otherCounts[ev].toString(),
+                      bold: true,
+                      color: 'FF0000', // red text
+                    }),
+                  ],
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+            })
+        ),
+        new TableCell({
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: totals.male.toString(),
+                  bold: true,
+                  color: 'FF0000', // red text
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+            }),
+          ],
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: totals.female.toString(),
+                  bold: true,
+                  color: 'FF0000', // red text
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+            }),
+          ],
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: totals.patients.toString(),
+                  bold: true,
+                  color: 'FF0000', // red text
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+            }),
+          ],
+        }),
+      ],
+    });
+
+    // ========== DOC CREATION ==========
     const doc = new Document({
       sections: [
         {
@@ -635,43 +801,16 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
               alignment: AlignmentType.CENTER,
               children: [
                 new TextRun({
-                  text: '24/7 Operations Center',
+                  text: `24/7 SEARCH AND RESCUE OPERATIONS ANNUAL REPORT ${new Date().getFullYear()}`,
                   bold: true,
                   size: 32,
-                }),
-              ],
-              spacing: { after: 200 },
-            }),
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [
-                new TextRun({
-                  text: 'Search and Rescue Operations Report',
-                  bold: true,
-                  size: 28,
                 }),
               ],
               spacing: { after: 400 },
             }),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
-              rows: tableRows,
-              borders: {
-                top: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
-                bottom: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
-                left: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
-                right: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
-                insideHorizontal: {
-                  style: BorderStyle.SINGLE,
-                  size: 1,
-                  color: '000000',
-                },
-                insideVertical: {
-                  style: BorderStyle.SINGLE,
-                  size: 1,
-                  color: '000000',
-                },
-              },
+              rows: [header1, header2, ...dataRows, totalRow],
             }),
           ],
         },
@@ -679,7 +818,7 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
     });
 
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, 'rescue-operations.docx');
+    saveAs(blob, 'accident-report.docx');
   }
 
   // =====================

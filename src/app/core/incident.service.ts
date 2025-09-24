@@ -11,14 +11,17 @@ import {
   DocumentData,
 } from '@angular/fire/firestore';
 import { collectionData } from '@angular/fire/firestore';
-import { from, Observable, switchMap } from 'rxjs';
+import { combineLatest, from, map, Observable, of, switchMap } from 'rxjs';
 import { Feedback } from '../model/feedback';
 
 export interface Incident {
   id?: string;
   name: string;
   icon: string;
+
   tips: string[];
+
+  types: { id: string; name: string }[];
 }
 
 export interface EnrichedFeedback extends Feedback {
@@ -67,8 +70,9 @@ export class IncidentService {
     const feedbacksRef = collection(this.firestore, 'feedbacks');
 
     return collectionData(feedbacksRef, { idField: 'id' }).pipe(
-      switchMap(async (rawFeedbacks: DocumentData[]) => {
-        // Map raw feedback data to typed Feedback[]
+      switchMap((rawFeedbacks: any[]) => {
+        if (!rawFeedbacks.length) return of([]); // walang feedbacks
+
         const feedbacks: Feedback[] = rawFeedbacks.map((f: any) => ({
           id: f.id,
           feedback: f.feedback,
@@ -77,36 +81,24 @@ export class IncidentService {
           timestamp: f.timestamp,
         }));
 
-        // For each feedback, fetch EmergencyRequest to get requester's name
-        const enrichedFeedbacks = await Promise.all(
-          feedbacks.map(async (fb) => {
-            let requesterName = 'Unknown';
+        // convert bawat feedback into observable na may kasamang user data
+        const observables = feedbacks.map((fb) =>
+          from(getDoc(doc(this.firestore, 'users', fb.requestId))).pipe(
+            map((userSnap) => {
+              const userData = userSnap.exists() ? userSnap.data() : null;
 
-            try {
-              const reqDoc = doc(
-                this.firestore,
-                `EmergencyRequest/${fb.requestId}`
-              );
-              const reqSnap = await getDoc(reqDoc);
-              if (reqSnap.exists()) {
-                requesterName = (reqSnap.data() as any)?.name || 'Unknown';
-              }
-            } catch (error) {
-              console.error(
-                'Error fetching EmergencyRequest for',
-                fb.requestId,
-                error
-              );
-            }
-
-            return {
-              ...fb,
-              name: requesterName,
-            } as EnrichedFeedback;
-          })
+              return {
+                ...fb,
+                name: userData?.['fullName'] || 'Unknown User',
+                profilePic:
+                  userData?.['profileImageUrl'] || 'assets/profile.jpg',
+              } as EnrichedFeedback;
+            })
+          )
         );
 
-        return enrichedFeedbacks;
+        // pagsamahin lahat ng results
+        return combineLatest(observables);
       })
     );
   }
