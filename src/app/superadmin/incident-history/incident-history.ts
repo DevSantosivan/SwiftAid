@@ -439,10 +439,12 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
       'DECEMBER',
     ];
 
-    // Collect all unique event categories (other than vehicle subtypes)
+    // Collect all unique event categories (other than "Vehicular" and accidentTypes)
     const allEvents = Array.from(
       new Set(
-        rows.map((r) => r.event).filter((ev) => !accidentTypes.includes(ev))
+        rows
+          .map((r) => r.event)
+          .filter((ev) => ev !== 'Vehicular' && !accidentTypes.includes(ev))
       )
     );
 
@@ -455,23 +457,27 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
         return d.getMonth() === idx;
       });
 
-      // Count vehicular subtypes
+      // Vehicular events only
+      const vehicularEvents = monthEvents.filter(
+        (r) => r.event === 'Vehicular'
+      );
+
+      // Count vehicular subtypes by eventType
       const typeCounts: Record<string, number> = {};
       accidentTypes.forEach((type) => {
-        typeCounts[type] = monthEvents.filter((r) => r.event === type).length;
+        typeCounts[type] = vehicularEvents.filter(
+          (r) => r.eventType === type
+        ).length;
       });
 
-      // Count other events (Heart Attack, Fire Incident, etc.)
+      // Count other events (non-vehicular)
       const otherCounts: Record<string, number> = {};
       allEvents.forEach((ev) => {
         otherCounts[ev] = monthEvents.filter((r) => r.event === ev).length;
       });
 
-      // Total vehicle accidents = sum of vehicular subtypes
-      const totalVehicle = accidentTypes.reduce(
-        (sum, t) => sum + typeCounts[t],
-        0
-      );
+      // Total vehicle accidents = count of all vehicular events
+      const totalVehicle = vehicularEvents.length;
 
       const male = monthEvents.filter((r) => r.sex === 'Male').length;
       const female = monthEvents.filter((r) => r.sex === 'Female').length;
@@ -681,7 +687,6 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
         })
     );
 
-    // ========== TOTAL ROW ==========
     // ========== TOTAL ROW ==========
     const totalRow = new TableRow({
       children: [

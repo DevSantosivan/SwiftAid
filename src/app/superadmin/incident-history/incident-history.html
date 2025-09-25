@@ -129,11 +129,20 @@
     >
       <span>Page {{ currentPage }} of {{ totalPages }}</span>
 
-      <div class="pagination-buttons" style="display: flex; gap: 10px">
-        <button (click)="goToPreviousPage()" [disabled]="currentPage === 1">
+      <div
+        class="pagination-buttons"
+        style="display: flex; gap: 10px"
+        *ngIf="totalPages > 4"
+      >
+        <button
+          style="border: none; color: red"
+          (click)="goToPreviousPage()"
+          [disabled]="currentPage === 1"
+        >
           ← Previous
         </button>
         <button
+          style="border: none; color: red"
           (click)="goToNextPage()"
           [disabled]="currentPage === totalPages"
         >
@@ -194,7 +203,7 @@
       <!-- Resident -->
       <span style="flex: 2; display: flex; align-items: center; gap: 10px">
         <img
-          [src]="req.profilePicture|| '../../../assets/profile-default.jpg'"
+          [src]="req.profilePicture || 'assets/profile-deafault.jpg'"
           alt="Resident image"
           style="
             width: 40px;

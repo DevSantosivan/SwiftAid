@@ -63,7 +63,10 @@
             (mouseenter)="highlightMarker(req)"
           >
             <td class="user-info">
-              <img [src]="req.image || 'assets/logo22.png'" alt="User" />
+              <img
+                [src]="req.profilePicture || 'assets/profile-deafault.jpg'"
+                alt="User"
+              />
               <span class="user-details"
                 >{{ req.name }} <br />
                 <p>

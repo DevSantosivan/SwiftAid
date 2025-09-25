@@ -6,6 +6,7 @@ export interface EmergencyRequest {
   description: string;
   email: string;
   event: string;
+  eventType: string;
   image?: string;
   latitude: number;
   longitude: number;
