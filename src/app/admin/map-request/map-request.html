@@ -1,23 +1,29 @@
 <div class="content-body">
   <div class="content_1">
     <h3>Emergency Request</h3>
-    <p>Display all request</p>
+    <p>Display all requests</p>
     <br />
+
+    <!-- ===== TOP SECTION ===== -->
     <div class="request-top-section">
+      <!-- Summary -->
       <div class="request-summary-grid">
         <div style="width: 100%; height: 400px; max-width: 400px; margin: auto">
-          <p>Total Requests : {{ filteredRequests.length }}</p>
+          <p>Total Requests: {{ filteredRequests.length }}</p>
           <canvas #pieChartCanvas></canvas>
           <br />
         </div>
       </div>
 
+      <!-- Map -->
       <div class="map-container">
         <h3>Map Request</h3>
-        <p>View all request when hover list</p>
+        <p>View all requests when hovering list</p>
         <div id="requestMap"></div>
       </div>
     </div>
+
+    <!-- ===== FILTER SECTION ===== -->
     <div class="request-table-container">
       <div class="header-controls">
         <label>Filter Status</label>
@@ -43,76 +49,76 @@
         />
       </div>
 
-      <table class="custom-dark-table">
-        <thead>
-          <tr>
-            <th><i class="bx bx-user"></i> RESIDENT</th>
-            <th><i class="bx bxs-ambulance"></i> Type Of Incident</th>
-            <th><i class="bx bx-check-circle"></i> STATUS</th>
-            <th><i class="bx bxs-location-plus"></i> LOCATION</th>
-            <th><i class="bx bx-time"></i> TIME</th>
+      <!-- ===== LIST SECTION ===== -->
+      <div class="request-list-container">
+        <h4>All Emergency Request</h4>
+        <p>List of emergency requests</p>
+        @for (req of paginatedRequests; track $index) {
+        <div
+          class="request-card"
+          [routerLink]="['/admin/EmergencyRequest', req.id]"
+          [queryParams]="{ from: 'emergency' }"
+          (mouseenter)="highlightMarker(req)"
+        >
+          <!-- Card Title -->
+          <h4 class="request-title">
+            {{ req.event }} - {{ req.status === "Responding" ? "In Progress" :
+            req.status }}
+          </h4>
 
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (req of paginatedRequests; track $index) {
-          <tr
-            class="view clickable"
-            [routerLink]="['/admin/EmergencyRequest', req.id]"
-            [queryParams]="{ from: 'emergency' }"
-            (mouseenter)="highlightMarker(req)"
-          >
-            <td class="user-info">
+          <div class="request-header">
+            <div class="user-info">
               <img
                 [src]="req.profilePicture || 'assets/profile-deafault.jpg'"
                 alt="User"
               />
-              <span class="user-details"
-                >{{ req.name }} <br />
-                <p>
-                  <i class="bx bxs-phone"></i> {{ req.contactNumber }}
-                </p></span
-              >
-            </td>
-            <td>{{ req.event }}</td>
-            <td>
-              <span
-                class="status-badge"
-                [ngClass]="{
-                  pending: req.status === 'Pending',
-                  'in-progress': req.status === 'Responding',
-                  resolved: req.status === 'Resolved'
-                }"
-              >
-                {{ req.status === "Responding" ? "In Progress" : req.status }}
-              </span>
-            </td>
-            <td>{{ req.address }}</td>
-            <td>{{ req.timestamp | date : "mediumDate" }}</td>
+              <div class="user-details">
+                <h5>{{ req.name }}</h5>
+                <p><i class="bx bxs-phone"></i> {{ req.contactNumber }}</p>
+              </div>
+            </div>
 
-            <td class="action-buttons">
-              <button
-                class="accept"
-                (click)="$event.stopPropagation(); acceptRequest(req)"
-                *ngIf="req.status === 'Pending'"
-              >
-                <i class="bx bxs-user-check"></i>
-                Accept
-              </button>
-              <span
-                class="view clickable"
-                [routerLink]="['/admin/EmergencyRequest', req.id]"
-                [queryParams]="{ from: 'emergency' }"
-              >
-                <i class="bx bx-show"></i> View
-              </span>
-            </td>
-          </tr>
-          }
-        </tbody>
-      </table>
+            <span
+              class="status-badge"
+              [ngClass]="{
+                pending: req.status === 'Pending',
+                'in-progress': req.status === 'Responding',
+                resolved: req.status === 'Resolved'
+              }"
+            >
+              {{ req.status === "Responding" ? "In Progress" : req.status }}
+            </span>
+          </div>
 
+          <div class="request-body">
+            <p><i class="bx bxs-location-plus"></i> {{ req.address }}</p>
+            <p>
+              <i class="bx bx-time"></i> {{ req.timestamp | date: "mediumDate"
+              }}
+            </p>
+          </div>
+
+          <div class="request-footer">
+            <button
+              class="accept"
+              (click)="$event.stopPropagation(); acceptRequest(req)"
+              *ngIf="req.status === 'Pending'"
+            >
+              <i class="bx bxs-user-check"></i> Accept
+            </button>
+            <span
+              class="view clickable"
+              [routerLink]="['/admin/EmergencyRequest', req.id]"
+              [queryParams]="{ from: 'emergency' }"
+            >
+              <i class="bx bx-show"></i> View
+            </span>
+          </div>
+        </div>
+        }
+      </div>
+
+      <!-- ===== PAGINATION ===== -->
       <div class="pagination-container">
         <span>Page {{ currentPage }} of {{ totalPages }}</span>
         <div class="pagination-controls">
@@ -128,22 +134,7 @@
         </div>
       </div>
     </div>
+
+    <br /><br />
   </div>
-
-  <br />
-  <br />
-
-  <br />
-  <br />
 </div>
-
-<!-- <div class="mobile-message">
-  <div class="mobile-content-message">
-    <img src="../../../assets/formobile.gif" alt="Mobile view not supported" />
-    <h1>Mobile View Not Supported</h1>
-    <p>
-      This dashboard is not optimized for mobile devices. Please access it from
-      a desktop or laptop for the best experience.
-    </p>
-  </div>
-</div> -->

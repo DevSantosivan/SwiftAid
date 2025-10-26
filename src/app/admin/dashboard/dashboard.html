@@ -2,12 +2,13 @@
   <div class="content_1">
     <div class="flex-header">
       <div>
-        <h4>Mdrrmo Staff Dashboard</h4>
+        <h3>Mdrrmo Staff Dashboard</h3>
         <p>Main</p>
       </div>
       <div><p>Welcome back!</p></div>
     </div>
-    <!-- start -->
+
+    <!-- START Stats Boxes -->
     <div class="flex-box">
       <div class="box">
         <div class="flex">
@@ -19,6 +20,7 @@
         </div>
         <p>{{ userCount }}</p>
       </div>
+
       <div class="box">
         <div class="flex">
           <h4>Total Rescue</h4>
@@ -26,15 +28,15 @@
         </div>
         <p>{{ totalresolveRequest }}</p>
       </div>
+
       <div class="box">
         <div class="flex">
           <h4>Pending Request</h4>
-
           <i style="font-size: 30px; color: red" class="bx bx-time-five"></i>
         </div>
-
         <p>{{ totalPendingRequests }}</p>
       </div>
+
       <div class="box">
         <div class="flex">
           <h4>Total Request Rescue</h4>
@@ -43,28 +45,26 @@
             class="bx bx-git-pull-request"
           ></i>
         </div>
-
         <p>{{ totalRequestRescueCount }}</p>
       </div>
     </div>
-    <!-- end -->
+    <!-- END Stats Boxes -->
 
+    <!-- CHARTS -->
     <div class="chart-flex">
       <div class="chart">
         <h3>Monthly Activity</h3>
         <p>Emergency requests and resolutions in the last 6 months.</p>
-        <br />
         <div class="pie-chart">
           <canvas id="requestEventBarChart"></canvas>
         </div>
       </div>
+
       <div class="chart">
         <h3>Event Category</h3>
         <p>Distribution of emergency request types over time.</p>
-        <br />
         <div class="pie-chart">
-          <canvas id="MyPieChart"> </canvas>
-
+          <canvas id="MyPieChart"></canvas>
           <div class="pie-chart-legend">
             <div *ngFor="let item of pieChartLegend" class="legend-item">
               <span
@@ -83,73 +83,63 @@
         </div>
       </div>
     </div>
+
     <h3>Yearly Event Accident</h3>
     <p>Chart</p>
     <div class="history-content">
       <canvas id="MyYearlyChart"></canvas>
     </div>
   </div>
-  <!-- end of content 1 -->
+  <!-- END content_1 -->
+
+  <!-- START Sidebar / Recent Requests -->
   <div class="content_2">
     <div class="btn-flex">
-      <!-- @if(isSuperAdmin) {
+      <!-- Print Button -->
+      <!--
       <div class="btn" (click)="printDashboard()">
         <i class="bx bx-printer"></i>
         <h3>Print</h3>
       </div>
-      } -->
+      -->
 
       <div class="post-details-alert">
         <i class="bx bx-alert-shield"></i>
       </div>
+
       <div class="pie-content">
         <h3>Recent Requests</h3>
         <p>Recent</p>
 
-        <div class="recent-list">
-          <div class="list" *ngFor="let request of recentRequests">
-            <div class="profile">
-              <div
-                style="
-                  width: 50px;
-                  height: 50px;
-                  overflow: hidden;
-                  border-radius: 50%;
-                "
-                class="img"
-              >
-                <img
-                  style="width: 100%; height: 100%"
-                  src="{{request.image}}"
-                  alt=""
-                />
+        <!-- CARD-BASED RECENT REQUESTS -->
+        <div class="recent-cards">
+          <div class="recent-card" *ngFor="let request of recentRequests">
+            <div class="card-header">
+              <div class="profile">
+                <div class="img">
+                  <img
+                    [src]="request.image || '../../../assets/profile-default.jpg'"
+                    alt="Profile"
+                  />
+                </div>
+                <span>{{ request.name || 'Unknown' }}</span>
               </div>
-              <span>{{ request.name || "Unknown" }}</span>
-            </div>
-
-            <div class="description">
               <p class="status" [ngClass]="getStatusClass(request.status)">
                 {{ getStatusLabel(request.status) }}
               </p>
+            </div>
+
+            <div class="card-body">
               <h4>{{ request.event }}</h4>
               <p class="timestamp">
-                {{ request.timestamp?.toDate() | date : "short" }}
+                {{ request.timestamp?.toDate() | date: 'short' }}
               </p>
             </div>
           </div>
         </div>
+        <!-- END recent-cards -->
       </div>
     </div>
   </div>
+  <!-- END content_2 -->
 </div>
-
-<!-- <div class="mobile-message">
-  <div class="mobile-content-message">
-    <img src="../../../assets/formobile.gif" alt="" />
-    <h1>Mobile View Not Supported</h1>
-    <p>
-      This dashboard is not optimized for mobile devices. Please access it from
-      a desktop or laptop for the best experience.
-    </p>
-  </div>
-</div> -->
