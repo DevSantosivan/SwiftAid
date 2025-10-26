@@ -15,7 +15,8 @@ export class AccountVerificationDetails implements OnInit {
   verificationId: string | null = null;
   user: account | null = null;
 
-  profilePicture: string = '';
+  // Fields for template binding
+  profilePicture: string = 'assets/profile-default.jpg';
   fullName: string = '';
   contactNumber: string = '';
   email: string = '';
@@ -25,6 +26,7 @@ export class AccountVerificationDetails implements OnInit {
   birthday: string = '';
   sex: string = '';
   birthCertificateImage: string = '';
+  idType: string = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -33,31 +35,34 @@ export class AccountVerificationDetails implements OnInit {
   ) {}
 
   ngOnInit() {
+    // Get the verification ID from the route
     this.route.paramMap.subscribe(async (params) => {
       this.verificationId = params.get('id');
-      if (this.verificationId) {
-        try {
-          const userData = await this.userService.getUserById(
-            this.verificationId
-          );
-          if (userData) {
-            this.user = userData;
-            this.setUserFields(userData);
-          } else {
-            alert('User not found.');
-            this.router.navigate(['/admin/verifications']);
-          }
-        } catch (error) {
-          console.error('Error fetching user:', error);
-          alert('Error loading user details.');
+      if (!this.verificationId) return;
+
+      try {
+        const userData = await this.userService.getUserById(
+          this.verificationId
+        );
+        if (!userData) {
+          alert('User not found.');
           this.router.navigate(['/admin/verifications']);
+          return;
         }
+
+        this.user = userData;
+        this.setUserFields(userData);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        alert('Error loading user details.');
+        this.router.navigate(['/admin/verifications']);
       }
     });
   }
 
-  setUserFields(user: account) {
-    this.profilePicture = user.profileImageUrl || 'assets/default-profile.png';
+  private setUserFields(user: account) {
+    this.profilePicture =
+      user.profileImageUrl?.trim() || '../../../assets/profile-deafault.jpg';
     this.fullName = user.fullName || '';
     this.contactNumber = user.contactNumber || '';
     this.email = user.email || '';
@@ -67,6 +72,7 @@ export class AccountVerificationDetails implements OnInit {
     this.sex = user.sex || '';
     this.birthday = user.dateOfBirth || '';
     this.birthCertificateImage = user.validIdImageUrl || '';
+    this.idType = user.idType || '';
   }
 
   navigateToVerification() {
@@ -78,7 +84,7 @@ export class AccountVerificationDetails implements OnInit {
     try {
       await this.userService.updateUserStatus(this.verificationId, 'approved');
       alert('Account approved successfully.');
-      this.router.navigate(['/superAdmin/Verification']);
+      this.navigateToVerification();
     } catch (error) {
       console.error('Approval error:', error);
       alert('Failed to approve the account.');

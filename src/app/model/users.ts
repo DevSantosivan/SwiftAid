@@ -24,4 +24,6 @@ export interface account {
   blocked?: boolean; // Optional - for block modal logic
   blockReason?: string;
   createdAt: number;
+  updatedAt: number;
+  idType?: string; // Optional - for different types of IDs
 }

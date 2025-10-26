@@ -1,31 +1,53 @@
-.content-body {
+/* ===========================
+   GLOBAL STYLES
+=========================== */
+html,
+body {
   width: 100%;
   height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  color: #333;
+  overflow-y: auto; /* allow vertical scrolling */
+  overflow-x: hidden; /* prevent horizontal scroll */
 }
 
-body {
-  position: relative;
-  z-index: 0;
+/* ===========================
+   PAGE STRUCTURE
+=========================== */
+.content-body {
+  width: 100%;
+  min-height: 100vh; /* allow page to grow */
+  padding-bottom: 10%;
+  overflow-y: auto; /* enable scroll when table is long */
 }
 
-/* Flex wrapper: cards + map */
+.content_1 {
+  width: 100%;
+  padding: 0px 20px;
+  overflow-y: auto; /* allow scroll inside content */
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* ===========================
+   CHART + MAP SECTION
+=========================== */
 .request-top-section {
   display: flex;
-
   margin-bottom: 2rem;
 
-  /* Cards grid */
   .request-summary-grid {
-    flex: 1; /* give this more space */
-    display: flex; /* change from grid to flex for easier control */
+    flex: 1;
+    display: flex;
     flex-direction: column;
-    align-items: flex-start; /* left align content */
+    align-items: flex-start;
 
-    /* Chart container */
     .chart-container {
-      width: 100%; /* take full width of grid container */
-      max-width: 600px; /* max width for the chart */
-      height: 400px; /* bigger height */
+      width: 100%;
+      max-width: 600px;
+      height: 400px;
       padding: 1rem;
       border: 1px solid #ccc;
       border-radius: 12px;
@@ -38,10 +60,9 @@ body {
     }
   }
 
-  /* Map container */
   .map-container {
-    flex: 2; /* keep map bigger */
-    height: 400px; /* slightly taller for balance */
+    flex: 2;
+    height: 400px;
 
     #requestMap {
       width: 100%;
@@ -52,28 +73,31 @@ body {
   }
 }
 
-/* Ensure canvas fills the chart container */
+/* Canvas fill */
 canvas {
   width: 100% !important;
   height: 100% !important;
   display: block;
 }
 
-/* Responsive: stack on small screens */
+/* Responsive layout */
 @media (max-width: 992px) {
   .request-top-section {
     flex-direction: column;
 
     .map-container {
-      height: 400px; /* taller on mobile */
+      height: 400px;
     }
   }
 
   .request-summary-grid {
-    grid-template-columns: 1fr 1fr; /* still 2 columns on tablets */
+    grid-template-columns: 1fr 1fr;
   }
 }
 
+/* ===========================
+   TABLE SECTION
+=========================== */
 .request-table-container {
   padding: 20px;
   background-color: #fff;
@@ -105,23 +129,23 @@ canvas {
       &:focus {
         outline: none;
         border-color: red;
-        background-color: #fff;
       }
     }
   }
 
   .custom-dark-table {
-    i {
-      font-size: 17px;
-    }
     width: 100%;
     border-collapse: collapse;
     background-color: #fff;
     color: #333;
     font-size: 14px;
 
+    i {
+      font-size: 17px;
+    }
+
     thead tr {
-      height: 50px; /* Fixed header row height */
+      height: 50px;
     }
 
     thead th {
@@ -130,26 +154,25 @@ canvas {
       font-size: 13px;
       border-bottom: 2px solid #ddd;
       text-align: left;
-      vertical-align: middle; /* Vertically center header text */
+      vertical-align: middle;
     }
 
     tbody tr {
-      height: 60px; /* Fixed body row height */
+      height: 60px;
     }
 
     tbody td {
       padding: 12px 16px;
       font-size: 12px;
-      vertical-align: middle; /* Vertically center content */
-      white-space: nowrap; /* Prevent wrapping */
+      vertical-align: middle;
+      white-space: nowrap;
     }
 
-    /* Align user-info flex items perfectly */
     .user-info {
       display: flex;
       align-items: center;
       gap: 10px;
-      height: 100%; /* Take full row height */
+      height: 100%;
 
       img {
         width: 40px;
@@ -159,7 +182,7 @@ canvas {
       }
 
       span {
-        line-height: 15px; /* Vertically center the name */
+        line-height: 15px;
         font-weight: 600;
         color: #222;
         display: flex;
@@ -172,7 +195,6 @@ canvas {
       }
     }
 
-    /* Consistent status badge size */
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -180,7 +202,6 @@ canvas {
       padding: 5px 20px !important;
       border-radius: 20px;
       font-weight: 600;
-      padding: 0 12px;
       user-select: none;
       color: #333;
       white-space: nowrap;
@@ -205,14 +226,12 @@ canvas {
       color: #388e3c;
     }
 
-    /* Action buttons container */
     .action-buttons {
       display: flex;
-      gap: 10px; /* space between buttons */
+      gap: 10px;
       align-items: center;
     }
 
-    /* Common button style */
     .action-buttons button,
     .action-buttons span.clickable {
       display: inline-flex;
@@ -227,45 +246,30 @@ canvas {
       transition: all 0.3s ease;
     }
 
-    /* View button */
     .action-buttons .view {
       background: #1992e4;
-      color: #ffff;
+      color: #fff;
       border: 1px solid #bfdbfe;
-    }
-    .accept {
-      background: #424242;
-      color: #ffff;
-      border: 1px solid #bfdbfe;
-    }
-    .action-buttons .view:hover {
-      background: #dbeafe;
-      color: #1d4ed8;
     }
 
-    /* Approve button */
+    .accept {
+      background: #424242;
+      color: #fff;
+      border: 1px solid #bfdbfe;
+    }
+
     .action-buttons .approve {
       background: #dcfce7;
       color: #166534;
       border: 1px solid #86efac;
     }
-    .action-buttons .approve:hover {
-      background: #bbf7d0;
-      color: #14532d;
-    }
 
-    /* Decline button */
     .action-buttons .decline {
       background: #fee2e2;
       color: #991b1b;
       border: 1px solid #fca5a5;
     }
-    .action-buttons .decline:hover {
-      background: #fecaca;
-      color: #7f1d1d;
-    }
 
-    /* Icon inside button */
     .action-buttons i {
       font-size: 16px;
     }
@@ -278,15 +282,9 @@ canvas {
   }
 }
 
-.profile-marker .marker-circle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%; /* make it circular */
-  background-size: cover;
-  background-position: center;
-  border: 2px solid red; /* optional outline */
-}
-
+/* ===========================
+   PAGINATION + LOADING
+=========================== */
 .pagination-container {
   display: flex;
   justify-content: space-between;
@@ -321,361 +319,17 @@ canvas {
   }
 }
 
-.loading-request {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 150px;
-  font-weight: bold;
-  color: #555;
-}
-
-.spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  animation: spin 1s linear infinite;
-  margin-bottom: 8px;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-p {
-  font-size: 13px;
-  color: #666;
-}
-
-.pending {
-  color: #ff9800;
-  border: 1px solid #ff9800;
-  padding: 2px 5px;
-  border-radius: 3px;
-  font-weight: 500;
-}
-
-.In-progress {
-  color: #2196f3;
-  border: 1px solid #2196f3;
-  padding: 2px 5px;
-  border-radius: 3px;
-  font-weight: 500;
-}
-
-.Resolved {
-  color: #4caf50;
-  border: 1px solid #4caf50;
-  padding: 2px 5px;
-  border-radius: 3px;
-  font-weight: 500;
-}
-
-.no-request {
-  width: 100%;
-  text-align: center;
-}
-
-.content_1 {
-  width: 100%;
-  padding: 0px 20px;
-  overflow: hidden;
-}
-
-.flex-filter {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  position: relative;
-  top: 10px;
-}
-
-.flex-filter-request {
-  display: flex;
-}
-
-.filter-box {
-  display: flex;
-  align-items: center;
-  padding: 0.2rem 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  cursor: pointer;
-  margin: 0px 5px;
-}
-
-.map-title {
-  display: flex;
-  flex-direction: column;
-  margin: 0px 10px;
-}
-
-.map-title h3 {
-  font-size: 14px;
-}
-
-.filter-box.active {
-  background-color: rgba(255, 0, 0, 0.644);
-  color: white;
-  border-color: red;
-}
-
-.pulse-marker {
-  position: relative;
-  overflow: visible;
-}
-
-/* ========================
-   DESKTOP DEFAULT STYLES
-=========================== */
-.flex-request {
-  width: 100%;
-  display: flex;
-  margin-top: 40px;
-  gap: 20px;
-}
-
-.list-request {
-  width: 100%;
-  height: 80vh;
-  max-width: 25%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 8px 10px 8px 0;
-  scroll-behavior: smooth;
-
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-}
-
-.list-request::-webkit-scrollbar {
-  width: 8px;
-}
-.list-request::-webkit-scrollbar-track {
-  background: transparent;
-}
-.list-request::-webkit-scrollbar-thumb {
-  background: rgba(255, 0, 0, 0.438);
-  border-radius: 4px;
-}
-.list-request::-webkit-scrollbar-thumb:hover {
-  background: darkred;
-}
-
-.map-request {
-  width: 100%;
-  height: 80%;
-  overflow: hidden;
-}
-
-.map {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  z-index: 0;
-}
-
-/* Request Item Container */
-.request-item {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 20px;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-}
-
-.request-item:hover {
-  background-color: #b6b4b44d;
-  transition: 0.3s ease-in;
-  cursor: pointer;
-}
-
-/* Details Layout */
-.request-details {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.request-details .img {
-  width: 100%;
-  height: 200px;
-  overflow: hidden;
-  border-radius: 6px;
-}
-
-.request-details .img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Details Column */
-.flex-details {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-/* Text Content */
-.details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.details h5 {
-  margin: 0;
-  font-size: 13px;
-  color: #333;
-}
-
-.details p {
-  margin: 0;
-  font-size: 12px;
-  color: #555;
-}
-.details span {
-  margin: 0;
-  font-size: 12px;
-  margin-top: 5px;
-}
-
-/* Staff Info */
-.staff-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.staff-info img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.staff-info span {
-  font-size: 14px;
-  color: #444;
-}
-
-/* Buttons */
-.request-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.request-actions button {
-  border: 1px solid #ccc;
-  padding: 6px 12px;
-  border-radius: 5px;
-  background-color: #fff;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.request-actions button:hover {
-  background-color: #e0e0e0;
-}
-
-/* ========================
-   MOBILE RESPONSIVE STYLES
+/* ===========================
+   RESPONSIVE TABLE
 =========================== */
 @media (max-width: 768px) {
   .content-body {
-    padding: 0px 0px;
+    padding: 0px;
   }
   .content_1 {
-    width: 100%;
-    padding: 0px 0px;
-    overflow: hidden;
+    padding: 0px;
   }
-  .flex-request {
-    padding: 10px 0px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  /* Map goes on top */
-  .map-request {
-    order: 1;
-    width: 100%;
-    height: 40vh;
-    margin-top: 10px;
-  }
-  .flex-filter {
-    width: 100%;
-  }
-  .flex-filter span {
-    font-size: 15px;
-  }
-
-  .map {
-    height: 100% !important;
-    width: 100% !important;
-  }
-
-  .map-header {
-    height: 100%;
-  }
-
-  /* List below map, scroll horizontally */
-  .list-request {
-    order: 2;
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-    width: 100%;
-    max-width: 100%;
-    scroll-snap-type: x mandatory;
-    gap: 10px;
-  }
-
-  .list-request::-webkit-scrollbar {
-    height: 6px;
-  }
-
-  .list-request::-webkit-scrollbar-thumb {
-    background: rgba(255, 0, 0, 0.5);
-    border-radius: 4px;
-  }
-
-  .request-item {
-    min-width: 280px;
-    max-width: 320px;
-    flex: 0 0 auto;
-    margin-bottom: 0;
-    padding: 10px;
-    scroll-snap-align: start;
-    border-radius: 8px;
-    background: white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
-  }
-
-  .request-item:hover {
-    background-color: #f8f8f8;
-    transform: scale(1.03);
-  }
-
-  /* Optional: hide map title on mobile */
-  .map-title {
-    display: none;
+  .custom-dark-table {
+    font-size: 12px;
   }
 }

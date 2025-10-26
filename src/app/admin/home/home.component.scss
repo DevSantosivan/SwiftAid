@@ -204,15 +204,117 @@
 
 .body-container {
   width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
   .content-body {
     width: 100%;
-    height: 100%;
+
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+  }
+}
+
+/* ===== MOBILE VIEW NAVIGATION BAR ===== */
+.bottom-mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid #ddd;
+  box-shadow: 0 -3px 6px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+}
+
+.bottom-mobile-nav li {
+  list-style: none;
+  flex: 1;
+  text-align: center;
+}
+
+.bottom-mobile-nav i {
+  font-size: 25px;
+  color: #444;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Active state (current route) */
+.bottom-mobile-nav li.active i {
+  color: red;
+  transform: scale(1.2);
+}
+
+/* Hover effect (optional) */
+.bottom-mobile-nav li:hover i {
+  color: red;
+  cursor: pointer;
+}
+
+/* Adjust main content so it doesn’t hide behind the nav */
+.body-container-mobile {
+  padding-bottom: 65px;
+}
+
+/* Hide desktop sidebar on mobile */
+@media (max-width: 768px) {
+  .right-side-navbar {
+    display: none;
+  }
+}
+/* ===== MOBILE VIEW NAVIGATION BAR ===== */
+.bottom-mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid #ddd;
+  box-shadow: 0 -3px 6px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+}
+
+.bottom-mobile-nav li {
+  list-style: none;
+  flex: 1;
+  text-align: center;
+}
+
+.bottom-mobile-nav i {
+  font-size: 25px;
+  color: #444;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Active state (current route) */
+.bottom-mobile-nav li.active i {
+  color: red;
+  transform: scale(1.2);
+}
+
+/* Hover effect (optional) */
+.bottom-mobile-nav li:hover i {
+  color: red;
+  cursor: pointer;
+}
+
+/* Adjust main content so it doesn’t hide behind the nav */
+.body-container-mobile {
+  padding-bottom: 65px;
+}
+
+/* Hide desktop sidebar on mobile */
+@media (max-width: 768px) {
+  .right-side-navbar {
+    display: none;
   }
 }

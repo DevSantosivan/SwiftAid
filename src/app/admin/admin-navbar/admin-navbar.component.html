@@ -94,7 +94,6 @@
       <button
         *ngIf="currentUser?.role === 'superAdmin'"
         class="btn-view"
-        [routerLink]="['/superAdmin/EmergencyRequest', currentRequest.id]"
         (click)="viewRequest(currentRequest)"
       >
         <i class="bx bx-show"></i> View Details
@@ -104,7 +103,6 @@
       <button
         *ngIf="currentUser?.role === 'admin'"
         class="btn-view"
-        [routerLink]="['/admin/EmergencyRequest', currentRequest.id]"
         (click)="viewRequest(currentRequest)"
       >
         <i class="bx bx-show"></i> View Details

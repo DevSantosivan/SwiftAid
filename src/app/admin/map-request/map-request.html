@@ -56,8 +56,11 @@
           </tr>
         </thead>
         <tbody>
+          @for (req of paginatedRequests; track $index) {
           <tr
-            *ngFor="let req of paginatedRequests"
+            class="view clickable"
+            [routerLink]="['/admin/EmergencyRequest', req.id]"
+            [queryParams]="{ from: 'emergency' }"
             (mouseenter)="highlightMarker(req)"
           >
             <td class="user-info">
@@ -106,6 +109,7 @@
               </span>
             </td>
           </tr>
+          }
         </tbody>
       </table>
 
@@ -125,6 +129,12 @@
       </div>
     </div>
   </div>
+
+  <br />
+  <br />
+
+  <br />
+  <br />
 </div>
 
 <!-- <div class="mobile-message">

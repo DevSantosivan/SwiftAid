@@ -9,6 +9,7 @@ import { Subscription } from 'rxjs';
 import * as L from 'leaflet';
 import { Timestamp } from 'firebase/firestore';
 import { EmergencyRequest } from '../../model/emergency';
+import { NavigationService } from '../../core/navigation.service';
 
 @Component({
   selector: 'app-admin-navbar',
@@ -36,7 +37,8 @@ export class AdminNavbarComponent implements OnInit, OnDestroy {
     private router: Router,
     private authService: UserService,
     private requestService: EmergencyRequestService,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private navigationService: NavigationService
   ) {
     // Enable looping for the audio
     this.audio.loop = true;
@@ -73,6 +75,19 @@ export class AdminNavbarComponent implements OnInit, OnDestroy {
     }
   }
 
+  viewRequest(request: EmergencyRequest) {
+    this.closeNewRequestModal();
+    if (this.currentUser?.role === 'superAdmin') {
+      this.router.navigate(['/superAdmin/EmergencyRequest', request.id], {
+        queryParams: { from: 'EmergencView' },
+      });
+    } else if (this.currentUser?.role === 'admin') {
+      this.router.navigate(['/admin/EmergencyRequest', request.id], {
+        queryParams: { from: 'EmergencyRescue' },
+      });
+    }
+  }
+
   ngOnDestroy(): void {
     this.requestSubscription?.unsubscribe();
     Object.values(this.maps).forEach((map) => map.remove());
@@ -95,12 +110,6 @@ export class AdminNavbarComponent implements OnInit, OnDestroy {
       .signOut()
       .then(() => this.router.navigate(['/login']))
       .catch((error) => console.error('Logout error', error));
-  }
-
-  // --- Request Actions ---
-  viewRequest(req: EmergencyRequest) {
-    console.log('Viewing request', req);
-    this.closeNewRequestModal();
   }
 
   acceptRequest(req: EmergencyRequest) {

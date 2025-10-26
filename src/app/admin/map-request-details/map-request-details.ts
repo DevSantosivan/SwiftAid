@@ -46,7 +46,7 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
   backLabel: string = 'Back To Emergency Request List';
   staffAddress: string = 'Fetching address...'; // For readable address
   proximityMessage: string = ''; // Message to show when close to the request
-
+  backRoute: any[] = ['/admin/EmergencyRequest'];
   // Proximity threshold (in meters)
   proximityThreshold = 500; // 500 meters
 
@@ -62,17 +62,26 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
   goBack() {
     const previousUrl = this.navigationService.getPreviousUrl();
     this.router.navigateByUrl(previousUrl);
+    this.router.navigate(this.backRoute);
   }
 
   async ngAfterViewInit(): Promise<void> {
     const prevUrl = this.navigationService.getPreviousUrl();
-
+    const from = this.route.snapshot.queryParamMap.get('from');
     if (prevUrl.includes('Notification')) {
       this.backLabel = 'Back To Notifications';
     } else if (prevUrl.includes('EmergencyRequest')) {
       this.backLabel = 'Back To Emergency Request List';
     } else {
       this.backLabel = 'Back To Home'; // fallback
+    }
+
+    if (from === 'EmergencView') {
+      this.backLabel = 'Back To Emergency Requests';
+      this.backRoute = ['/superAdmin/EmergencyRequest'];
+    } else if (from === 'EmergencyRescue') {
+      this.backLabel = 'Back To Emergency Requests';
+      this.backRoute = ['/admin/EmergencyRequest'];
     }
 
     const id = this.route.snapshot.paramMap.get('id');

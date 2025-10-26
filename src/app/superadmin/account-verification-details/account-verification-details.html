@@ -10,7 +10,11 @@
     <!-- Left: Profile, Work, Skills -->
     <div class="details-left">
       <div class="profile-section">
-        <img [src]="profilePicture" alt="Profile Picture" class="profile-pic" />
+        <img
+          class="profile-pic"
+          [src]="user?.profileImageUrl || '../../../assets/profile-deafault.jpg'"
+          alt="'s Profile Picture"
+        />
         <h2>{{ fullName }}</h2>
         <p class="location"><i class="bx bx-map"></i> {{ address }}</p>
         <p class="role">Resident</p>
@@ -45,15 +49,9 @@
         <h4>Uploaded Valid IDs</h4>
         <div class="id-images">
           <div class="id-card">
-            <p>National ID</p>
+            <p>{{user?.idType}}</p>
             <div class="img">
               <img [src]="nationalIdImage" alt="National ID" />
-            </div>
-          </div>
-          <div class="id-card">
-            <p>Birth Certificate</p>
-            <div class="img">
-              <img [src]="birthCertificateImage" alt="Birth Certificate" />
             </div>
           </div>
         </div>
