@@ -231,7 +231,7 @@
           [ngClass]="{
             pending: req.status.toLowerCase() === 'pending',
             accepted: req.status.toLowerCase() === 'accepted' || req.status.toLowerCase() === 'responding',
-            completed: req.status.toLowerCase() === 'completed' || req.status.toLowerCase() === 'resolved',
+            completed: req.status.toLowerCase() === 'completed' || req.status.toLowerCase() === 'completed',
             cancelled: req.status.toLowerCase() === 'cancelled'
           }"
         >

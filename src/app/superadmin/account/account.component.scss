@@ -442,7 +442,7 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
   display: flex;
-  justify-content: center;
+  justify-content: right;
   align-items: center;
   z-index: 1200;
 }
@@ -764,4 +764,95 @@
 
 .modal-card .cancel-btn:hover {
   background: #565e64;
+}
+
+@media (max-width: 1200px) {
+  .account-header,
+  .account-row {
+    font-size: 13px;
+    padding: 10px 8px;
+    min-width: 700px;
+  }
+}
+
+@media (max-width: 992px) {
+  .orders-summary {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .account-header,
+  .account-row {
+    font-size: 12px;
+    padding: 8px 6px;
+    min-width: 650px;
+  }
+
+  .search-bar {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .account-header,
+  .account-row {
+    min-width: 600px;
+  }
+
+  .modal-body {
+    flex-direction: column;
+  }
+
+  .profile-side {
+    flex: 0 0 auto;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .details-side {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .content-body {
+    margin-top: 40px;
+  }
+  .account-header {
+    display: none;
+  }
+
+  .account-list {
+    border-radius: 5px;
+  }
+  .account-row {
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 100%;
+    padding: 8px 6px;
+    margin-bottom: 10px;
+  }
+
+  .col-name,
+  .col-email,
+  .col-contact,
+  .col-extra,
+  .col-action {
+    flex: 1 1 100%;
+    width: 100%;
+    margin-bottom: 6px;
+  }
+
+  .orders-summary {
+    width: 100%;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .order-card {
+    width: 100%;
+  }
+
+  .search-bar {
+    width: 100%;
+  }
 }

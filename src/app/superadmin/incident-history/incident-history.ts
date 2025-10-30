@@ -182,8 +182,8 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
             height: 40px;
             border-radius: 50%;
             overflow: hidden;
-            border: 2px solid RED;
-            box-shadow: 0 0 15px rgba(247, 11, 11, 0.3);
+            border: 2px solid rgba(11, 247, 43, 0.3);
+            box-shadow: 0 0 15px rgba(11, 247, 43, 0.3);
           ">
             <img 
               src="${req.image || 'assets/default-marker-icon.png'}" 

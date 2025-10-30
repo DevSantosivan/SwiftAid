@@ -44,16 +44,27 @@ export class DashboardComponent implements OnInit {
 
   public currentDateTime: Date = new Date();
 
+  // private RED_PALETTE = [
+  //   '#b71c1c',
+  //   '#d32f2f',
+  //   '#f44336',
+  //   '#ef5350',
+  //   '#c62828',
+  //   '#212121',
+  //   '#424242',
+  //   '#e0e0e0',
+  //   '#ffffff',
+  // ];
   private RED_PALETTE = [
-    '#b71c1c',
-    '#d32f2f',
-    '#f44336',
-    '#ef5350',
-    '#c62828',
-    '#212121',
-    '#424242',
-    '#e0e0e0',
-    '#ffffff',
+    '#f57c00', // Orange
+    '#0f0f0f9c', // Yellow
+    '#388e3c', // Green
+    '#1976d2', // Blue
+    '#7b1fa2', // Purple
+    '#0097a7', // Teal
+    '#8d6e63', // Brown
+    '#ff8a65', // Light Orange
+    '#c2185b', // Pink/Magenta
   ];
 
   constructor(

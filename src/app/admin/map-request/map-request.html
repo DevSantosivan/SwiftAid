@@ -61,10 +61,7 @@
           (mouseenter)="highlightMarker(req)"
         >
           <!-- Card Title -->
-          <h4 class="request-title">
-            {{ req.event }} - {{ req.status === "Responding" ? "In Progress" :
-            req.status }}
-          </h4>
+          <h4 class="request-title">{{ req.event }}</h4>
 
           <div class="request-header">
             <div class="user-info">

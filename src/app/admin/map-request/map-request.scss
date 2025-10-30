@@ -33,13 +33,13 @@ body {
 /* ===============================
    HEADINGS
 =============================== */
-h3 {
-  font-size: 1.5rem;
-  color: #000; /* black headings */
+h3,
+h4 {
+  color: #000;
 }
 
 p {
-  color: #555; /* dark gray text */
+  color: #555;
 }
 
 /* ===============================
@@ -48,17 +48,17 @@ p {
 .request-top-section {
   display: flex;
   flex-wrap: wrap;
-  gap: 2rem;
+  gap: 1rem;
   margin-bottom: 2rem;
   justify-content: space-between;
 }
 
 .request-summary-grid,
 .map-container {
+  border: 1px solid #cccccc8e;
   background: #fff; /* white cards */
   border-radius: 1rem;
   padding: 1.5rem;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* light shadow */
 }
 
 .request-summary-grid {
@@ -66,7 +66,7 @@ p {
 }
 
 .map-container {
-  flex: 2 1 600px;
+  flex: 1 3 900px;
   position: relative;
 }
 
@@ -127,9 +127,8 @@ p {
 }
 
 .request-card {
-  background: #f9f9f9; /* slightly gray cards */
   border-radius: 0.8rem;
-  padding: 1rem 1.5rem;
+  padding: 10px 1.5rem;
   transition: 0.2s;
   cursor: pointer;
   display: flex;
@@ -311,7 +310,7 @@ button.accept:hover {
 /* Mobile */
 @media (max-width: 600px) {
   .content_1 {
-    margin-top: 40px;
+    margin-top: 140px;
     padding: 10px;
     width: 100%;
   }

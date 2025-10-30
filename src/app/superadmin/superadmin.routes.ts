@@ -13,6 +13,8 @@ import { IncidentHistory } from './incident-history/incident-history';
 import { AccountVerification } from './account-verification/account-verification';
 import { LiveTracking } from './live-tracking/live-tracking';
 import { Statistic } from './statistic/statistic';
+import { AccountView } from './account-view/account-view';
+import { AccountEdit } from './account-edit/account-edit';
 
 export const SuperAdminRoutes: Routes = [
   {
@@ -76,7 +78,15 @@ export const SuperAdminRoutes: Routes = [
 
       { path: 'Team', component: TeamComponent },
       { path: 'Team-Details', component: TeamStaffComponent },
-      { path: 'Account', component: AccountComponent },
+      {
+        path: 'Account',
+        children: [
+          { path: '', component: AccountComponent },
+          { path: 'view/:id', component: AccountView },
+          { path: 'edit/:id', component: AccountEdit },
+        ],
+      },
+
       { path: 'Feedback', component: FeedbackComponent },
       { path: 'Info', component: InfoComponent },
       { path: 'Notifications', component: NotificationComponent },

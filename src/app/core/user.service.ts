@@ -30,6 +30,7 @@ export interface AccountWithStatus extends account {
   providedIn: 'root',
 })
 export class UserService {
+  [x: string]: any;
   // 🔵 Primary Firebase app and auth (current logged-in user - admin)
   private primaryApp = initializeApp(environment.firebaseConfig);
   private db = getFirestore(this.primaryApp);

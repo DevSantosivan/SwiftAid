@@ -43,7 +43,8 @@ export class AccountComponent implements OnInit {
   otherBlockReason = '';
 
   // === Reactive form ===
-  editForm: FormGroup | null = null;
+  editForm!: FormGroup; // initialized in ngOnInit or editAccount
+  selectedImagePreview: string | null = null;
 
   // === Helpers ===
   defaultAvatar =
@@ -53,7 +54,7 @@ export class AccountComponent implements OnInit {
   // === Pagination ===
   currentPage = 1;
   itemsPerPage = 9;
-  Math: any;
+  Math: any = Math;
 
   constructor(
     private accountService: UserService,
@@ -64,6 +65,19 @@ export class AccountComponent implements OnInit {
   ngOnInit(): void {
     this.accountService.getAllAccounts().subscribe((accounts) => {
       this.allAccounts = accounts;
+    });
+
+    // Initialize empty edit form to prevent template errors
+    this.editForm = this.fb.group({
+      fullName: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      contactNumber: ['', Validators.required],
+      address: ['', Validators.required],
+      office_id: [''],
+      role: ['', Validators.required],
+      profileImageUrl: [''],
+      nationalIdImageUrl: [''],
+      birthCertImageUrl: [''],
     });
   }
 
@@ -98,28 +112,12 @@ export class AccountComponent implements OnInit {
     );
   }
 
-  get filteredAllAccounts() {
-    return this.allAccounts.filter((acc) => this.matchesSearch(acc));
-  }
-
   get filteredResidents() {
     return this.residentAccounts.filter((acc) => this.matchesSearch(acc));
   }
 
-  get filteredStaff() {
-    return this.staffAccounts.filter((acc) => this.matchesSearch(acc));
-  }
-
-  get filteredBlocked() {
-    return this.blockAccounts.filter((acc) => this.matchesSearch(acc));
-  }
-
-  // === Account categorization ===
   get residentAccounts() {
     return this.allAccounts.filter((acc) => acc.role === 'resident');
-  }
-  get staffAccounts() {
-    return this.allAccounts.filter((acc) => acc.role === 'admin');
   }
   get blockAccounts() {
     return this.residentAccounts.filter((acc) => acc.blocked);
@@ -159,9 +157,10 @@ export class AccountComponent implements OnInit {
     this.closeDropdown();
   }
 
-  // === View, Edit & Delete ===
+  // === View & Edit Modals ===
   viewAccount(account: account) {
     this.accountToView = account;
+    this.accountToEdit = null;
   }
   closeView() {
     this.accountToView = null;
@@ -169,32 +168,36 @@ export class AccountComponent implements OnInit {
 
   editAccount(account: account) {
     this.accountToEdit = { ...account };
-    this.editForm = this.fb.group({
-      fullName: [account.fullName, Validators.required],
-      email: [account.email, [Validators.required, Validators.email]],
-      contactNumber: [account.contactNumber, Validators.required],
-      address: [account.address, Validators.required],
-      office_id: [account.office_id],
-      role: [account.role, Validators.required],
-      profileImageUrl: [account.profileImageUrl || this.defaultAvatar],
-      nationalIdImageUrl: [account.validIdImageUrl || null],
-      birthCertImageUrl: [account.validIdImageUrl || null],
+    this.accountToView = null;
+    this.selectedImagePreview = null;
+
+    this.editForm.patchValue({
+      fullName: account.fullName,
+      email: account.email,
+      contactNumber: account.contactNumber,
+      address: account.address,
+      office_id: account.office_id,
+      role: account.role,
+      profileImageUrl: account.profileImageUrl || this.defaultAvatar,
+      nationalIdImageUrl: account.validIdImageUrl || null,
+      birthCertImageUrl: account.validIdImageUrl || null,
     });
   }
 
   closeEdit() {
     this.accountToEdit = null;
-    this.editForm = null;
+    this.selectedImagePreview = null;
+    this.editForm.reset();
   }
 
   async saveEdit() {
-    if (!this.editForm?.valid || !this.accountToEdit) return;
+    if (!this.editForm.valid || !this.accountToEdit) return;
     this.blockingInProgress = true;
     const updatedUser = { ...this.accountToEdit, ...this.editForm.value };
     try {
       await this.accountService.updateUser(updatedUser.id, updatedUser);
       this.accountToEdit = null;
-      this.editForm = null;
+      this.editForm.reset();
       this.showSnackBar('User updated successfully.');
     } catch (err) {
       console.error(err);
@@ -204,6 +207,7 @@ export class AccountComponent implements OnInit {
     }
   }
 
+  // === Delete ===
   deleteAccount(account: account) {
     this.accountToDelete = account;
     this.showDeleteModal = true;
@@ -212,7 +216,6 @@ export class AccountComponent implements OnInit {
     this.accountToDelete = null;
     this.showDeleteModal = false;
   }
-
   async confirmDelete() {
     if (!this.accountToDelete) return;
     this.blockingInProgress = true;
@@ -231,18 +234,16 @@ export class AccountComponent implements OnInit {
 
   // === Block & Unblock ===
   openBlockModal(account: account) {
-    if (account.blocked) return; // don't allow blocking if already blocked
+    if (account.blocked) return;
     this.accountToView = account;
     this.showBlockModal = true;
   }
-
   closeBlockModal() {
     this.accountToView = null;
     this.showBlockModal = false;
     this.blockReason = '';
     this.otherBlockReason = '';
   }
-
   async confirmBlock() {
     if (!this.accountToView) return;
 
@@ -250,6 +251,7 @@ export class AccountComponent implements OnInit {
       this.blockReason === 'Other'
         ? this.otherBlockReason.trim()
         : this.blockReason;
+
     if (!reason) {
       this.showSnackBar('Please select or enter a reason for blocking.');
       return;
@@ -257,7 +259,6 @@ export class AccountComponent implements OnInit {
 
     this.showBlockModal = false;
     this.blockingInProgress = true;
-
     try {
       await this.accountService.blockUsers([this.accountToView.id], reason);
       this.accountToView.blocked = true;
@@ -271,16 +272,14 @@ export class AccountComponent implements OnInit {
   }
 
   openUnblockModal(account: account) {
-    if (!account.blocked) return; // only unblock if blocked
+    if (!account.blocked) return;
     this.accountToUnblock = account;
     this.showUnblockModal = true;
   }
-
   closeUnblockModal() {
     this.accountToUnblock = null;
     this.showUnblockModal = false;
   }
-
   async confirmUnblock() {
     if (!this.accountToUnblock) return;
     this.blockingInProgress = true;
@@ -299,23 +298,19 @@ export class AccountComponent implements OnInit {
 
   // === File Uploads ===
   onAvatarChange(event: Event) {
-    this.handleFileChange(event, 'profileImageUrl');
-  }
-  onNationalIdChange(event: Event) {
-    this.handleFileChange(event, 'nationalIdImageUrl');
-  }
-  onBirthCertChange(event: Event) {
-    this.handleFileChange(event, 'birthCertImageUrl');
+    this.onFileChange(event, 'profileImageUrl');
   }
 
-  private handleFileChange(event: Event, field: string) {
+  onFileChange(event: Event, field: string) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file && this.editForm) {
       const reader = new FileReader();
       reader.onload = () => {
-        this.editForm?.patchValue({ [field]: reader.result });
+        this.editForm.patchValue({ [field]: reader.result });
         if (this.accountToEdit)
           (this.accountToEdit as any)[field] = reader.result;
+        if (field === 'profileImageUrl')
+          this.selectedImagePreview = reader.result as string;
       };
       reader.readAsDataURL(file);
     }
@@ -325,7 +320,6 @@ export class AccountComponent implements OnInit {
     document.getElementById('profileImageInput')?.click();
   }
 
-  // === Notifications ===
   showSnackBar(message: string) {
     this.snackBar.open(message, 'Close', { duration: 3000 });
   }

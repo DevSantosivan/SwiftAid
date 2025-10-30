@@ -7,7 +7,7 @@
     <div class="search-bar">
       <input
         type="text"
-        placeholder="Search team members..."
+        placeholder="Search resident accounts..."
         [(ngModel)]="searchTerm"
       />
       <button type="button">
@@ -15,23 +15,20 @@
       </button>
     </div>
 
-    <!-- Orders Summary Container -->
+    <!-- Accounts Summary -->
     <div class="orders-summary">
       <div class="order-card total-orders">
         <h3>Total Account This Month</h3>
         <p class="order-count">{{ totalResidentAccountsCount }}</p>
       </div>
-
       <div class="order-card pending-orders">
         <h3>Pending Account</h3>
         <p class="order-count">{{ pendingResidentAccountsCount }}</p>
       </div>
-
       <div class="order-card shipped-orders">
         <h3>Registered Account</h3>
         <p class="order-count">{{ registeredResidentAccountsCount }}</p>
       </div>
-
       <div class="order-card refunded-orders">
         <h3>Blocked Account</h3>
         <p class="order-count">{{ blockedResidentAccountsCount }}</p>
@@ -40,6 +37,8 @@
 
     <!-- Resident Account List -->
     <div>
+      <h3>Account list</h3>
+      <br />
       <div class="account-header">
         <span class="col-name">Profile</span>
         <span class="col-name">Name</span>
@@ -53,17 +52,11 @@
       </div>
 
       <div class="account-list">
-        <div
-          (click)="viewAccount(acc)"
-          class="account-row"
-          *ngFor="let acc of filteredResidents"
-        >
+        <div class="account-row" *ngFor="let acc of paginatedResidents">
           <span class="col-name">
             <img
               class="profile-img-list"
-              [src]="
-                acc.profileImageUrl || '../../../assets/profile-default.jpg'
-              "
+              [src]="acc.profileImageUrl || defaultAvatar"
               alt="{{ acc.fullName }}"
             />
           </span>
@@ -78,7 +71,6 @@
           <span class="col-extra">{{
             acc.createdAt | date : "mediumDate"
           }}</span>
-
           <span class="col-action action-buttons">
             <button title="View" (click)="viewAccount(acc)">
               <i class="bx bx-show"></i>
@@ -132,16 +124,9 @@
     </div>
   </div>
 
-  <!-- View/Edit Modal -->
-  <div
-    class="modal-overlay"
-    *ngIf="accountToView || accountToEdit"
-    tabindex="-1"
-    role="dialog"
-    aria-modal="true"
-  >
-    <!-- View Modal -->
-    <div class="modal-card" *ngIf="accountToView && !accountToEdit">
+  <!-- View Modal -->
+  <div class="modal-edit-overlay" *ngIf="accountToView && !accountToEdit">
+    <div class="modal-card">
       <header class="modal-header">
         <h2 class="modal-title">Account Details</h2>
         <button class="close-btn" (click)="closeView()">×</button>
@@ -151,10 +136,7 @@
         <div class="profile-side">
           <img
             class="profile-pic"
-            [src]="
-              accountToView.profileImageUrl ||
-              '../../../assets/profile-default.jpg'
-            "
+            [src]="accountToView.profileImageUrl || defaultAvatar"
             alt="{{ accountToView.fullName }}'s Profile Picture"
           />
         </div>
@@ -178,7 +160,6 @@
               <i class="bx bx-block"></i> Block Account
             </button>
 
-            <!-- Show unblock button only if account is blocked -->
             <button
               *ngIf="accountToView.blocked"
               class="unblock-btn"
@@ -194,6 +175,7 @@
             <p><strong>Email:</strong> {{ accountToView.email }}</p>
             <p><strong>Address:</strong> {{ accountToView.address }}</p>
           </section>
+
           <section *ngIf="accountToView.validIdImageUrl">
             <h4>Valid ID</h4>
             <a
@@ -223,22 +205,17 @@
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Edit Modal Placeholder -->
-    <div
-      class="modal-card"
-      *ngIf="accountToEdit"
-      aria-labelledby="editProfileTitle"
-    >
+  <!-- Edit Modal -->
+  <div class="modal-edit-overlay" *ngIf="accountToEdit">
+    <div class="modal-card">
       <header class="modal-header">
-        <h2 id="editProfileTitle" class="modal-title">Edit Profile</h2>
-        <button class="close-btn" (click)="closeEdit()" aria-label="Close">
-          ×
-        </button>
+        <h2 class="modal-title">Edit Profile</h2>
+        <button class="close-btn" (click)="closeEdit()">×</button>
       </header>
 
       <div class="modal-body">
-        <!-- Left Profile Picture + Edit -->
         <div class="profile-side">
           <img
             [src]="accountToEdit.profileImageUrl || defaultAvatar"
@@ -256,79 +233,41 @@
           />
         </div>
 
-        <!-- Right Form -->
-        <form class="form-side" novalidate>
+        <form [formGroup]="editForm" class="form-side" novalidate>
           <div class="form-row">
             <label for="fullName">Full Name</label>
-            <input
-              id="fullName"
-              type="text"
-              [(ngModel)]="accountToEdit.fullName"
-              name="fullName"
-              placeholder="Full Name"
-            />
+            <input id="fullName" type="text" formControlName="fullName" />
           </div>
-
           <div class="form-row">
             <label for="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              [(ngModel)]="accountToEdit.email"
-              name="email"
-              placeholder="Email"
-            />
+            <input id="email" type="email" formControlName="email" />
           </div>
-
           <div class="form-row">
             <label for="contactNumber">Contact Number</label>
             <input
               id="contactNumber"
               type="tel"
-              [(ngModel)]="accountToEdit.contactNumber"
-              name="contactNumber"
-              placeholder="Contact Number"
+              formControlName="contactNumber"
             />
           </div>
-
           <div class="form-row">
             <label for="address">Address</label>
-            <input
-              id="address"
-              type="text"
-              [(ngModel)]="accountToEdit.address"
-              name="address"
-              placeholder="Address"
-            />
+            <input id="address" type="text" formControlName="address" />
           </div>
-
           <div class="form-row">
             <label for="sex">Gender</label>
-            <select id="sex" [(ngModel)]="accountToEdit.sex" name="sex">
+            <select id="sex" formControlName="sex">
               <option value="Male">Male</option>
               <option value="Female">Female</option>
             </select>
           </div>
-
           <div class="form-row">
             <label for="dateOfBirth">Birthday</label>
-            <input
-              id="dateOfBirth"
-              type="date"
-              [(ngModel)]="accountToEdit.dateOfBirth"
-              name="dateOfBirth"
-            />
+            <input id="dateOfBirth" type="date" formControlName="dateOfBirth" />
           </div>
-
           <div class="form-row">
             <label for="idNumber">Valid ID Number</label>
-            <input
-              id="idNumber"
-              type="text"
-              [(ngModel)]="accountToEdit.idNumber"
-              name="idNumber"
-              placeholder="Valid ID Number"
-            />
+            <input id="idNumber" type="text" formControlName="idNumber" />
           </div>
 
           <div class="form-actions">
@@ -363,82 +302,82 @@
     </div>
   </div>
 
+  <!-- Block Modal -->
+  <div class="block-modal-backdrop" *ngIf="showBlockModal">
+    <div class="modal block-modal">
+      <h3>Block Account</h3>
+      <p class="warning">⚠ Are you sure you want to block this account?</p>
+
+      <div class="form-row">
+        <label for="blockReason">Reason for Blocking</label>
+        <select
+          id="blockReason"
+          [(ngModel)]="blockReason"
+          name="blockReason"
+          class="block-reason-dropdown"
+        >
+          <option value="" disabled selected>Select reason...</option>
+          <option value="Inactive account">Inactive account</option>
+          <option value="Misuse of Emergency System">
+            Misuse of Emergency System
+          </option>
+          <option value="Submitting False Emergency Reports">
+            Submitting False Emergency Reports
+          </option>
+          <option value="Violation of Community Guidelines">
+            Violation of Community Guidelines
+          </option>
+          <option value="Duplicate Account">Duplicate Account</option>
+          <option value="Suspicious Activity Detected">
+            Suspicious Activity Detected
+          </option>
+          <option value="Unauthorized Access Attempt">
+            Unauthorized Access Attempt
+          </option>
+          <option value="Spamming Emergency Requests">
+            Spamming Emergency Requests
+          </option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-row" *ngIf="blockReason === 'Other'">
+        <label for="otherReason">Specify Reason</label>
+        <textarea
+          id="otherReason"
+          [(ngModel)]="otherBlockReason"
+          placeholder="Enter custom reason..."
+        ></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button class="cancel-btn" (click)="closeBlockModal()">Cancel</button>
+        <button class="confirm-btn" (click)="confirmBlock()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unblock Modal -->
+  <div class="unblock-modal-backdrop" *ngIf="showUnblockModal">
+    <div class="modal unblock-modal">
+      <h3>Unblock Account</h3>
+      <p class="warning">
+        ⚠ Are you sure you want to unblock
+        <strong>{{ accountToUnblock?.fullName }}</strong
+        >?
+      </p>
+      <div class="modal-actions">
+        <button class="cancel-btn" (click)="closeUnblockModal()">Cancel</button>
+        <button class="confirm-btn" (click)="confirmUnblock()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading Modal -->
   <div class="loading-modal-backdrop" *ngIf="blockingInProgress">
     <div class="loading-modal-content">
       <div class="spinner"></div>
       <div>Processing, please wait...</div>
-    </div>
-  </div>
-</div>
-
-<!-- Block Modal -->
-<div class="block-modal-backdrop" *ngIf="showBlockModal">
-  <div class="modal block-modal">
-    <h3>Block Account</h3>
-    <p class="warning">⚠ Are you sure you want to block this account?</p>
-
-    <div class="form-row">
-      <label for="blockReason">Reason for Blocking</label>
-      <select
-        id="blockReason"
-        [(ngModel)]="blockReason"
-        name="blockReason"
-        class="block-reason-dropdown"
-      >
-        <option value="" disabled selected>Select reason...</option>
-        <option value="Inactive account">Inactive account</option>
-        <option value="Misuse of Emergency System">
-          Misuse of Emergency System
-        </option>
-        <option value="Submitting False Emergency Reports">
-          Submitting False Emergency Reports
-        </option>
-        <option value="Violation of Community Guidelines">
-          Violation of Community Guidelines
-        </option>
-        <option value="Duplicate Account">Duplicate Account</option>
-        <option value="Suspicious Activity Detected">
-          Suspicious Activity Detected
-        </option>
-        <option value="Unauthorized Access Attempt">
-          Unauthorized Access Attempt
-        </option>
-        <option value="Spamming Emergency Requests">
-          Spamming Emergency Requests
-        </option>
-        <option value="Other">Other</option>
-      </select>
-    </div>
-
-    <div class="form-row" *ngIf="blockReason === 'Other'">
-      <label for="otherReason">Specify Reason</label>
-      <textarea
-        id="otherReason"
-        [(ngModel)]="otherBlockReason"
-        placeholder="Enter custom reason..."
-      ></textarea>
-    </div>
-
-    <div class="modal-actions">
-      <button class="cancel-btn" (click)="closeBlockModal()">Cancel</button>
-      <button class="confirm-btn" (click)="confirmBlock()">Confirm</button>
-    </div>
-  </div>
-</div>
-
-<!-- Unblock Modal -->
-<div class="unblock-modal-backdrop" *ngIf="showUnblockModal">
-  <div class="modal unblock-modal">
-    <h3>Unblock Account</h3>
-    <p class="warning">
-      ⚠ Are you sure you want to unblock
-      <strong>{{ accountToUnblock?.fullName }}</strong
-      >?
-    </p>
-    <div class="modal-actions">
-      <button class="cancel-btn" (click)="closeUnblockModal()">Cancel</button>
-      <button class="confirm-btn" (click)="confirmUnblock()">Confirm</button>
     </div>
   </div>
 </div>

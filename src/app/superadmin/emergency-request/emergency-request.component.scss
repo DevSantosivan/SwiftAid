@@ -41,7 +41,7 @@ body {
 
   /* Map container */
   .map-container {
-    flex: 2; /* keep map bigger */
+    flex: 1; /* keep map bigger */
     height: 400px; /* slightly taller for balance */
 
     #requestMap {

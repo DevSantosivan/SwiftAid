@@ -1,0 +1,108 @@
+<!-- Edit Modal -->
+<div
+  class="modal-card"
+  *ngIf="accountToEdit"
+  aria-labelledby="editProfileTitle"
+>
+  <header class="modal-header">
+    <h2 id="editProfileTitle" class="modal-title">Edit Profile</h2>
+    <button class="close-btn" (click)="closeEdit()" aria-label="Close">
+      ×
+    </button>
+  </header>
+
+  <div class="modal-body">
+    <!-- Left Profile Picture + Edit -->
+    <div class="profile-side">
+      <img
+        [src]="accountToEdit.profileImageUrl || defaultAvatar"
+        alt="Profile Picture"
+        class="profile-pic"
+      />
+      <button class="edit-pic-btn" (click)="triggerProfileImageUpload()">
+        <i class="bx bx-edit-alt"></i> Edit
+      </button>
+      <input
+        type="file"
+        id="profileImageInput"
+        (change)="onAvatarChange($event)"
+        hidden
+      />
+    </div>
+
+    <!-- Right Form -->
+    <form *ngIf="editForm" [formGroup]="editForm" novalidate>
+      <div class="form-row">
+        <label for="fullName">Full Name</label>
+        <input
+          id="fullName"
+          type="text"
+          formControlName="fullName"
+          placeholder="Full Name"
+        />
+      </div>
+
+      <div class="form-row">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          placeholder="Email"
+        />
+      </div>
+
+      <div class="form-row">
+        <label for="contactNumber">Contact Number</label>
+        <input
+          id="contactNumber"
+          type="tel"
+          formControlName="contactNumber"
+          placeholder="Contact Number"
+        />
+      </div>
+
+      <div class="form-row">
+        <label for="address">Address</label>
+        <input
+          id="address"
+          type="text"
+          formControlName="address"
+          placeholder="Address"
+        />
+      </div>
+
+      <div class="form-row">
+        <label for="sex">Gender</label>
+        <select id="sex" formControlName="sex">
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="dateOfBirth">Birthday</label>
+        <input id="dateOfBirth" type="date" formControlName="dateOfBirth" />
+      </div>
+
+      <div class="form-row">
+        <label for="idNumber">Valid ID Number</label>
+        <input
+          id="idNumber"
+          type="text"
+          formControlName="idNumber"
+          placeholder="Valid ID Number"
+        />
+      </div>
+
+      <div class="form-actions">
+        <button class="save-btn" type="button" (click)="saveEdit()">
+          Save
+        </button>
+        <button class="cancel-btn" type="button" (click)="closeEdit()">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

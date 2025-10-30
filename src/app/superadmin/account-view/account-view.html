@@ -1,0 +1,107 @@
+<div class="view-page">
+  <button class="back-btn" (click)="goBack()">← Back</button>
+
+  <div *ngIf="account">
+    <div class="profile-side">
+      <img
+        class="profile-pic"
+        [src]="account.profileImageUrl || '../../../assets/profile-default.jpg'"
+        alt="{{ account.fullName }}"
+      />
+    </div>
+
+    <div class="details-side">
+      <h2>{{ account.fullName }}</h2>
+      <p>
+        <strong>Status:</strong> {{ account.blocked ? 'Blocked' : 'Registered'
+        }}
+      </p>
+      <p><strong>Email:</strong> {{ account.email }}</p>
+      <p><strong>Contact:</strong> {{ account.contactNumber }}</p>
+      <p><strong>Address:</strong> {{ account.address }}</p>
+
+      <button
+        *ngIf="!account.blocked"
+        class="block-btn"
+        (click)="openBlockModal()"
+      >
+        Block
+      </button>
+      <button
+        *ngIf="account.blocked"
+        class="unblock-btn"
+        (click)="openUnblockModal()"
+      >
+        Unblock
+      </button>
+    </div>
+  </div>
+
+  <div class="block-modal-backdrop" *ngIf="showBlockModal">
+    <div class="modal block-modal">
+      <h3>Block Account</h3>
+      <p class="warning">⚠ Are you sure you want to block this account?</p>
+
+      <div class="form-row">
+        <label for="blockReason">Reason for Blocking</label>
+        <select
+          id="blockReason"
+          [(ngModel)]="blockReason"
+          name="blockReason"
+          class="block-reason-dropdown"
+        >
+          <option value="" disabled selected>Select reason...</option>
+          <option value="Inactive account">Inactive account</option>
+          <option value="Misuse of Emergency System">
+            Misuse of Emergency System
+          </option>
+          <option value="Submitting False Emergency Reports">
+            Submitting False Emergency Reports
+          </option>
+          <option value="Violation of Community Guidelines">
+            Violation of Community Guidelines
+          </option>
+          <option value="Duplicate Account">Duplicate Account</option>
+          <option value="Suspicious Activity Detected">
+            Suspicious Activity Detected
+          </option>
+          <option value="Unauthorized Access Attempt">
+            Unauthorized Access Attempt
+          </option>
+          <option value="Spamming Emergency Requests">
+            Spamming Emergency Requests
+          </option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-row" *ngIf="blockReason === 'Other'">
+        <label for="otherReason">Specify Reason</label>
+        <textarea
+          id="otherReason"
+          [(ngModel)]="otherBlockReason"
+          placeholder="Enter custom reason..."
+        ></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button class="cancel-btn" (click)="closeBlockModal()">Cancel</button>
+        <button class="confirm-btn" (click)="confirmBlock()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unblock Modal -->
+  <div class="modal" *ngIf="showUnblockModal">
+    <div class="modal-content">
+      <h3>Unblock Account</h3>
+      <p>Are you sure you want to unblock this account?</p>
+      <div class="modal-actions">
+        <button class="confirm-btn" (click)="confirmUnblock()">Yes</button>
+        <button class="cancel-btn" (click)="showUnblockModal = false">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
