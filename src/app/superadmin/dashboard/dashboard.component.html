@@ -4,7 +4,7 @@
     <p>Main</p>
     <!-- start -->
     <div class="flex-box">
-      <div class="box">
+      <div (click)="goToRegisteredAccount()" class="box">
         <div class="flex">
           <h4>Total Registered Account</h4>
           <i
@@ -16,7 +16,7 @@
         <small>Total of All Accounts</small>
       </div>
 
-      <div class="box">
+      <div (click)="goToTotalTeam()" class="box">
         <div class="flex">
           <h4>Total Team</h4>
           <i class="bx bxs-group" style="font-size: 40px; color: red"></i>
@@ -25,7 +25,7 @@
         <small>Registered Staff</small>
       </div>
 
-      <div class="box">
+      <div (click)="goToTotalResident()" class="box">
         <div class="flex">
           <h4>Total Resident</h4>
           <i class="bx bx-male-female" style="font-size: 40px; color: red"></i>
@@ -34,7 +34,7 @@
         <small>Verified Residents</small>
       </div>
 
-      <div class="box">
+      <div (click)="goToPendingAccount()" class="box">
         <div class="flex">
           <h4>Pending Resident</h4>
           <i class="bx bx-time" style="font-size: 40px; color: red"></i>
@@ -43,7 +43,7 @@
         <small>Residents Awaiting Approval</small>
       </div>
 
-      <div class="box">
+      <div (click)="goToEmergencyRequest()" class="box">
         <div class="flex">
           <h4>Total Emergency Request</h4>
           <i
@@ -55,7 +55,7 @@
         <small>All Resident Requests</small>
       </div>
 
-      <div class="box">
+      <div (click)="goToResolvedRequest()" class="box">
         <div class="flex">
           <h4>Total Rescue</h4>
           <i class="bx bxs-ambulance" style="font-size: 40px; color: red"></i>
@@ -64,7 +64,7 @@
         <small>Emergency Requests Resolved</small>
       </div>
 
-      <div class="box">
+      <div (click)="goToPendingReqest()" class="box">
         <div class="flex">
           <h4>Total Pending Request</h4>
           <i class="bx bx-timer" style="font-size: 40px; color: red"></i>
@@ -137,11 +137,24 @@
         <p>Recent</p>
 
         <div class="recent-list">
-          <div class="list" *ngFor="let request of recentRequests">
+          <div
+            [routerLink]="['/superAdmin/EmergencyRequest', request.id]"
+            click
+            class="list"
+            *ngFor="let request of recentRequests"
+          >
             <div class="profile">
               <div class="img">
-                <i class="bx bxs-user-circle"></i>
+                <img
+                  class="profile-pic"
+                  [src]="
+                    request.profilePicture ||
+                    '../../../assets/profile-deafault.jpg'
+                  "
+                  alt="'s Profile Picture"
+                />
               </div>
+
               <span>{{ request.name || "Unknown" }}</span>
             </div>
 

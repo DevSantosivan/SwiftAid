@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Auth } from '@angular/fire/auth';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { UserService } from '../../core/user.service';
@@ -16,7 +16,7 @@ Chart.register(...registerables, ChartDataLabels);
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
@@ -44,18 +44,11 @@ export class DashboardComponent implements OnInit {
 
   public currentDateTime: Date = new Date();
 
-  // private RED_PALETTE = [
-  //   '#b71c1c',
-  //   '#d32f2f',
-  //   '#f44336',
-  //   '#ef5350',
-  //   '#c62828',
-  //   '#212121',
-  //   '#424242',
-  //   '#e0e0e0',
-  //   '#ffffff',
-  // ];
   private RED_PALETTE = [
+    '#e74c3c',
+    '#3498db',
+    '#2ecc71',
+    '#9b59b6',
     '#f57c00', // Orange
     '#0f0f0f9c', // Yellow
     '#388e3c', // Green
@@ -84,6 +77,30 @@ export class DashboardComponent implements OnInit {
     }, 60000);
   }
 
+  goToRegisteredAccount() {
+    this.route.navigate(['/superAdmin/Account']);
+  }
+  goToTotalTeam() {
+    this.route.navigate(['/superAdmin/Team']);
+  }
+  goToTotalResident() {
+    this.route.navigate(['/superAdmin/Account']);
+  }
+  goToEmergencyRequest() {
+    this.route.navigate(['/superAdmin/EmergencyRequest']);
+  }
+  goToPendingAccount() {
+    this.route.navigate(['/superAdmin/Verification']);
+  }
+  goToResolvedRequest() {
+    this.route.navigate(['/superAdmin/IncidentHistory']);
+  }
+  goToPendingReqest() {
+    this.route.navigate(['/superAdmin/EmergencyRequest']);
+  }
+  goToReqestDetails() {
+    this.route.navigate(['/superAdmin/EmergencyRequest']);
+  }
   private async initializeDashboard() {
     const user = this.authentication.currentUser;
     this.currentUserId = user?.uid || '';
@@ -167,7 +184,6 @@ export class DashboardComponent implements OnInit {
     } catch (error) {}
   }
 
-  // Charts Config
   public pieChartConfig: any = {
     type: 'pie',
     data: {
