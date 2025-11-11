@@ -64,8 +64,8 @@
       <p class="alert-id">🔴 Alert #{{ currentRequest.id }}</p>
       <div class="user-info">
         <img
-          *ngIf="currentRequest.image; else placeholder"
-          [src]="currentRequest.image"
+          *ngIf="currentRequest.profilePicture; else placeholder"
+          [src]="currentRequest.profilePicture"
           alt="Profile"
           class="user-img"
         />

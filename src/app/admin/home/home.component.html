@@ -44,6 +44,16 @@
             {{ unreadEmergencyRequestCount }}
           </span>
         </li>
+        <!-- Show only when user has an active responding request -->
+        <li
+          *ngIf="hasActiveResponse"
+          [routerLink]="'EmergencyRequest/' + activeRequestId"
+          routerLinkActive="active"
+        >
+          <i class="bx bx-run"></i>
+          <span *ngIf="!isCollapsed">Ongoing Response</span>
+        </li>
+
         <li
           [routerLink]="'History'"
           routerLinkActive="active"
@@ -60,6 +70,7 @@
           <i class="bx bx-group"></i>
           <span *ngIf="!isCollapsed">Resident</span>
         </li>
+
         <li
           [routerLink]="'Notification'"
           routerLinkActive="active"
@@ -131,6 +142,15 @@
     >
       <i class="bx bxs-ambulance"></i>
     </li>
+    <li
+      *ngIf="hasActiveResponse"
+      [routerLink]="'EmergencyRequest/' + activeRequestId"
+      routerLinkActive="active"
+      title="Ongoing Response"
+    >
+      <i class="bx bx-run"></i>
+    </li>
+
     <li
       [routerLink]="'History'"
       routerLinkActive="active"

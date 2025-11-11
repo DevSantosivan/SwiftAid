@@ -78,8 +78,10 @@
   <h2>Meet Our Team</h2>
 
   <!-- Loop through grouped positions -->
+  <br />
   <div *ngFor="let group of groupedTeam" class="team-group">
     <h3 class="team-group-title">{{ group.position }}</h3>
+    <br />
     <div class="team-container">
       <div class="team-card" *ngFor="let member of group.members">
         <img [src]="member.image" [alt]="member.name" />
@@ -87,7 +89,9 @@
         <p class="role">{{ member.role }}</p>
       </div>
     </div>
+    <br />
   </div>
+  <br />
 </section>
 
 <!-- CTA -->

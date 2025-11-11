@@ -5,6 +5,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { IncidentService } from '../../core/incident.service';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
+import { Router, RouterLink } from '@angular/router';
 
 interface EnrichedFeedback {
   id: string;
@@ -52,7 +53,8 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   constructor(
     private incidentService: IncidentService,
-    private emergencyService: EmergencyRequestService
+    private emergencyService: EmergencyRequestService,
+    private route: Router
   ) {}
 
   ngOnInit() {
@@ -115,5 +117,9 @@ export class HomeComponent implements OnInit, OnDestroy {
         }
       })
       .join(' ');
+  }
+
+  goToLogin() {
+    this.route.navigate(['/login']);
   }
 }

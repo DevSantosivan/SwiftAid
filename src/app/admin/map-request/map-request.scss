@@ -30,6 +30,10 @@ body {
   padding: 1.5rem 0rem;
 }
 
+.no-data {
+  margin-bottom: 20px;
+}
+
 /* ===============================
    HEADINGS
 =============================== */
@@ -293,7 +297,7 @@ button.accept:hover {
   }
 
   #requestMap {
-    height: 350px;
+    height: 550px;
   }
 
   .header-controls {
@@ -333,7 +337,7 @@ button.accept:hover {
   }
 
   #requestMap {
-    height: 280px;
+    height: 600px;
   }
 
   .request-footer {

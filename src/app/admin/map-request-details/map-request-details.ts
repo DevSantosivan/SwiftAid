@@ -9,6 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
 import 'leaflet.markercluster';
+import 'leaflet-routing-machine';
 import { EmergencyRequest } from '../../model/emergency';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { UserService } from '../../core/user.service';
@@ -39,16 +40,18 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
   staffLocation: L.LatLngExpression = [0, 0];
   staffMarker?: L.Marker;
   requestMarker?: L.Marker;
-  routeLine?: L.Polyline;
+  private routingControl?: L.Routing.Control;
   currentStaff: any = null;
   private watchId?: number;
   private requestSubscription?: Subscription;
   backLabel: string = 'Back To Emergency Request List';
-  staffAddress: string = 'Fetching address...'; // For readable address
-  proximityMessage: string = ''; // Message to show when close to the request
+  staffAddress: string = 'Fetching address...';
+  proximityMessage: string = '';
   backRoute: any[] = ['/admin/EmergencyRequest'];
-  // Proximity threshold (in meters)
-  proximityThreshold = 500; // 500 meters
+  proximityThreshold = 500;
+
+  isViewingRequest = false;
+  activeRequestId: string | null = null;
 
   constructor(
     private requestService: EmergencyRequestService,
@@ -57,9 +60,32 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private navigationService: NavigationService
-  ) {}
+  ) {
+    this.router.events.subscribe((event: any) => {
+      if (event.url?.includes('/EmergencyRequest')) {
+        this.isViewingRequest = true;
+      } else {
+        this.isViewingRequest = false;
+      }
+    });
+  }
+
+  finishRequest() {
+    this.activeRequestId = null;
+    this.isViewingRequest = false;
+    this.showNextRequest();
+  }
+
+  showNextRequest() {
+    if (this.isViewingRequest) {
+      console.log('Currently viewing a request — skip showing new modal.');
+      return;
+    }
+    console.log('Showing next pending emergency request...');
+  }
 
   goBack() {
+    this.finishRequest();
     const previousUrl = this.navigationService.getPreviousUrl();
     this.router.navigateByUrl(previousUrl);
     this.router.navigate(this.backRoute);
@@ -73,7 +99,7 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
     } else if (prevUrl.includes('EmergencyRequest')) {
       this.backLabel = 'Back To Emergency Request List';
     } else {
-      this.backLabel = 'Back To Home'; // fallback
+      this.backLabel = 'Back To Home';
     }
 
     if (from === 'EmergencView') {
@@ -87,6 +113,9 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) return;
 
+    this.activeRequestId = id;
+    this.isViewingRequest = true;
+
     const request = await this.requestService.getRequestById(id);
     if (!request) return;
 
@@ -95,7 +124,6 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
 
     await this.loadCurrentStaff();
 
-    // Subscribe to real-time updates of requests assigned to current staff
     if (this.currentStaff?.uid) {
       this.requestSubscription = this.requestService
         .subscribeToLocationUpdatesByStaffId(this.currentStaff.uid)
@@ -124,22 +152,18 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.watchId !== undefined) {
+    this.finishRequest();
+    if (this.watchId !== undefined)
       navigator.geolocation.clearWatch(this.watchId);
-    }
-    if (this.requestSubscription) {
-      this.requestSubscription.unsubscribe();
-    }
+    if (this.requestSubscription) this.requestSubscription.unsubscribe();
   }
 
   initializeMap(): void {
     if (!this.mapContainer?.nativeElement) return;
-
     this.map = L.map(this.mapContainer.nativeElement).setView(
       [14.5995, 120.9842],
       13
     );
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(this.map);
@@ -165,7 +189,7 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
           position.coords.longitude,
         ];
       } catch {
-        // silent fallback
+        this.staffLocation = [12.353106204407416, 121.06914400674586]; // default MDRRMO location
       }
     }
 
@@ -180,7 +204,7 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
       .bindPopup('Your Location');
 
     const latLng = this.staffLocation as [number, number];
-    this.staffAddress = await this.reverseGeocode(latLng[0], latLng[1]); // Initial address fetch
+    this.staffAddress = await this.reverseGeocode(latLng[0], latLng[1]);
   }
 
   renderRequestMarker(): void {
@@ -190,10 +214,11 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
     const staffLoc = L.latLng(this.staffLocation);
 
     this.requestMarker = L.marker(requestLoc, {
-      icon: L.icon({
-        iconUrl: 'assets/logo22.png',
-        iconSize: [70, 60],
-        iconAnchor: [35, 40],
+      icon: L.divIcon({
+        className: 'custom-pulse-marker',
+        html: `<div class="pulse"></div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
       }),
     })
       .addTo(this.map)
@@ -202,21 +227,14 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
       )
       .openPopup();
 
-    this.routeLine = L.polyline([staffLoc, requestLoc], {
-      color: 'red',
-      weight: 4,
-      opacity: 0.7,
-      dashArray: '10,6',
-    }).addTo(this.map);
-
-    const group = L.featureGroup([this.staffMarker!]);
-    this.map.fitBounds(group.getBounds().pad(0.2));
+    this.renderRouteWithRoutingMachine(staffLoc, requestLoc);
   }
 
   updateRequestMarkerAndRoute() {
     if (!this.map || !this.request.latitude || !this.request.longitude) return;
 
     const requestLoc = L.latLng(this.request.latitude, this.request.longitude);
+    const staffLoc = L.latLng(this.staffLocation);
 
     if (this.requestMarker) {
       this.requestMarker.setLatLng(requestLoc);
@@ -234,22 +252,30 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
         );
     }
 
-    if (this.routeLine && this.staffLocation) {
-      this.routeLine.setLatLngs([L.latLng(this.staffLocation), requestLoc]);
-    } else if (this.staffLocation) {
-      this.routeLine = L.polyline([L.latLng(this.staffLocation), requestLoc], {
-        color: 'red',
-        weight: 4,
-        opacity: 0.7,
-        dashArray: '10,6',
-      }).addTo(this.map);
-    }
-
-    // Adjust map bounds to fit markers
-    const group = L.featureGroup([this.staffMarker!, this.requestMarker]);
-    this.map.fitBounds(group.getBounds().pad(0.2));
+    this.renderRouteWithRoutingMachine(staffLoc, requestLoc);
   }
 
+  private renderRouteWithRoutingMachine(start: L.LatLng, end: L.LatLng): void {
+    if (this.routingControl) {
+      this.map.removeControl(this.routingControl);
+      this.routingControl = undefined;
+    }
+
+    this.routingControl = (L.Routing.control as any)({
+      waypoints: [start, end],
+      routeWhileDragging: false,
+      showAlternatives: false,
+      fitSelectedRoutes: true,
+      addWaypoints: false,
+      createMarker: () => null,
+      lineOptions: {
+        styles: [{ color: '#ff1a1aff', weight: 8, opacity: 0.8 }],
+        extendToWaypoints: false,
+      },
+    }).addTo(this.map);
+  }
+
+  // ✅ Only updates while Responding / Ongoing
   trackStaffLocation(): void {
     if (!navigator.geolocation) return;
 
@@ -258,48 +284,36 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
         this.ngZone.run(async () => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
-
-          // Log current device location sa console
-          console.log('Current device location:', { lat, lng });
-
           this.staffLocation = [lat, lng];
           this.staffMarker?.setLatLng(this.staffLocation);
+          this.updateRequestMarkerAndRoute();
 
-          if (
-            this.map &&
-            this.routeLine &&
-            this.request.latitude &&
-            this.request.longitude
-          ) {
-            const requestLoc = L.latLng(
-              this.request.latitude,
-              this.request.longitude
-            );
-            this.routeLine.setLatLngs([
-              L.latLng(this.staffLocation),
-              requestLoc,
-            ]);
-          }
-
-          // Update currentStaff's lat/lng locally
           if (this.currentStaff) {
             this.currentStaff.staffLat = lat;
             this.currentStaff.staffLng = lng;
           }
 
-          // Check proximity and display message if close
           this.checkProximityToRequest(lat, lng);
 
           try {
             if (
               this.currentStaff?.uid &&
-              this.request?.staffId === this.currentStaff.uid
+              this.request?.staffId === this.currentStaff.uid &&
+              (this.request.status === 'Responding' ||
+                this.request.status === 'Ongoing')
             ) {
               await this.requestService.updateLocationByStaffId(
                 this.currentStaff.uid,
                 lat,
                 lng
               );
+            } else if (
+              this.request?.status === 'Resolved' ||
+              this.request?.status === 'Completed'
+            ) {
+              console.log('🛑 Request resolved — stopping location updates.');
+              if (this.watchId !== undefined)
+                navigator.geolocation.clearWatch(this.watchId);
             }
           } catch (error) {
             console.error('Failed to update staff location:', error);
@@ -307,33 +321,26 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
         });
       },
       () => {},
-      {
-        enableHighAccuracy: true,
-        maximumAge: 3000,
-        timeout: 10000,
-      }
+      { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
     );
   }
 
-  // Check proximity to the request
   checkProximityToRequest(lat: number, lng: number): void {
     const requestLoc = L.latLng(this.request.latitude, this.request.longitude);
     const staffLoc = L.latLng(lat, lng);
-    const distance = staffLoc.distanceTo(requestLoc); // distance in meters
+    const distance = staffLoc.distanceTo(requestLoc);
 
-    // Display message if within proximity threshold
     if (distance <= this.proximityThreshold) {
       this.proximityMessage = `You are within ${Math.round(
         distance
       )} meters of the request location.`;
     } else {
-      this.proximityMessage = ''; // No proximity message if outside threshold
+      this.proximityMessage = '';
     }
   }
 
   async reverseGeocode(lat: number, lng: number): Promise<string> {
     const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
-
     try {
       const response = await fetch(url);
       const data = await response.json();
@@ -350,7 +357,7 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
       try {
         this.currentStaff = await this.userService.getUserById(user.uid);
       } catch {
-        // fail silently
+        // silent
       }
     }
   }
@@ -363,10 +370,13 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
 
     try {
       await this.requestService.markRequestAsResolved(this.request.id);
-
       const updated = await this.requestService.getRequestById(this.request.id);
-      if (updated) {
-        this.request = updated;
+      if (updated) this.request = updated;
+
+      // 🛑 Stop geolocation watcher when resolved
+      if (this.watchId !== undefined) {
+        navigator.geolocation.clearWatch(this.watchId);
+        console.log('Stopped location updates after resolving request.');
       }
 
       this.submitSuccess = true;
@@ -396,7 +406,6 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
 
     try {
       const latLng = L.latLng(this.staffLocation);
-
       await this.requestService.updateRequestWithStaffInfo(
         request.id!,
         {
@@ -411,10 +420,7 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
       );
 
       const updated = await this.requestService.getRequestById(request.id!);
-      if (updated) {
-        this.request = updated;
-      }
-
+      if (updated) this.request = updated;
       this.submitSuccessAccept = true;
     } catch {
       alert('Failed to accept request.');

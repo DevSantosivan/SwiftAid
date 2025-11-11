@@ -61,6 +61,10 @@ export class HomeComponent implements OnInit {
   // Add this for mobile view detection
   isMobileView: boolean = false;
 
+  // 🔥 Responding state (for showing "Ongoing Response" menu)
+  hasActiveResponse = false;
+  activeRequestId: string | null = null;
+
   constructor(
     private authentication: Auth,
     private router: Router,
@@ -95,14 +99,28 @@ export class HomeComponent implements OnInit {
 
         // Load yearly accident data and update chart
         await this.getYearlyAccidentData();
-
-        // Initialize your charts here if needed, e.g.:
-        // this.chart = new Chart(<canvasRef>, this.lineChartConfig);
-        // this.yearlyChart = new Chart(<canvasRef>, this.yearlyChartConfig);
       } catch (error) {
         console.error('Error initializing dashboard:', error);
       }
     })();
+
+    // 🟢 Watch realtime emergency requests to detect responding state
+    this.emergencyRequestService.getRequestRealtime().subscribe((requests) => {
+      const currentUser = this.authentication.currentUser;
+      if (!currentUser) return;
+
+      const myResponding = requests.find(
+        (r) => r.status === 'Responding' && r.staffId === currentUser.uid
+      );
+
+      if (myResponding) {
+        this.hasActiveResponse = true;
+        this.activeRequestId = myResponding.id;
+      } else {
+        this.hasActiveResponse = false;
+        this.activeRequestId = null;
+      }
+    });
   }
 
   // HostListener to listen to window resize and update isMobileView accordingly
@@ -167,7 +185,7 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  // Line Chart Config for Monthly Data (example static data)
+  // Line Chart Config for Monthly Data
   public lineChartConfig: any = {
     type: 'bar',
     data: {
@@ -210,7 +228,7 @@ export class HomeComponent implements OnInit {
     },
   };
 
-  // Yearly Chart Config (Accident Data)
+  // Yearly Chart Config
   public yearlyChartConfig: any = {
     type: 'line',
     data: {
@@ -218,7 +236,7 @@ export class HomeComponent implements OnInit {
       datasets: [
         {
           label: 'Accident Data',
-          data: [20, 30, 40, 25, 50], // placeholder data, replaced on load
+          data: [20, 30, 40, 25, 50],
           fill: false,
           borderColor: 'rgb(255, 8, 0)',
           tension: 0.1,
@@ -232,8 +250,6 @@ export class HomeComponent implements OnInit {
       },
     },
   };
-
-  // Your other methods...
 
   getMonthLabels(count: number): string[] {
     const labels: string[] = [];
@@ -257,7 +273,7 @@ export class HomeComponent implements OnInit {
   async getAccidentCategoriesFromFirestore() {
     const accidentRef = collection(this.firestore, 'EmergencyRequest');
     const querySnapshot = await getDocs(accidentRef);
-    // TODO: aggregate data here to build your pie chart dataset
+    // TODO: aggregate data for pie chart
   }
 
   async getYearlyAccidentData() {

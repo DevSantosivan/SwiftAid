@@ -222,25 +222,17 @@ export class EmergencyRequestService {
     return new Observable((subscriber) => {
       const ref = collection(this.firestore, this.collectionName);
       const q = query(ref);
-
       const unsubscribe = onSnapshot(
         q,
         (snap) => {
-          this.ngZone.run(() => {
-            const list = snap.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            })) as EmergencyRequest[];
-            subscriber.next(list);
-          });
+          const list = snap.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as EmergencyRequest[];
+          this.ngZone.run(() => subscriber.next(list));
         },
-        (error) => {
-          this.ngZone.run(() => {
-            subscriber.error(error);
-          });
-        }
+        (err) => this.ngZone.run(() => subscriber.error(err))
       );
-
       return { unsubscribe };
     });
   }
@@ -572,12 +564,18 @@ export class EmergencyRequestService {
   async getUnreadEmergency(userId: string): Promise<number> {
     const notifRef = collection(this.firestore, 'EmergencyRequest');
     const snap = await getDocs(notifRef);
-    const unread = snap.docs.filter((docSnap) => {
+
+    const unreadPending = snap.docs.filter((docSnap) => {
       const data = docSnap.data() as EmergencyRequest;
-      return !data.readBy?.includes(userId);
+
+      // only count if not yet read by user AND still pending
+      const notRead = !data.readBy?.includes(userId);
+      const isPending = data.status === 'Pending';
+
+      return notRead && isPending;
     });
 
-    return unread.length;
+    return unreadPending.length;
   }
 
   getUnreadRespondingRequests(userId: string): Observable<number> {

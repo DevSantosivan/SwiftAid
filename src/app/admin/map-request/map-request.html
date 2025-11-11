@@ -6,15 +6,6 @@
 
     <!-- ===== TOP SECTION ===== -->
     <div class="request-top-section">
-      <!-- Summary -->
-      <div class="request-summary-grid">
-        <div style="width: 100%; height: 400px; max-width: 400px; margin: auto">
-          <p>Total Requests: {{ filteredRequests.length }}</p>
-          <canvas #pieChartCanvas></canvas>
-          <br />
-        </div>
-      </div>
-
       <!-- Map -->
       <div class="map-container">
         <h3>Map Request</h3>
@@ -23,36 +14,24 @@
       </div>
     </div>
 
-    <!-- ===== FILTER SECTION ===== -->
-    <div class="request-table-container">
-      <div class="header-controls">
-        <label>Filter Status</label>
-        <select [(ngModel)]="activeFilter" (change)="applyFilter(activeFilter)">
-          <option value="All">All</option>
-          <option value="Pending">Pending</option>
-          <option value="Responding">In Progress</option>
-          <option value="Resolved">Resolved</option>
-        </select>
+    <!-- ===== LIST SECTION ===== -->
+    <div class="request-list-container">
+      <h4>All Emergency Request</h4>
+      <p>List of emergency requests</p>
 
-        <label>From:</label>
-        <input
-          type="date"
-          [(ngModel)]="filterStartDate"
-          (change)="onDateFilterChange()"
-        />
-
-        <label>To:</label>
-        <input
-          type="date"
-          [(ngModel)]="filterEndDate"
-          (change)="onDateFilterChange()"
-        />
+      <!-- ✅ SHOW THIS IF NO DATA -->
+      <div
+        class="no-data"
+        *ngIf="filteredRequests.length === 0 && !isLoading; else hasData"
+      >
+        <img src="../../../assets/Empty Box.gif" alt="No Data" />
+        <h4>No Emergency Requests Found</h4>
+        <p>There are currently no pending or available requests.</p>
       </div>
+      <br /><br />
 
-      <!-- ===== LIST SECTION ===== -->
-      <div class="request-list-container">
-        <h4>All Emergency Request</h4>
-        <p>List of emergency requests</p>
+      <!-- ✅ SHOW DATA IF AVAILABLE -->
+      <ng-template #hasData>
         @for (req of paginatedRequests; track $index) {
         <div
           class="request-card"
@@ -90,8 +69,8 @@
           <div class="request-body">
             <p><i class="bx bxs-location-plus"></i> {{ req.address }}</p>
             <p>
-              <i class="bx bx-time"></i> {{ req.timestamp | date: "mediumDate"
-              }}
+              <i class="bx bx-time"></i>
+              {{ req.timestamp | date: "mediumDate" }}
             </p>
           </div>
 
@@ -113,25 +92,28 @@
           </div>
         </div>
         }
-      </div>
-
-      <!-- ===== PAGINATION ===== -->
-      <div class="pagination-container">
-        <span>Page {{ currentPage }} of {{ totalPages }}</span>
-        <div class="pagination-controls">
-          <button (click)="goToPreviousPage()" [disabled]="currentPage === 1">
-            ← Previous
-          </button>
-          <button
-            (click)="goToNextPage()"
-            [disabled]="currentPage === totalPages"
-          >
-            Next →
-          </button>
-        </div>
-      </div>
+      </ng-template>
     </div>
 
-    <br /><br />
+    <!-- ===== PAGINATION ===== -->
+    <div
+      class="pagination-container"
+      *ngIf="filteredRequests.length > 0 && !isLoading"
+    >
+      <span>Page {{ currentPage }} of {{ totalPages }}</span>
+      <div class="pagination-controls">
+        <button (click)="goToPreviousPage()" [disabled]="currentPage === 1">
+          ← Previous
+        </button>
+        <button
+          (click)="goToNextPage()"
+          [disabled]="currentPage === totalPages"
+        >
+          Next →
+        </button>
+      </div>
+    </div>
   </div>
+
+  <br /><br />
 </div>
