@@ -9,7 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
 import 'leaflet.markercluster';
-import 'leaflet-routing-machine';
+import 'leaflet-routing-machine'; // ✅ import routing machine
 import { EmergencyRequest } from '../../model/emergency';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { UserService } from '../../core/user.service';
@@ -40,7 +40,7 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
   staffLocation: L.LatLngExpression = [0, 0];
   staffMarker?: L.Marker;
   requestMarker?: L.Marker;
-  private routingControl?: L.Routing.Control;
+  routingControl?: L.Routing.Control; // ✅ added for route line
   currentStaff: any = null;
   private watchId?: number;
   private requestSubscription?: Subscription;
@@ -50,9 +50,6 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
   backRoute: any[] = ['/admin/EmergencyRequest'];
   proximityThreshold = 500;
 
-  isViewingRequest = false;
-  activeRequestId: string | null = null;
-
   constructor(
     private requestService: EmergencyRequestService,
     private userService: UserService,
@@ -60,32 +57,9 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private navigationService: NavigationService
-  ) {
-    this.router.events.subscribe((event: any) => {
-      if (event.url?.includes('/EmergencyRequest')) {
-        this.isViewingRequest = true;
-      } else {
-        this.isViewingRequest = false;
-      }
-    });
-  }
-
-  finishRequest() {
-    this.activeRequestId = null;
-    this.isViewingRequest = false;
-    this.showNextRequest();
-  }
-
-  showNextRequest() {
-    if (this.isViewingRequest) {
-      console.log('Currently viewing a request — skip showing new modal.');
-      return;
-    }
-    console.log('Showing next pending emergency request...');
-  }
+  ) {}
 
   goBack() {
-    this.finishRequest();
     const previousUrl = this.navigationService.getPreviousUrl();
     this.router.navigateByUrl(previousUrl);
     this.router.navigate(this.backRoute);
@@ -112,9 +86,6 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
 
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) return;
-
-    this.activeRequestId = id;
-    this.isViewingRequest = true;
 
     const request = await this.requestService.getRequestById(id);
     if (!request) return;
@@ -152,18 +123,25 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.finishRequest();
-    if (this.watchId !== undefined)
+    if (this.watchId !== undefined) {
       navigator.geolocation.clearWatch(this.watchId);
-    if (this.requestSubscription) this.requestSubscription.unsubscribe();
+    }
+    if (this.requestSubscription) {
+      this.requestSubscription.unsubscribe();
+    }
+    if (this.map) {
+      this.map.remove();
+    }
   }
 
   initializeMap(): void {
     if (!this.mapContainer?.nativeElement) return;
+
     this.map = L.map(this.mapContainer.nativeElement).setView(
       [14.5995, 120.9842],
       13
     );
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(this.map);
@@ -189,7 +167,7 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
           position.coords.longitude,
         ];
       } catch {
-        this.staffLocation = [12.353106204407416, 121.06914400674586]; // default MDRRMO location
+        // fallback
       }
     }
 
@@ -213,21 +191,29 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
     const requestLoc = L.latLng(this.request.latitude, this.request.longitude);
     const staffLoc = L.latLng(this.staffLocation);
 
-    this.requestMarker = L.marker(requestLoc, {
-      icon: L.divIcon({
-        className: 'custom-pulse-marker',
-        html: `<div class="pulse"></div>`,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
-      }),
-    })
+    // 🟢 Remove old marker kung meron
+    if (this.requestMarker) {
+      this.map.removeLayer(this.requestMarker);
+    }
+
+    // 🟢 Create pulsing marker icon
+    const pulseIcon = L.divIcon({
+      className: 'custom-pulse-marker',
+      html: '<div class="pulse"></div>',
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+    });
+
+    // 🟢 Add pulsing marker
+    this.requestMarker = L.marker(requestLoc, { icon: pulseIcon })
       .addTo(this.map)
       .bindPopup(
         `<strong>${this.request.name}</strong><br>${this.request.address}`
       )
       .openPopup();
 
-    this.renderRouteWithRoutingMachine(staffLoc, requestLoc);
+    // 🟢 Add routing line (from staff to request)
+    this.addRoutingLine(staffLoc, requestLoc);
   }
 
   updateRequestMarkerAndRoute() {
@@ -239,28 +225,21 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
     if (this.requestMarker) {
       this.requestMarker.setLatLng(requestLoc);
     } else {
-      this.requestMarker = L.marker(requestLoc, {
-        icon: L.icon({
-          iconUrl: 'assets/logo22.png',
-          iconSize: [70, 60],
-          iconAnchor: [35, 40],
-        }),
-      })
-        .addTo(this.map)
-        .bindPopup(
-          `<strong>${this.request.name}</strong><br>${this.request.address}`
-        );
+      this.renderRequestMarker();
     }
 
-    this.renderRouteWithRoutingMachine(staffLoc, requestLoc);
+    this.addRoutingLine(staffLoc, requestLoc); // ✅ update the real route
   }
 
-  private renderRouteWithRoutingMachine(start: L.LatLng, end: L.LatLng): void {
+  // ✅ Actual routing line using leaflet-routing-machine
+  addRoutingLine(start: L.LatLng, end: L.LatLng) {
+    // Remove old route
     if (this.routingControl) {
       this.map.removeControl(this.routingControl);
       this.routingControl = undefined;
     }
 
+    // Add new routing control
     this.routingControl = (L.Routing.control as any)({
       waypoints: [start, end],
       routeWhileDragging: false,
@@ -269,13 +248,11 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
       addWaypoints: false,
       createMarker: () => null,
       lineOptions: {
-        styles: [{ color: '#ff1a1aff', weight: 8, opacity: 0.8 }],
-        extendToWaypoints: false,
+        styles: [{ color: '#ff3838', weight: 8, opacity: 0.9 }],
       },
     }).addTo(this.map);
   }
 
-  // ✅ Only updates while Responding / Ongoing
   trackStaffLocation(): void {
     if (!navigator.geolocation) return;
 
@@ -284,9 +261,18 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
         this.ngZone.run(async () => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
+
+          console.log('Current device location:', { lat, lng });
+
           this.staffLocation = [lat, lng];
           this.staffMarker?.setLatLng(this.staffLocation);
-          this.updateRequestMarkerAndRoute();
+
+          if (this.map && this.request.latitude && this.request.longitude) {
+            this.addRoutingLine(
+              L.latLng(this.staffLocation),
+              L.latLng(this.request.latitude, this.request.longitude)
+            );
+          }
 
           if (this.currentStaff) {
             this.currentStaff.staffLat = lat;
@@ -298,22 +284,13 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
           try {
             if (
               this.currentStaff?.uid &&
-              this.request?.staffId === this.currentStaff.uid &&
-              (this.request.status === 'Responding' ||
-                this.request.status === 'Ongoing')
+              this.request?.staffId === this.currentStaff.uid
             ) {
               await this.requestService.updateLocationByStaffId(
                 this.currentStaff.uid,
                 lat,
                 lng
               );
-            } else if (
-              this.request?.status === 'Resolved' ||
-              this.request?.status === 'Completed'
-            ) {
-              console.log('🛑 Request resolved — stopping location updates.');
-              if (this.watchId !== undefined)
-                navigator.geolocation.clearWatch(this.watchId);
             }
           } catch (error) {
             console.error('Failed to update staff location:', error);
@@ -321,7 +298,11 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
         });
       },
       () => {},
-      { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+      {
+        enableHighAccuracy: true,
+        maximumAge: 3000,
+        timeout: 10000,
+      }
     );
   }
 
@@ -329,7 +310,6 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
     const requestLoc = L.latLng(this.request.latitude, this.request.longitude);
     const staffLoc = L.latLng(lat, lng);
     const distance = staffLoc.distanceTo(requestLoc);
-
     if (distance <= this.proximityThreshold) {
       this.proximityMessage = `You are within ${Math.round(
         distance
@@ -356,9 +336,7 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
     if (user) {
       try {
         this.currentStaff = await this.userService.getUserById(user.uid);
-      } catch {
-        // silent
-      }
+      } catch {}
     }
   }
 
@@ -372,13 +350,6 @@ export class MapRequestDetails implements AfterViewInit, OnDestroy {
       await this.requestService.markRequestAsResolved(this.request.id);
       const updated = await this.requestService.getRequestById(this.request.id);
       if (updated) this.request = updated;
-
-      // 🛑 Stop geolocation watcher when resolved
-      if (this.watchId !== undefined) {
-        navigator.geolocation.clearWatch(this.watchId);
-        console.log('Stopped location updates after resolving request.');
-      }
-
       this.submitSuccess = true;
     } catch {
       this.submitSuccess = false;

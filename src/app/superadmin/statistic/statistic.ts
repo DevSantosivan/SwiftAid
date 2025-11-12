@@ -14,6 +14,7 @@ import { Subscription } from 'rxjs';
 import { Chart, registerables } from 'chart.js';
 import * as L from 'leaflet';
 import 'leaflet.heat';
+import 'leaflet/dist/leaflet.css';
 
 Chart.register(...registerables);
 
@@ -26,14 +27,11 @@ Chart.register(...registerables);
 })
 export class Statistic implements OnInit, AfterViewInit, OnDestroy {
   requests: EmergencyRequest[] = [];
-  incidentLocation: string = '';
   stats = [
     { label: 'Total Requests', value: 0 },
     { label: 'Pending', value: 0 },
-    { label: 'Completed', value: 0 },
-    { label: 'Cancelled', value: 0 },
   ];
-
+  incidentLocation = '';
   recommendations: string[] = [];
 
   @ViewChild('eventChartCanvas')
@@ -41,11 +39,14 @@ export class Statistic implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('streetChartCanvas')
   streetChartCanvas!: ElementRef<HTMLCanvasElement>;
 
-  eventChart!: Chart;
-  streetChart!: Chart;
-  map!: L.Map;
   private requestSub?: Subscription;
-  private streetCache: { [key: string]: string } = {};
+  private streetCache: Record<string, string> = {};
+  private updateTimeout?: any;
+
+  eventChart?: Chart;
+  streetChart?: Chart;
+  map?: L.Map;
+  heatLayer?: any;
 
   constructor(
     private requestService: EmergencyRequestService,
@@ -67,119 +68,169 @@ export class Statistic implements OnInit, AfterViewInit, OnDestroy {
     this.map?.remove();
   }
 
+  /** ✅ Real-time Firestore listener */
   subscribeToRealtimeRequests(): void {
     this.requestSub = this.requestService
       .getRequestRealtime()
-      .subscribe(async (requests) => {
-        this.ngZone.run(async () => {
+      .subscribe((requests) => {
+        this.ngZone.run(() => {
           this.requests = requests;
           this.updateStats();
           this.generateRecommendations();
-          this.updateMapMarkers();
-          await this.updateEventChart();
-          await this.updateStreetChart();
+
+          // Debounce updates for performance
+          clearTimeout(this.updateTimeout);
+          this.updateTimeout = setTimeout(() => {
+            this.updateMapMarkers();
+            this.updateCharts();
+          }, 500);
         });
       });
   }
 
+  /** ✅ Fast stats computation */
   updateStats(): void {
     const total = this.requests.length;
     const pending = this.requests.filter((r) => r.status === 'Pending').length;
-    const completed = this.requests.filter(
-      (r) => r.status === 'Completed'
-    ).length;
-    const cancelled = this.requests.filter(
-      (r) => r.status === 'Cancelled'
-    ).length;
-
     this.stats = [
       { label: 'Total Requests', value: total },
       { label: 'Pending', value: pending },
-      { label: 'Completed', value: completed },
-      { label: 'Cancelled', value: cancelled },
     ];
   }
 
-  async updateEventChart(): Promise<void> {
-    const eventCounts: { [event: string]: number } = {};
-    this.requests.forEach((req) => {
-      eventCounts[req.event] = (eventCounts[req.event] || 0) + 1;
+  /** ✅ Unified chart update */
+  async updateCharts(): Promise<void> {
+    const eventCounts: Record<string, number> = {};
+    const streetCounts: Record<string, number> = {};
+
+    const tasks = this.requests.map(async (r) => {
+      eventCounts[r.event] = (eventCounts[r.event] || 0) + 1;
+      if (r.latitude && r.longitude) {
+        const key = `${r.latitude},${r.longitude}`;
+        let street = this.streetCache[key];
+        if (!street) {
+          street = await this.reverseGeocode(r.latitude, r.longitude);
+          this.streetCache[key] = street;
+        }
+        streetCounts[street] = (streetCounts[street] || 0) + 1;
+      }
     });
 
-    if (this.eventChart) this.eventChart.destroy();
+    await Promise.all(tasks);
 
-    this.eventChart = new Chart(this.eventChartCanvas.nativeElement, {
-      type: 'pie',
-      data: {
-        labels: Object.keys(eventCounts),
-        datasets: [
-          {
-            data: Object.values(eventCounts),
-            backgroundColor: ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6'],
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-      },
-    });
+    this.renderChart(
+      this.eventChartCanvas,
+      'pie',
+      eventCounts,
+      this.eventChart,
+      (chart) => (this.eventChart = chart)
+    );
+
+    this.renderChart(
+      this.streetChartCanvas,
+      'bar',
+      streetCounts,
+      this.streetChart,
+      (chart) => (this.streetChart = chart),
+      true
+    );
   }
 
-  async updateStreetChart(): Promise<void> {
-    const streetCounts: { [street: string]: number } = {};
+  /** ✅ Fixed chart rendering (no infinite growth) */
+  renderChart(
+    canvasRef: ElementRef<HTMLCanvasElement>,
+    type: 'pie' | 'bar',
+    dataMap: Record<string, number>,
+    existingChart: Chart | undefined,
+    setChart: (chart: Chart) => void,
+    isHorizontal = false
+  ): void {
+    const labels = Object.keys(dataMap);
+    const data = Object.values(dataMap);
+    if (!canvasRef?.nativeElement) return;
 
-    for (const req of this.requests) {
-      if (!req.latitude || !req.longitude) continue;
-      const key = `${req.latitude},${req.longitude}`;
-      const street = await this.reverseGeocode(req.latitude, req.longitude);
-      streetCounts[street] = (streetCounts[street] || 0) + 1;
+    // 🔥 Always destroy old chart first to prevent growth
+    if (existingChart) {
+      existingChart.destroy();
     }
 
-    if (this.streetChart) this.streetChart.destroy();
-
-    this.streetChart = new Chart(this.streetChartCanvas.nativeElement, {
-      type: 'bar',
+    const newChart = new Chart(canvasRef.nativeElement, {
+      type,
       data: {
-        labels: Object.keys(streetCounts),
+        labels,
         datasets: [
           {
-            label: 'Requests per Street',
-            data: Object.values(streetCounts),
-            backgroundColor: '#c93e3eff',
+            label: 'Count',
+            data,
+
+            backgroundColor:
+              type === 'pie'
+                ? ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f1c40f']
+                : '#e74c3c',
           },
         ],
       },
       options: {
-        indexAxis: 'y',
+        indexAxis: isHorizontal ? 'y' : 'x',
         responsive: true,
-        plugins: {
-          legend: { display: false },
-        },
-        scales: {
-          x: { beginAtZero: true },
-        },
+        maintainAspectRatio: false,
+        plugins: { legend: { display: type === 'pie' } },
+        scales: { x: { beginAtZero: true } },
       },
     });
+
+    setChart(newChart);
   }
 
+  /** ✅ Cached reverse geocode */
   async reverseGeocode(lat: number, lon: number): Promise<string> {
     const key = `${lat},${lon}`;
     if (this.streetCache[key]) return this.streetCache[key];
 
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+        { headers: { 'User-Agent': 'RescueDashboard/1.0' } }
       );
       const data = await res.json();
       const street = data?.address?.road || 'Unknown Street';
       this.streetCache[key] = street;
       return street;
-    } catch (e) {
-      console.error('Reverse geocoding error:', e);
+    } catch {
+      this.streetCache[key] = 'Unknown Street';
       return 'Unknown Street';
     }
   }
 
+  /** ✅ Initialize map and heat layer */
+  initMap(): void {
+    this.map = L.map('map').setView([12.3609, 121.0675], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+    }).addTo(this.map);
+
+    this.heatLayer = (L as any)
+      .heatLayer([], {
+        radius: 25,
+        blur: 15,
+        maxZoom: 17,
+        gradient: { 0.1: 'blue', 0.3: 'lime', 0.6: 'orange', 1.0: 'red' },
+      })
+      .addTo(this.map);
+  }
+
+  /** ✅ Smooth heat map update */
+  updateMapMarkers(): void {
+    if (!this.map || !this.heatLayer) return;
+
+    const heatPoints: [number, number, number][] = this.requests
+      .filter((r) => r.latitude && r.longitude)
+      .map((r) => [r.latitude!, r.longitude!, 0.5]);
+
+    this.heatLayer.setLatLngs(heatPoints);
+  }
+
+  /** ✅ Smart recommendations */
   generateRecommendations(): void {
     const pending = this.requests.filter((r) => r.status === 'Pending').length;
     const completed = this.requests.filter(
@@ -187,80 +238,17 @@ export class Statistic implements OnInit, AfterViewInit, OnDestroy {
     ).length;
 
     this.recommendations = [];
-
-    if (pending > completed) {
+    if (pending > completed)
       this.recommendations.push('⚠️ Assign more staff to pending requests.');
-    }
-    if (completed / (this.requests.length || 1) < 0.5) {
-      this.recommendations.push('📈 Improve response efficiency and training.');
-    }
-    if (this.requests.filter((r) => r.event === 'Fire').length > 5) {
+    if (completed / (this.requests.length || 1) < 0.5)
+      this.recommendations.push('📈 Improve response efficiency.');
+    if (this.requests.filter((r) => r.event === 'Fire').length > 5)
       this.recommendations.push(
         '🔥 Prepare additional fire-fighting resources.'
       );
-    }
-    if (this.requests.filter((r) => r.event === 'Medical').length > 5) {
-      this.recommendations.push(
-        '🏥 Coordinate with hospitals for surge capacity.'
-      );
-    }
-    if (this.recommendations.length === 0) {
-      this.recommendations.push(
-        '✅ System stable. Keep monitoring ongoing requests.'
-      );
-    }
-  }
-
-  initMap(): void {
-    this.map = L.map('map').setView([12.3609, 121.0675], 13); // San Jose Occidental Mindoro
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-    }).addTo(this.map);
-  }
-
-  updateMapMarkers(): void {
-    if (!this.map) return;
-
-    // Remove old heat layers if any
-    this.map.eachLayer((layer) => {
-      if ((layer as any)._heat) {
-        this.map.removeLayer(layer);
-      }
-    });
-
-    const heatPoints: [number, number, number][] = this.requests
-      .filter((r) => r.latitude && r.longitude)
-      .map((r) => [r.latitude!, r.longitude!, 0.5]); // 0.5 is intensity
-
-    if (heatPoints.length === 0) return;
-
-    const heatLayer = (L as any).heatLayer(heatPoints, {
-      radius: 25,
-      blur: 15,
-      maxZoom: 17,
-      gradient: {
-        0.1: 'blue',
-        0.3: 'lime',
-        0.6: 'orange',
-        1.0: 'red',
-      },
-    });
-
-    heatLayer.addTo(this.map);
-  }
-
-  getEventColor(event: string): string {
-    switch (event.toLowerCase()) {
-      case 'car accident':
-        return 'red';
-      case 'stroke':
-        return 'blue';
-      case 'medical':
-        return 'green';
-      case 'fire':
-        return 'orange';
-      default:
-        return 'purple';
-    }
+    if (this.requests.filter((r) => r.event === 'Medical').length > 5)
+      this.recommendations.push('🏥 Coordinate with hospitals.');
+    if (this.recommendations.length === 0)
+      this.recommendations.push('✅ System stable. Keep monitoring.');
   }
 }

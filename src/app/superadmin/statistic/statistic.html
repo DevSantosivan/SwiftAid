@@ -1,8 +1,4 @@
 <div class="dashboard">
-  <br />
-  <br />
-  <br />
-  <!-- Header Section -->
   <header class="dashboard-header">
     <h3>Emergency Response Overview</h3>
     <p>Quick insight into emergency request trends and statistics.</p>
@@ -31,10 +27,7 @@
     <!-- Left: Map -->
     <div class="card map-card">
       <h3>📍 Emergency Incidents in {{ incidentLocation || 'the Area' }}</h3>
-      <br />
       <div id="map" class="map-container"></div>
-      <br />
-      <br />
       <div class="map-total-request">
         <span>
           <i class="bx bx-git-pull-request"></i> Displaying {{ requests.length
@@ -50,18 +43,17 @@
     <!-- Right: Charts -->
     <div class="right-charts">
       <div class="card">
-        <h3>Requests by Status</h3>
-        <canvas #statusChartCanvas></canvas>
-      </div>
-
-      <div class="card">
         <h3>Requests by Street</h3>
-        <canvas #streetChartCanvas></canvas>
+        <div class="chart-wrapper">
+          <canvas #streetChartCanvas></canvas>
+        </div>
       </div>
 
       <div class="card">
         <h3>Requests by Event Type</h3>
-        <canvas #eventChartCanvas></canvas>
+        <div class="chart-wrapper">
+          <canvas #eventChartCanvas></canvas>
+        </div>
       </div>
     </div>
   </section>
