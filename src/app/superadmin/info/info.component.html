@@ -24,7 +24,7 @@
       </li>
     </ul>
 
-    <!-- Barangay Tab -->
+    <!-- =================== BARANGAY TAB =================== -->
     <div *ngIf="activeTab === 'barangay'" class="tab-content">
       <button class="add_baranggay" (click)="openAddModal()">
         Add Barangay
@@ -33,12 +33,9 @@
       <div class="grid-item">
         <div *ngFor="let barangay of allBaranggay" class="content-container">
           <div class="barangay-card">
-            <!-- MAP Section -->
             <div class="map-container" id="map-{{ barangay.id }}"></div>
 
-            <!-- Details Section -->
             <div class="barangay-details">
-              <!-- Profile Image -->
               <div class="barangay-profile">
                 <img
                   [src]="
@@ -60,7 +57,6 @@
               </p>
             </div>
 
-            <!-- Edit/Delete Buttons -->
             <div class="card-actions">
               <button (click)="editBarangay(barangay)">
                 <i class="bx bx-edit-alt"></i> Edit
@@ -74,7 +70,7 @@
       </div>
     </div>
 
-    <!-- Incident Tab -->
+    <!-- =================== INCIDENT TAB =================== -->
     <div *ngIf="activeTab === 'event'" class="tab-content">
       <button class="add_baranggay" (click)="openIncidentModal()">
         Add Incident
@@ -83,35 +79,30 @@
       <div class="grid-item">
         <div *ngFor="let incident of allIncidents" class="content-container">
           <div class="barangay-card">
-            <!-- Incident Details -->
             <div class="barangay-details">
               <h2>{{ incident.name }}</h2>
-              <!-- Incident Details -->
-              <div class="barangay-details">
-                <div
-                  class="incident-icon"
-                  style="font-size: 48px; color: red; margin-bottom: 10px"
-                >
-                  <i [class]="incident.icon"></i>
-                </div>
 
-                <!-- ✅ Show Types -->
-                <div *ngIf="incident.types?.length">
-                  <h4>Types:</h4>
-                  <ul>
-                    <li *ngFor="let type of incident.types">{{ type.name }}</li>
-                  </ul>
-                </div>
-
-                <div *ngIf="incident.tips?.length" class="tips">
-                  <h4>Tips:</h4>
-                  <ul style="list-style: none">
-                    <li *ngFor="let tip of incident.tips">{{ tip }}</li>
-                  </ul>
-                </div>
+              <div
+                class="incident-icon"
+                style="font-size: 48px; color: red; margin-bottom: 10px"
+              >
+                <i [class]="incident.icon"></i>
               </div>
 
-              <!-- Edit/Delete Buttons -->
+              <div *ngIf="incident.types?.length">
+                <h4>Types:</h4>
+                <ul>
+                  <li *ngFor="let type of incident.types">{{ type.name }}</li>
+                </ul>
+              </div>
+
+              <div *ngIf="incident.tips?.length" class="tips">
+                <h4>Tips:</h4>
+                <ul style="list-style: none">
+                  <li *ngFor="let tip of incident.tips">{{ tip }}</li>
+                </ul>
+              </div>
+
               <div class="card-actions">
                 <button (click)="editIncident(incident)">
                   <i class="bx bx-edit-alt"></i> Edit
@@ -127,134 +118,202 @@
     </div>
   </div>
 
-  <!-- Incident Modal -->
-  <div class="modal" [class.show]="showAddIncidentModal">
-    <div class="modal-content">
+  <div class="incident-overlay" [class.show]="showAddIncidentModal">
+    <div class="incident-panel">
       <h2>{{ newIncident.id ? "Edit Incident" : "Add Incident" }}</h2>
+
       <form (ngSubmit)="submitIncident()" #incidentForm="ngForm" novalidate>
-        <label for="incidentName">Incident Name</label>
-        <input
-          id="incidentName"
-          type="text"
-          required
-          [(ngModel)]="newIncident.name"
-          name="name"
-        />
-
-        <label for="incidentIcon">Icon Class Name</label>
-        <input
-          id="incidentIcon"
-          type="text"
-          required
-          [(ngModel)]="newIncident.icon"
-          name="icon"
-          placeholder="e.g. bx bxs-car-crash"
-        />
-
-        <label>Incident Types</label>
-        <div class="types-input-group">
+        <!-- INCIDENT NAME -->
+        <div class="form-group">
+          <label for="incidentName">Incident Name</label>
           <input
+            id="incidentName"
             type="text"
-            [(ngModel)]="newTypeName"
-            name="newType"
-            placeholder="Enter a type (e.g. Vehicle Accident)"
-            (keyup.enter)="addType()"
+            required
+            [(ngModel)]="newIncident.name"
+            name="name"
+            placeholder="Enter incident name"
           />
-          <button type="button" (click)="addType()">Add Type</button>
         </div>
 
-        <ul class="type-list">
-          <li *ngFor="let type of newIncident.types; let i = index">
-            {{ type.name }}
-            <button
-              type="button"
-              aria-label="Remove type"
-              (click)="removeType(i)"
+        <!-- ICON SELECTION -->
+        <div class="form-group">
+          <label>Select an Icon</label>
+          <div class="icon-grid">
+            <div
+              *ngFor="let icon of defaultIcons"
+              class="icon-item"
+              [class.selected]="newIncident.icon === icon.class"
+              (click)="selectIcon(icon.class)"
             >
-              <i class="bx bx-x"></i>
-            </button>
-          </li>
-        </ul>
-
-        <label>Tips for this Incident</label>
-        <div class="tips-input-group">
-          <input
-            type="text"
-            [(ngModel)]="newTip"
-            name="newTip"
-            placeholder="Enter a tip"
-            (keyup.enter)="addTip()"
-          />
-          <button type="button" (click)="addTip()">Add Tip</button>
+              <i [class]="icon.class"></i>
+              <p>{{ icon.name }}</p>
+            </div>
+          </div>
         </div>
 
-        <ul class="tip-list">
-          <li *ngFor="let tip of newIncident.tips; let i = index">
-            {{ tip }}
-            <button type="button" (click)="removeTip(i)">
-              <i class="bx bx-x"></i>
-            </button>
-          </li>
-        </ul>
+        <!-- SELECTED ICON -->
+        <div *ngIf="newIncident.icon" class="icon-preview">
+          <strong>Selected Icon:</strong>
+          <i [class]="newIncident.icon"></i>
+        </div>
 
+        <!-- CUSTOM ICON -->
+        <div class="form-group">
+          <label>Or Enter Custom Icon Class</label>
+          <input
+            id="incidentIcon"
+            type="text"
+            [(ngModel)]="newIncident.icon"
+            name="icon"
+            placeholder="e.g. bx bxs-car-crash"
+          />
+        </div>
+
+        <!-- INCIDENT TYPES -->
+        <div class="form-group">
+          <label>Incident Types</label>
+          <div class="types-input-group">
+            <input
+              type="text"
+              [(ngModel)]="newTypeName"
+              name="newType"
+              placeholder="e.g. Vehicle Accident"
+              (keyup.enter)="addType()"
+            />
+            <button class="add" type="button" (click)="addType()">Add</button>
+          </div>
+
+          <ul class="type-list">
+            <li *ngFor="let type of newIncident.types; let i = index">
+              {{ type.name }}
+              <button type="button" (click)="removeType(i)">
+                <i class="bx bx-x"></i>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- TIPS -->
+        <div class="form-group">
+          <label>Tips for this Incident</label>
+          <div class="tips-input-group">
+            <input
+              type="text"
+              [(ngModel)]="newTip"
+              name="newTip"
+              placeholder="Enter a tip"
+              (keyup.enter)="addTip()"
+            />
+            <button class="add" type="button" (click)="addTip()">Add</button>
+          </div>
+
+          <ul class="tip-list">
+            <li *ngFor="let tip of newIncident.tips; let i = index">
+              {{ tip }}
+              <button type="button" (click)="removeTip(i)">
+                <i class="bx bx-x"></i>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ACTION BUTTONS -->
         <div class="modal-actions">
-          <button type="submit" [disabled]="incidentForm.invalid">
+          <button
+            type="submit"
+            [disabled]="incidentForm.invalid"
+            class="save-btn"
+          >
             {{ newIncident.id ? "Update" : "Save" }}
           </button>
-          <button type="button" (click)="closeIncidentModal()">Cancel</button>
+          <button
+            type="button"
+            class="cancel-btn"
+            (click)="closeIncidentModal()"
+          >
+            Cancel
+          </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Add Barangay Modal -->
+  <!-- =================== ADD BARANGAY MODAL =================== -->
   <div class="modal" [class.show]="showAddModal">
-    <div class="modal-content">
-      <h2>Add Barangay</h2>
-      <form (ngSubmit)="submitBarangay()" #barangayForm="ngForm">
-        <label>Barangay Name</label>
-        <input
-          type="text"
-          required
-          [(ngModel)]="newBarangay.baranggay"
-          name="baranggay"
-        />
+    <div class="modal-content barangay-modal">
+      <h2>{{ editingBarangayId ? "Edit Barangay" : "Add Barangay" }}</h2>
 
-        <label>Captain Name</label>
-        <input
-          type="text"
-          required
-          [(ngModel)]="newBarangay.captain_name"
-          name="captain_name"
-        />
+      <form
+        (ngSubmit)="submitBarangay()"
+        #barangayForm="ngForm"
+        class="barangay-flex"
+      >
+        <!-- LEFT SIDE -->
+        <div class="barangay-left">
+          <label>Barangay Name</label>
+          <input
+            type="text"
+            required
+            [(ngModel)]="newBarangay.baranggay"
+            name="baranggay"
+          />
 
-        <label>Contact</label>
-        <input
-          type="text"
-          required
-          [(ngModel)]="newBarangay.barangay_contact"
-          name="contact"
-        />
+          <label>Captain Name</label>
+          <input
+            type="text"
+            required
+            [(ngModel)]="newBarangay.captain_name"
+            name="captain_name"
+          />
 
-        <label>Image URL</label>
-        <input
-          type="text"
-          [(ngModel)]="newBarangay.baranggay_img"
-          name="image"
-        />
+          <label>Contact</label>
+          <input
+            type="text"
+            required
+            [(ngModel)]="newBarangay.barangay_contact"
+            name="contact"
+          />
 
-        <div id="map" style="height: 300px; margin: 10px 0"></div>
+          <label>Barangay Image</label>
+          <div class="upload-section">
+            <input
+              type="file"
+              accept="image/*"
+              (change)="onFileSelected($event)"
+            />
+            <div *ngIf="imagePreview" class="image-preview">
+              <img [src]="imagePreview" alt="Preview" />
+            </div>
+          </div>
+        </div>
 
-        <p>Latitude: {{ newBarangay.latitude }}</p>
-        <p>Longitude: {{ newBarangay.longitude }}</p>
+        <!-- RIGHT SIDE -->
+        <div class="barangay-right">
+          <p>Pin Barangay Location</p>
+          <div id="map" class="map"></div>
 
-        <button type="submit">Save</button>
-        <button type="button" (click)="closeModal()">Cancel</button>
+          <div class="coords">
+            <p>Latitude: {{ newBarangay.latitude }}</p>
+            <p>Longitude: {{ newBarangay.longitude }}</p>
+          </div>
+        </div>
       </form>
+
+      <div class="modal-actions">
+        <button
+          type="submit"
+          form="barangayForm"
+          [disabled]="barangayForm.invalid"
+        >
+          {{ editingBarangayId ? "Update" : "Save" }}
+        </button>
+        <button type="button" (click)="closeModal()">Cancel</button>
+      </div>
     </div>
   </div>
 
-  <!-- Loading Modal -->
+  <!-- =================== LOADING MODAL =================== -->
   <div class="loading-modal-backdrop" *ngIf="isSubmitting">
     <div class="loading-modal-content">
       <div class="spinner"></div>
@@ -262,7 +321,7 @@
     </div>
   </div>
 
-  <!-- Mobile Message -->
+  <!-- =================== MOBILE MESSAGE =================== -->
   <div class="mobile-message">
     <div class="mobile-content-message">
       <img src="../../../assets/formobile.gif" alt="" />

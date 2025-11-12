@@ -29,9 +29,9 @@ export class Statistic implements OnInit, AfterViewInit, OnDestroy {
     { label: 'Total Requests', value: 0 },
     { label: 'Pending', value: 0 },
   ];
+
   incidentLocation = '';
   recommendations: string[] = [];
-
   @ViewChild('eventChartCanvas')
   eventChartCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('streetChartCanvas')
@@ -44,7 +44,7 @@ export class Statistic implements OnInit, AfterViewInit, OnDestroy {
   eventChart?: Chart;
   streetChart?: Chart;
   map?: L.Map;
-  heatLayer?: any;
+  markerLayer?: L.LayerGroup;
 
   constructor(
     private requestService: EmergencyRequestService,
@@ -76,17 +76,15 @@ export class Statistic implements OnInit, AfterViewInit, OnDestroy {
           this.updateStats();
           this.generateRecommendations();
 
-          // Debounce updates for performance
           clearTimeout(this.updateTimeout);
           this.updateTimeout = setTimeout(() => {
-            this.updateMapMarkers();
-            this.updateCharts();
-          }, 500);
+            this.updateCustomMarkers();
+            this.updateChartsFast();
+          }, 300);
         });
       });
   }
 
-  /** ✅ Fast stats computation */
   updateStats(): void {
     const total = this.requests.length;
     const pending = this.requests.filter((r) => r.status === 'Pending').length;
@@ -96,26 +94,15 @@ export class Statistic implements OnInit, AfterViewInit, OnDestroy {
     ];
   }
 
-  /** ✅ Unified chart update */
-  async updateCharts(): Promise<void> {
+  /** ⚡ Faster chart update (no waiting for API) */
+  async updateChartsFast(): Promise<void> {
     const eventCounts: Record<string, number> = {};
     const streetCounts: Record<string, number> = {};
 
-    const tasks = this.requests.map(async (r) => {
+    // Quick event chart (no delay)
+    this.requests.forEach((r) => {
       eventCounts[r.event] = (eventCounts[r.event] || 0) + 1;
-      if (r.latitude && r.longitude) {
-        const key = `${r.latitude},${r.longitude}`;
-        let street = this.streetCache[key];
-        if (!street) {
-          street = await this.reverseGeocode(r.latitude, r.longitude);
-          this.streetCache[key] = street;
-        }
-        streetCounts[street] = (streetCounts[street] || 0) + 1;
-      }
     });
-
-    await Promise.all(tasks);
-
     this.renderChart(
       this.eventChartCanvas,
       'pie',
@@ -124,6 +111,22 @@ export class Statistic implements OnInit, AfterViewInit, OnDestroy {
       (chart) => (this.eventChart = chart)
     );
 
+    // Start async background street processing
+    const tasks = this.requests.map(async (r) => {
+      if (r.latitude && r.longitude) {
+        const key = `${r.latitude},${r.longitude}`;
+        if (!this.streetCache[key]) {
+          this.streetCache[key] = await this.reverseGeocode(
+            r.latitude,
+            r.longitude
+          );
+        }
+        const street = this.streetCache[key];
+        streetCounts[street] = (streetCounts[street] || 0) + 1;
+      }
+    });
+
+    // ⚡ Don't wait — update immediately with placeholders
     this.renderChart(
       this.streetChartCanvas,
       'bar',
@@ -132,9 +135,20 @@ export class Statistic implements OnInit, AfterViewInit, OnDestroy {
       (chart) => (this.streetChart = chart),
       true
     );
+
+    // ✅ When reverse geocoding finishes, refresh only once
+    Promise.allSettled(tasks).then(() => {
+      this.renderChart(
+        this.streetChartCanvas,
+        'bar',
+        streetCounts,
+        this.streetChart,
+        (chart) => (this.streetChart = chart),
+        true
+      );
+    });
   }
 
-  /** ✅ Fixed chart rendering (no infinite growth) */
   renderChart(
     canvasRef: ElementRef<HTMLCanvasElement>,
     type: 'pie' | 'bar',
@@ -147,10 +161,7 @@ export class Statistic implements OnInit, AfterViewInit, OnDestroy {
     const data = Object.values(dataMap);
     if (!canvasRef?.nativeElement) return;
 
-    // 🔥 Always destroy old chart first to prevent growth
-    if (existingChart) {
-      existingChart.destroy();
-    }
+    if (existingChart) existingChart.destroy();
 
     const newChart = new Chart(canvasRef.nativeElement, {
       type,
@@ -160,7 +171,6 @@ export class Statistic implements OnInit, AfterViewInit, OnDestroy {
           {
             label: 'Count',
             data,
-
             backgroundColor:
               type === 'pie'
                 ? ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f1c40f']
@@ -174,13 +184,14 @@ export class Statistic implements OnInit, AfterViewInit, OnDestroy {
         maintainAspectRatio: false,
         plugins: { legend: { display: type === 'pie' } },
         scales: { x: { beginAtZero: true } },
+        animation: { duration: 300 }, // smoother, faster
       },
     });
 
     setChart(newChart);
   }
 
-  /** ✅ Cached reverse geocode */
+  /** ✅ Cached reverse geocode with fail-safe */
   async reverseGeocode(lat: number, lon: number): Promise<string> {
     const key = `${lat},${lon}`;
     if (this.streetCache[key]) return this.streetCache[key];
@@ -200,35 +211,49 @@ export class Statistic implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /** ✅ Initialize map and heat layer */
+  /** ✅ Map + glowing markers */
   initMap(): void {
     this.map = L.map('map').setView([12.3609, 121.0675], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
     }).addTo(this.map);
-
-    this.heatLayer = (L as any)
-      .heatLayer([], {
-        radius: 25,
-        blur: 15,
-        maxZoom: 17,
-        gradient: { 0.1: 'blue', 0.3: 'lime', 0.6: 'orange', 1.0: 'red' },
-      })
-      .addTo(this.map);
+    this.markerLayer = L.layerGroup().addTo(this.map);
   }
 
-  /** ✅ Smooth heat map update */
-  updateMapMarkers(): void {
-    if (!this.map || !this.heatLayer) return;
+  updateCustomMarkers(): void {
+    if (!this.map || !this.markerLayer) return;
+    this.markerLayer.clearLayers();
 
-    const heatPoints: [number, number, number][] = this.requests
+    this.requests
       .filter((r) => r.latitude && r.longitude)
-      .map((r) => [r.latitude!, r.longitude!, 0.5]);
+      .forEach((r) => {
+        const color =
+          r.event === 'Heart attack'
+            ? 'red'
+            : r.event === 'Vehicular'
+            ? 'blue'
+            : r.event === 'Flood'
+            ? 'aqua'
+            : r.event === 'Crime'
+            ? 'purple'
+            : 'orange';
 
-    this.heatLayer.setLatLngs(heatPoints);
+        const icon = L.divIcon({
+          className: 'custom-pulse-marker',
+          html: `<div class="pulse" style="background:${color}"></div>`,
+          iconSize: [20, 20],
+        });
+
+        L.marker([r.latitude!, r.longitude!], { icon })
+          .bindPopup(
+            `<b>${r.event}</b><br>Status: ${r.status}<br>${r.latitude.toFixed(
+              3
+            )}, ${r.longitude.toFixed(3)}`
+          )
+          .addTo(this.markerLayer!);
+      });
   }
 
-  /** ✅ Smart recommendations */
   generateRecommendations(): void {
     const pending = this.requests.filter((r) => r.status === 'Pending').length;
     const completed = this.requests.filter(

@@ -25,18 +25,22 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
   activeTab: string = 'barangay';
 
-  // Modals and states
+  // Modal and states
   showAddModal = false;
   showAddIncidentModal = false;
   isSubmitting = false;
   editingBarangayId: string | null = null;
 
-  // Barangay data
+  // Barangay
   allBaranggay: Barangay[] = [];
   newBarangay: Barangay = this.getEmptyBarangay();
   map: L.Map | null = null;
 
-  // Incident data
+  // For file upload
+  imageFile: File | null = null;
+  imagePreview: string | null = null;
+
+  // Incident
   allIncidents: Incident[] = [];
   newIncident: Incident = { id: '', name: '', icon: '', tips: [], types: [] };
   newTip = '';
@@ -48,6 +52,48 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private incidentSub?: Subscription;
 
+  defaultIcons = [
+    // 🚗 VEHICLE / ROAD
+    { name: 'Vehicle Accident', class: 'bx bxs-car-crash' },
+    { name: 'Hit and Run', class: 'bx bx-walk' },
+    { name: 'Road Obstruction', class: 'bx bx-traffic-cone' },
+
+    // 🔥 FIRE / HAZARD
+    { name: 'Fire Incident', class: 'bx bxs-fire' },
+    { name: 'Gas Leak', class: 'bx bx-gas-pump' },
+    { name: 'Explosion', class: 'bx bx-bomb' },
+
+    // 💧 NATURAL DISASTER
+    { name: 'Flooding', class: 'bx bxs-droplet' },
+    { name: 'Earthquake', class: 'bx bxs-building-house' },
+    { name: 'Landslide', class: 'bx bxs-landscape' },
+    { name: 'Typhoon', class: 'bx bx-wind' },
+
+    // 🏥 MEDICAL
+    { name: 'Heart Attack', class: 'bx bx-heart-circle' },
+    { name: 'Stroke', class: 'bx bx-brain' },
+    { name: 'Severe Injury', class: 'bx bxs-band-aid' },
+    { name: 'Unconscious Person', class: 'bx bx-user-voice' },
+    { name: 'Pregnancy Emergency', class: 'bx bx-female' },
+
+    // ⚖️ CRIME / SAFETY
+    { name: 'Robbery', class: 'bx bxs-bank' },
+    { name: 'Assault', class: 'bx bx-user-x' },
+    { name: 'Domestic Violence', class: 'bx bx-home-heart' },
+    { name: 'Missing Person', class: 'bx bx-search-alt-2' },
+    { name: 'Vandalism', class: 'bx bx-paint-roll' },
+
+    // ⚡ OTHER EMERGENCIES
+    { name: 'Power Outage', class: 'bx bx-bolt' },
+    { name: 'Animal Attack', class: 'bx bx-dog' },
+    { name: 'Collapsed Structure', class: 'bx bx-building-house' },
+    { name: 'Chemical Spill', class: 'bx bx-test-tube' },
+    { name: 'Explosion Threat', class: 'bx bx-error' },
+  ];
+
+  selectIcon(iconClass: string) {
+    this.newIncident.icon = iconClass;
+  }
   constructor(
     private barangayService: BarangayService,
     private incidentService: IncidentService,
@@ -57,9 +103,7 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnInit(): void {
     this.fetchBarangays();
     this.incidentSub = this.incidentService.getAll().subscribe({
-      next: (incidents) => {
-        this.allIncidents = incidents;
-      },
+      next: (incidents) => (this.allIncidents = incidents),
       error: (err) => console.error('Error fetching incidents:', err),
     });
   }
@@ -77,7 +121,7 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
     this.incidentSub?.unsubscribe();
   }
 
-  // ===== TAB SWITCHING =====
+  // ============ TAB SWITCHING ============
   setTab(tabName: string): void {
     this.activeTab = tabName;
 
@@ -101,7 +145,7 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
-  // ===== BARANGAY LOGIC =====
+  // ============ BARANGAY LOGIC ============
   async fetchBarangays() {
     try {
       this.allBaranggay = await this.barangayService.getAll();
@@ -110,7 +154,9 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
       this.snackBar.open(
         'Failed to fetch barangays. Please try again.',
         'Close',
-        { duration: 3000 }
+        {
+          duration: 3000,
+        }
       );
     }
   }
@@ -120,16 +166,17 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
 
     if (barangayToEdit) {
       this.newBarangay = { ...barangayToEdit };
+      this.imagePreview = this.newBarangay.baranggay_img || null;
       this.editingBarangayId = barangayToEdit.id ?? null;
     } else {
       this.newBarangay = this.getEmptyBarangay();
+      this.imageFile = null;
+      this.imagePreview = null;
       this.editingBarangayId = null;
     }
 
     setTimeout(() => {
-      if (this.map) {
-        this.map.remove();
-      }
+      if (this.map) this.map.remove();
       this.initModalMap();
     }, 300);
   }
@@ -137,6 +184,8 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
   closeModal() {
     this.showAddModal = false;
     this.newBarangay = this.getEmptyBarangay();
+    this.imageFile = null;
+    this.imagePreview = null;
     this.editingBarangayId = null;
     if (this.map) {
       this.map.remove();
@@ -156,6 +205,21 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
       address: '',
       createdAt: new Date(),
     };
+  }
+
+  // ============ FILE UPLOAD HANDLER ============
+  onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.imageFile = file;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.imagePreview = reader.result as string;
+        this.newBarangay.baranggay_img = this.imagePreview!;
+      };
+      reader.readAsDataURL(file);
+    }
   }
 
   initModalMap() {
@@ -201,7 +265,6 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
       .addTo(this.map);
 
     (mapContainer as any)._leaflet_map = this.map;
-
     setTimeout(() => this.map?.invalidateSize(), 300);
   }
 
@@ -233,7 +296,6 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
             duration: 3000,
           });
         }
-
         await this.fetchBarangays();
         this.closeModal();
       } catch (error) {
@@ -241,7 +303,9 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
         this.snackBar.open(
           'Failed to submit barangay. Please try again.',
           'Close',
-          { duration: 3000 }
+          {
+            duration: 3000,
+          }
         );
       } finally {
         this.isSubmitting = false;
@@ -264,11 +328,9 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
         });
       } catch (error) {
         console.error('Error deleting barangay:', error);
-        this.snackBar.open(
-          'Failed to delete barangay. Please try again.',
-          'Close',
-          { duration: 3000 }
-        );
+        this.snackBar.open('Failed to delete barangay.', 'Close', {
+          duration: 3000,
+        });
       } finally {
         this.isSubmitting = false;
       }
@@ -316,8 +378,7 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   reverseGeocode(barangay: Barangay) {
-    if (barangay.latitude === undefined || barangay.longitude === undefined)
-      return;
+    if (!barangay.latitude || !barangay.longitude) return;
 
     const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${barangay.latitude}&lon=${barangay.longitude}`;
     fetch(url)
@@ -328,7 +389,7 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
       .catch((err) => console.error('Geocoding error:', err));
   }
 
-  // ===== INCIDENT LOGIC =====
+  // ============ INCIDENT LOGIC ============
   openIncidentModal() {
     this.showAddIncidentModal = true;
   }
@@ -389,7 +450,9 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
         this.snackBar.open(
           'Failed to submit incident. Please try again.',
           'Close',
-          { duration: 3000 }
+          {
+            duration: 3000,
+          }
         );
       } finally {
         this.isSubmitting = false;
@@ -430,11 +493,9 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
         });
         this.openIncidentDropdownIndex = null;
       } catch (error) {
-        this.snackBar.open(
-          'Failed to delete incident. Please try again.',
-          'Close',
-          { duration: 3000 }
-        );
+        this.snackBar.open('Failed to delete incident.', 'Close', {
+          duration: 3000,
+        });
       } finally {
         this.isSubmitting = false;
       }

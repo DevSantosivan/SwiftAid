@@ -66,3 +66,38 @@
   margin-right: 10px;
   font-size: 18px;
 }
+/* Custom static red marker */
+.custom-red-marker .dot {
+  width: 18px;
+  height: 18px;
+  background: red;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 5px rgba(255, 0, 0, 0.8);
+}
+::ng-deep .custom-pulse-marker .pulse {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  position: relative;
+  animation: pulse 1.5s infinite;
+  box-shadow: 0 0 0 rgba(255, 0, 0, 0.5);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.5);
+  }
+  70% {
+    transform: scale(1.4);
+    opacity: 0.6;
+    box-shadow: 0 0 0 20px rgba(255, 0, 0, 0);
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+  }
+}

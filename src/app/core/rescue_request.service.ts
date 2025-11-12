@@ -12,6 +12,7 @@ import {
   DocumentSnapshot,
   arrayUnion,
   deleteDoc,
+  orderBy,
 } from '@angular/fire/firestore';
 import { EmergencyRequest } from '../model/emergency';
 import { Notification } from '../model/notification'; // <-- Import notification interface
@@ -62,7 +63,11 @@ export class EmergencyRequestService {
   getRespondingRequestsLive(): Observable<EmergencyRequest[]> {
     return new Observable((subscriber) => {
       const ref = collection(this.firestore, this.collectionName);
-      const q = query(ref, where('status', '==', 'Responding'));
+      const q = query(
+        ref,
+        where('status', '==', 'Responding'),
+        orderBy('staffUpdatedAt', 'desc')
+      );
 
       const unsubscribe = onSnapshot(
         q,
@@ -221,7 +226,9 @@ export class EmergencyRequestService {
   getRequestRealtime(): Observable<EmergencyRequest[]> {
     return new Observable((subscriber) => {
       const ref = collection(this.firestore, this.collectionName);
-      const q = query(ref);
+
+      // ✅ Order by timestamp (latest first)
+      const q = query(ref, orderBy('timestamp', 'asc'));
 
       const unsubscribe = onSnapshot(
         q,
@@ -231,13 +238,12 @@ export class EmergencyRequestService {
               id: doc.id,
               ...doc.data(),
             })) as EmergencyRequest[];
+
             subscriber.next(list);
           });
         },
         (error) => {
-          this.ngZone.run(() => {
-            subscriber.error(error);
-          });
+          this.ngZone.run(() => subscriber.error(error));
         }
       );
 
