@@ -13,8 +13,6 @@ import { EmergencyRequest } from '../../model/emergency';
 import { Subscription } from 'rxjs';
 import { Chart, registerables } from 'chart.js';
 import * as L from 'leaflet';
-import 'leaflet.heat';
-import 'leaflet/dist/leaflet.css';
 
 Chart.register(...registerables);
 
