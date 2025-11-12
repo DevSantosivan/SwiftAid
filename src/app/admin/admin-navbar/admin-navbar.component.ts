@@ -13,7 +13,7 @@ import { NavigationService } from '../../core/navigation.service';
 
 @Component({
   selector: 'app-admin-navbar',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   templateUrl: './admin-navbar.component.html',
   styleUrls: ['./admin-navbar.component.scss'],
 })
