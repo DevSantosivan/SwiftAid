@@ -90,7 +90,6 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
     { name: 'Chemical Spill', class: 'bx bx-test-tube' },
     { name: 'Explosion Threat', class: 'bx bx-error' },
   ];
-
   selectIcon(iconClass: string) {
     this.newIncident.icon = iconClass;
   }

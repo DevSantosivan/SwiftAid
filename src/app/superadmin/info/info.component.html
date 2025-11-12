@@ -272,7 +272,7 @@
             type="text"
             required
             [(ngModel)]="newBarangay.barangay_contact"
-            name="contact"
+            name="barangay_contact"
           />
 
           <label>Barangay Image</label>
@@ -297,19 +297,16 @@
             <p>Latitude: {{ newBarangay.latitude }}</p>
             <p>Longitude: {{ newBarangay.longitude }}</p>
           </div>
+          <div class="modal-actions">
+            <button type="submit" [disabled]="barangayForm.invalid">
+              {{ editingBarangayId ? "Update" : "Save" }}
+            </button>
+            <button type="button" (click)="closeModal()">Cancel</button>
+          </div>
         </div>
-      </form>
 
-      <div class="modal-actions">
-        <button
-          type="submit"
-          form="barangayForm"
-          [disabled]="barangayForm.invalid"
-        >
-          {{ editingBarangayId ? "Update" : "Save" }}
-        </button>
-        <button type="button" (click)="closeModal()">Cancel</button>
-      </div>
+        <!-- ACTION BUTTONS MOVED INSIDE FORM -->
+      </form>
     </div>
   </div>
 
