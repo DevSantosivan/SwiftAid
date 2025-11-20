@@ -204,47 +204,4 @@ export class ViewRequestDetails implements AfterViewInit, OnDestroy {
       this.router.navigate(['/superAdmin/EmergencyRequest']);
     }
   }
-
-  navigateToNone() {
-    this.submitSuccessAccept = false;
-  }
-
-  async acceptRequest(request: EmergencyRequest) {
-    if (!this.currentStaff || !this.staffLocation) {
-      alert('Staff or location not available.');
-      return;
-    }
-
-    this.isSubmitting = true;
-    this.submitSuccessAccept = false;
-
-    try {
-      const latLng = L.latLng(this.staffLocation);
-
-      await this.requestService.updateRequestWithStaffInfo(
-        request.id!,
-        {
-          uid: this.currentStaff.uid,
-          first_name: this.currentStaff.first_name,
-          last_name: this.currentStaff.last_name,
-          email: this.currentStaff.email,
-          lat: latLng.lat,
-          lng: latLng.lng,
-        },
-        true
-      );
-
-      const updated = await this.requestService.getRequestById(request.id!);
-      if (updated) {
-        this.request = updated;
-      }
-
-      this.submitSuccessAccept = true;
-    } catch {
-      alert('Failed to accept request.');
-      this.submitSuccessAccept = false;
-    } finally {
-      this.isSubmitting = false;
-    }
-  }
 }

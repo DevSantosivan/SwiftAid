@@ -9,6 +9,9 @@ import { DeveloperAccessGuard } from '../guards/developer-access-guard';
 import { Contact } from './contact/contact';
 import { FQAs } from './fqas/fqas';
 import { AboutDeveloper } from './about-developer/about-developer';
+import { ForgotPassword } from './forgot-password/forgot-password';
+import { ForgotPasswordCode } from './forgot-password-code/forgot-password-code';
+import { NewPassword } from './new-password/new-password';
 
 export const PublicRoutes: Routes = [
   {
@@ -52,5 +55,19 @@ export const PublicRoutes: Routes = [
   {
     path: 'services',
     component: ServicesComponent,
+  },
+
+  // ⭐ Added Forgot Password Pages
+  {
+    path: 'forgot-password',
+    component: ForgotPassword,
+  },
+  {
+    path: 'forgot-password/code',
+    component: ForgotPasswordCode,
+  },
+  {
+    path: 'forgot-password/new',
+    component: NewPassword,
   },
 ];

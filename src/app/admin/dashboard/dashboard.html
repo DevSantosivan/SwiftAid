@@ -19,6 +19,7 @@
           ></i>
         </div>
         <p>{{ userCount }}</p>
+        <small>Total of all Accounts</small>
       </div>
 
       <div class="box">
@@ -27,6 +28,7 @@
           <i style="font-size: 30px; color: red" class="bx bxs-ambulance"></i>
         </div>
         <p>{{ totalresolveRequest }}</p>
+        <small>All Resident Requests</small>
       </div>
 
       <div class="box">
@@ -35,6 +37,7 @@
           <i style="font-size: 30px; color: red" class="bx bx-time-five"></i>
         </div>
         <p>{{ totalPendingRequests }}</p>
+        <small>Total Pending Request</small>
       </div>
 
       <div class="box">
@@ -46,6 +49,7 @@
           ></i>
         </div>
         <p>{{ totalRequestRescueCount }}</p>
+        <small>Emergency Request Resolved</small>
       </div>
     </div>
     <!-- END Stats Boxes -->
@@ -102,11 +106,9 @@
         <h3>Print</h3>
       </div>
       -->
-
       <div class="post-details-alert">
         <i class="bx bx-alert-shield"></i>
       </div>
-
       <div class="pie-content">
         <h3>Recent Requests</h3>
         <p>Recent</p>
@@ -118,7 +120,8 @@
               <div class="profile">
                 <div class="img">
                   <img
-                    [src]="request.image || '../../../assets/profile-default.jpg'"
+                    [src]=" request.profilePicture ||
+                    '../../../assets/profile-deafault.jpg'"
                     alt="Profile"
                   />
                 </div>

@@ -27,7 +27,8 @@ Chart.register(...registerables);
 export class HistoryCallComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('requestStatusBarChart')
   requestStatusBarChart!: ElementRef<HTMLCanvasElement>;
-
+  defaultAvatar =
+    'https://i.pinimg.com/736x/32/e4/61/32e46132a367eb48bb0c9e5d5b659c88.jpg';
   activeTab: 'all' | 'resolved' | 'cancelled' = 'all';
 
   allRequests: EmergencyRequest[] = [];

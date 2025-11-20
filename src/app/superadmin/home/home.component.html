@@ -38,8 +38,8 @@
     </div>
 
     <div class="header">
-      <h3 class="flex-logo" *ngIf="!isCollapsed">
-        <img src="assets/logo-switfaid.png" alt="" class="logo" />SwiftAid
+      <h3 (click)="navigateTopublic()" class="flex-logo" *ngIf="!isCollapsed">
+        <img src="assets/logo-switfaid.png" alt="" class="logo" /> SwiftAid
       </h3>
       <h3 class="icon-logo" *ngIf="isCollapsed">
         <img src="assets/logo-switfaid.png" alt="" class="logo" />
@@ -56,6 +56,7 @@
           <i class="bx bxs-dashboard"></i>
           <span *ngIf="!isCollapsed">Dashboard</span>
         </li>
+        <li class="tittle">OPERATIONS</li>
         <li
           [routerLink]="'EmergencyRequest'"
           routerLinkActive="active"
@@ -71,6 +72,7 @@
             {{ unreadPendingRequestCount }}
           </span>
         </li>
+
         <li
           [routerLink]="'LiveTracking'"
           routerLinkActive="active"
@@ -86,7 +88,7 @@
             {{ unreadRespondingRequestCount }}
           </span>
         </li>
-
+        <li class="tittle">Incident Report</li>
         <li
           [routerLink]="'IncidentHistory'"
           routerLinkActive="active"
@@ -104,7 +106,7 @@
           <i class="bx bx-bar-chart-square"></i>
           <span *ngIf="!isCollapsed">Statistic</span>
         </li>
-
+        <li class="tittle">Account Management</li>
         <li
           [routerLink]="['Team']"
           routerLinkActive="active"
@@ -137,7 +139,7 @@
             {{ pendingAccountCount }}
           </span>
         </li>
-
+        <li class="tittle">System Config</li>
         <li
           [routerLink]="'Feedback'"
           routerLinkActive="active"

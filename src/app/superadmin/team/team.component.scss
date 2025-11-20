@@ -1,6 +1,7 @@
 .content_1 {
   width: 100%;
 }
+// Modal Overlay
 .isProfilemodal {
   position: fixed;
   top: 0;
@@ -9,36 +10,149 @@
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
-  justify-content: center;
-  align-items: center;
+  justify-content: right; // CENTER horizontally
+  align-items: center; // CENTER vertically
   z-index: 99999;
-  animation: fadeIn 0.3s ease forwards;
+
+  .modal-content {
+    width: 750px;
+    height: 100%; // FULL HEIGHT
+    max-height: 95vh; // para safe at may konting spacing
+    background: #fff;
+    border-top-left-radius: 18px;
+    border-bottom-left-radius: 18px;
+
+    /* Right side straight */
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+
+    padding: 25px 30px;
+    overflow-y: auto; // scroll inside only
+
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+
+    // Header (Title + Close Button)
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+
+      h2 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+      }
+
+      .close {
+        font-size: 28px;
+        cursor: pointer;
+        color: #333;
+        transition: 0.2s;
+
+        &:hover {
+          color: #ff5252;
+        }
+      }
+    }
+
+    // Section Titles
+    h3 {
+      margin-top: 20px;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    // Image preview (valid ID)
+    .uploaded-image {
+      width: 100%;
+      height: auto;
+
+      img {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+      }
+    }
+
+    // Row for avatar + basic info
+    .profile-top {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+
+      img {
+        width: 65px;
+        height: 65px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .details {
+        display: flex;
+        flex-direction: column;
+
+        .role {
+          font-weight: 600;
+          margin-top: 4px;
+        }
+
+        .status {
+          color: green;
+          font-size: 14px;
+        }
+      }
+    }
+
+    // Contact info section
+    .info-section {
+      margin-top: 15px;
+
+      p {
+        margin: 4px 0;
+
+        strong {
+          font-weight: 600;
+        }
+      }
+    }
+
+    // Block Account Button
+    .block-btn {
+      margin-top: 10px;
+      align-self: flex-end;
+
+      button {
+        padding: 8px 12px;
+        background: #ff3b30;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+
+        &:hover {
+          background: #e62820;
+        }
+      }
+    }
+  }
+
+  // Slide-in animation (right side)
+  @keyframes slideIn {
+    from {
+      transform: translateX(50px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
 }
 
-.modal-content.view-member-modal {
-  background: #fff;
-  padding: 30px;
-
-  max-width: 750px;
-  width: 90%;
-  height: 60%;
-  position: relative;
-  transform: translateY(-30px);
-  animation: slideUp 0.3s ease-out forwards;
-}
-
-.modal-content .close {
-  position: absolute;
-  top: 16px;
-  right: 20px;
-  font-size: 24px;
-  cursor: pointer;
-  color: #888;
-  transition: color 0.2s ease;
-}
-.modal-content .close:hover {
-  color: #e74c3c;
-}
 .status-dot {
   display: inline-block;
   width: 10px;
@@ -340,78 +454,6 @@
   color: #666;
 }
 
-.modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  padding: 2rem;
-  z-index: 1000;
-  width: 90%;
-  max-width: 400px;
-
-  h2 {
-    margin-top: 0;
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-  }
-
-  label {
-    display: block;
-    margin: 0.5rem 0 0.25rem;
-    font-weight: 600;
-  }
-
-  input {
-    width: 100%;
-    padding: 0.5rem;
-    margin-bottom: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 1rem;
-  }
-
-  button {
-    margin-right: 0.5rem;
-    padding: 0.5rem 1rem;
-    font-size: 0.95rem;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-
-    &:first-of-type {
-      background-color: #007bff;
-      color: white;
-    }
-
-    &:nth-of-type(2) {
-      background-color: #6c757d;
-      color: white;
-    }
-
-    &:hover {
-      opacity: 0.9;
-    }
-  }
-}
-
-/* Optional: Modal backdrop */
-::ng-deep .modal-backdrop {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-}
-
-/* From Uiverse.io by milley69 */
-
 .loading {
   width: 100%;
   height: 50vh;
@@ -522,4 +564,14 @@
   border: 1px solid #333;
   background-color: #fff;
   color: #333;
+}
+
+.close {
+  font-size: 38px;
+  cursor: pointer;
+  color: #333;
+  transition: 0.2s;
+}
+.close:hover {
+  color: #ff5252;
 }

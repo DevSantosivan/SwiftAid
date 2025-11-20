@@ -1,5 +1,6 @@
 <div class="navbar-container">
-  <div class="company-brand">
+  <!-- LEFT BRAND -->
+  <div class="left-section">
     <h3 class="flex-logo">
       <img
         src="assets/logo-switfaid.png"
@@ -7,31 +8,92 @@
         width="80"
         height="80"
         class="logo"
-      />Swift Aid
+      />
+      Swift Aid
     </h3>
-    <ul>
-      <li>
-        <a
-          routerLink="/home"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          >Home</a
-        >
-      </li>
-      <li><a routerLink="/about-us" routerLinkActive="active">About Us</a></li>
-      <li><a routerLink="/services" routerLinkActive="active">Services</a></li>
-      <li><a routerLink="/faqs" routerLinkActive="active">FAQs</a></li>
-      <li><a routerLink="/contact" routerLinkActive="active">Contact Us</a></li>
-      <li>
-        <a routerLink="/about-developer" routerLinkActive="active">Developer</a>
-      </li>
-    </ul>
   </div>
 
-  <div class="btn-container">
-    <button class="btn1" (click)="loader()">Login</button>
-    <button class="btn2" (click)="loader()">Sign Up</button>
+  <!-- CENTER DESKTOP MENU -->
+  <ul class="desktop-menu">
+    <li><a routerLink="/home" routerLinkActive="active">Home</a></li>
+    <li><a routerLink="/about-us" routerLinkActive="active">About Us</a></li>
+    <li><a routerLink="/services" routerLinkActive="active">Services</a></li>
+    <li><a routerLink="/faqs" routerLinkActive="active">FAQs</a></li>
+    <li><a routerLink="/contact" routerLinkActive="active">Contact Us</a></li>
+    <li>
+      <a routerLink="/about-developer" routerLinkActive="active">Developer</a>
+    </li>
+  </ul>
+
+  <!-- RIGHT SECTION -->
+  <div class="right-section">
+    <!-- SHOW LOGIN + SIGNUP IF NOT LOGGED IN -->
+    <div class="auth-buttons" *ngIf="!currentUser">
+      <button class="btn1" (click)="goToLogin()">Login</button>
+      <button class="btn2" (click)="goToSignUp()">Sign Up</button>
+    </div>
+
+    <!-- SHOW DASHBOARD BUTTON ONLY ON DESKTOP AND ONLY IF LOGGED IN -->
+    <button class="dashboard-btn" *ngIf="currentUser" (click)="goToDashboard()">
+      My Dashboard
+    </button>
+
+    <!-- Mobile Menu Button -->
+    <i class="bx bx-menu mobile-toggle" (click)="mobileMenuOpen = true"></i>
+
+    <!-- Profile Icon (ONLY WHEN LOGGED IN) -->
+    <div class="profile-img" *ngIf="currentUser" (click)="toggleProfile()">
+      <img
+        *ngIf="currentUser.profileImageUrl; else noPic"
+        [src]="currentUser.profileImageUrl"
+      />
+      <ng-template #noPic>
+        <img
+          src="https://i.pinimg.com/736x/32/e4/61/32e46132a367eb48bb0c9e5d5b659c88.jpg"
+        />
+      </ng-template>
+    </div>
   </div>
+</div>
+
+<!-- PROFILE DROPDOWN -->
+<div class="profile-dropdown" *ngIf="showProfileMenu">
+  <p class="name">{{ currentUser?.fullName }}</p>
+  <p class="email">{{ currentUser?.email }}</p>
+  <hr />
+  <p class="menu-item" (click)="goToDashboard()">
+    <i class="bx bxs-dashboard"></i> Dashboard
+  </p>
+  <p class="menu-item" (click)="logout()">
+    <i class="bx bx-log-out"></i> Logout
+  </p>
+</div>
+
+<!-- MOBILE SLIDE MENU -->
+<div class="mobile-menu" [class.open]="mobileMenuOpen">
+  <div class="mobile-header">
+    <i class="bx bx-x close-btn" (click)="mobileMenuOpen = false"></i>
+  </div>
+
+  <a routerLink="/home">Home</a>
+  <a routerLink="/about-us">About Us</a>
+  <a routerLink="/services">Services</a>
+  <a routerLink="/faqs">FAQs</a>
+  <a routerLink="/contact">Contact Us</a>
+  <a routerLink="/about-developer">Developer</a>
+
+  <hr />
+
+  <!-- Dashboard only inside hamburger (mobile only) -->
+  <ng-container *ngIf="currentUser; else guestBtns">
+    <a (click)="goToDashboard()">My Dashboard</a>
+    <a (click)="logout()">Logout</a>
+  </ng-container>
+
+  <ng-template #guestBtns>
+    <a (click)="goToLogin()">Login</a>
+    <a (click)="goToSignUp()">Sign Up</a>
+  </ng-template>
 </div>
 
 @if(isloader){

@@ -3,6 +3,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { UserService } from '../../core/user.service';
 import { account } from '../../model/users';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-account-verification',
@@ -17,18 +18,18 @@ export class AccountVerification {
   isLoading = false; // loading flag
   showSuccessModal = false;
   successMessage = '';
+  private realtimeSub!: Subscription;
 
   constructor(private router: Router, private userService: UserService) {
-    this.loadPendingAccounts();
+    this.listenPendingAccounts();
   }
 
-  async loadPendingAccounts() {
-    try {
-      this.pendingAccounts =
-        await this.userService.getPendingResidentAccounts();
-    } catch (error) {
-      console.error('Error loading pending residents', error);
-    }
+  listenPendingAccounts() {
+    this.realtimeSub = this.userService
+      .getPendingResidentAccountsRealtime()
+      .subscribe((data) => {
+        this.pendingAccounts = data;
+      });
   }
 
   viewDetails(id: string) {
@@ -41,7 +42,7 @@ export class AccountVerification {
     this.isLoading = true;
     try {
       await this.userService.updateUserStatus(accountId, 'approved');
-      await this.loadPendingAccounts();
+      await this.listenPendingAccounts();
       this.showSuccess('Account approved successfully.');
     } catch (error) {
       console.error('Approval error:', error);
@@ -57,7 +58,7 @@ export class AccountVerification {
     this.isLoading = true;
     try {
       await this.userService.updateUserStatus(accountId, 'rejected');
-      await this.loadPendingAccounts();
+      await this.listenPendingAccounts();
       this.showSuccess('Account rejected successfully.');
     } catch (error) {
       console.error('Rejection error:', error);

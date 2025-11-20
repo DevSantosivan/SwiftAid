@@ -1,5 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { Auth, signInWithEmailAndPassword, User } from '@angular/fire/auth';
+import {
+  Auth,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  User,
+} from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 import {
@@ -54,7 +59,14 @@ export class AuthService {
       }
     });
   }
-
+  async resetPassword(email: string): Promise<string | null> {
+    try {
+      await sendPasswordResetEmail(this.auth, email);
+      return null;
+    } catch (e: any) {
+      return e.message ?? 'Something went wrong.';
+    }
+  }
   async validateAccessKey(keyInput: string): Promise<boolean> {
     try {
       const accessKeyRef = collection(this.firestore, 'accessKeys');

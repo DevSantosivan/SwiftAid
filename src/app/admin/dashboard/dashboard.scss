@@ -37,38 +37,59 @@ p {
 
     .flex-box {
       width: 100%;
+      display: grid; /* Change from flex to grid */
+      grid-template-columns: repeat(
+        auto-fill,
+        minmax(300px, 1fr)
+      ); /* Automatically adjusts based on screen size */
+      gap: 20px; /* Adds spacing between the grid items */
+      padding: 10px 0%;
+    }
+
+    .box {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 10px 0;
+      flex-direction: column;
+      width: 100%; /* Ensures box takes full width of its grid cell */
+      height: 150px;
+      background-color: white;
+      border-radius: 8px;
+      border: 1px solid #cccccc8e;
 
-      .box {
-        flex: 1 1 220px;
-        height: 150px;
-        background-color: white;
+      /* Flex properties inside the box */
+      .flex {
+        justify-content: space-between;
         display: flex;
-        flex-direction: column;
-        border-radius: 8px;
-        border: 1px solid #cccccc8e;
-        padding: 8px;
-
-        .flex {
-          justify-content: space-between;
-          display: flex;
-          align-items: center;
-        }
-
-        h4 {
-          font-size: 13px;
-          font-weight: 500;
-        }
-
-        p {
-          font-size: 25px;
-          margin: 0;
-        }
+        align-items: center;
+        padding: 8px 10px;
+        width: 100%;
       }
+
+      /* Title styling */
+      h4 {
+        font-size: 12px;
+        margin-left: 15px;
+        font-weight: 600;
+      }
+
+      /* Value styling */
+      p {
+        font-size: 30px;
+        margin-left: 25px;
+        font-weight: 700;
+        color: #333;
+      }
+
+      small {
+        font-size: 11px;
+        margin-left: 25px;
+        margin-top: 8px;
+        font-weight: 500;
+        color: #2e2d2d;
+      }
+    }
+    .box:hover {
+      cursor: pointer;
+      box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
     }
 
     .chart-flex {

@@ -128,8 +128,8 @@
   <div class="modal-edit-overlay" *ngIf="accountToView && !accountToEdit">
     <div class="modal-card">
       <header class="modal-header">
+        <button class="close-btn close" (click)="closeView()">×</button>
         <h2 class="modal-title">Account Details</h2>
-        <button class="close-btn" (click)="closeView()">×</button>
       </header>
 
       <div class="modal-body">
@@ -211,8 +211,8 @@
   <div class="modal-edit-overlay" *ngIf="accountToEdit">
     <div class="modal-card">
       <header class="modal-header">
+        <button class="close-btn close" (click)="closeEdit()">×</button>
         <h2 class="modal-title">Edit Profile</h2>
-        <button class="close-btn" (click)="closeEdit()">×</button>
       </header>
 
       <div class="modal-body">

@@ -4,7 +4,7 @@
     <p>List of past emergency requests</p>
 
     <!-- Bulk Select + Search -->
-    <div class="bulk-select-dropdown">
+    <!-- <div class="bulk-select-dropdown">
       <input
         type="checkbox"
         [checked]="isAllSelected()"
@@ -20,7 +20,7 @@
           <button (click)="selectBy('resolved')">Completed</button>
         </div>
       </div>
-    </div>
+    </div> -->
 
     <div class="search-bar">
       <input
@@ -57,10 +57,7 @@
       >
         <div class="request-header">
           <div class="user-info">
-            <img
-              [src]="req.profilePicture || 'assets/profile-default.jpg'"
-              alt="User"
-            />
+            <img [src]="req.profilePicture || defaultAvatar" alt="User" />
             <div class="user-details">
               <h5>{{ req.name || "Unknown User" }}</h5>
               <p><i class="bx bxs-phone"></i> {{ req.contactNumber || "-" }}</p>

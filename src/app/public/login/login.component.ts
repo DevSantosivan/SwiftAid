@@ -64,7 +64,9 @@ export class LoginComponent implements OnInit {
   goBack() {
     this.router.navigate(['/home']);
   }
-
+  goForgotPassword() {
+    this.router.navigate(['/forgot-password']);
+  }
   // 🔐 LOGIN FUNCTION
   async logins(): Promise<void> {
     if (!this.loginForm.valid) {

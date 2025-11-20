@@ -18,7 +18,7 @@
 .orders-summary {
   display: flex;
   gap: 20px;
-  padding: 20px;
+  padding: 0px;
   font-family: Arial, sans-serif;
 }
 
@@ -279,6 +279,18 @@
   opacity: 0.5;
 }
 
+.close {
+  font-size: 38px;
+  cursor: pointer;
+  color: #333;
+  transition: 0.2s;
+  background-color: transparent;
+  border: none;
+}
+.close:hover {
+  color: #ff5252;
+}
+
 /* ======================
   VIEW MODAL
 ========================= */
@@ -315,13 +327,12 @@
 .modal-title {
   font-weight: 600;
   font-size: 1.25rem;
-  flex-grow: 1;
+
   margin: 0;
 }
 
 .close-btn,
 .back-btn {
-  font-size: 1.5rem;
   background: none;
   border: none;
   cursor: pointer;
@@ -829,8 +840,16 @@
     flex-direction: column;
     align-items: flex-start;
     min-width: 100%;
-    padding: 8px 6px;
+    padding: 10px 20px;
     margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  .account-row:hover {
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background-color: transparent;
   }
 
   .col-name,

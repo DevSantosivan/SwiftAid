@@ -74,19 +74,22 @@ p {
   left: 0;
   z-index: 1000;
   transition: width 0.3s ease;
-  overflow: hidden;
+  scroll-behavior: auto;
 }
 
 /* Sidebar Collapsed State */
 .container-admin .right-side-navbar.collapsed {
-  width: 70px;
+  width: 124px;
   padding: 20px 10px;
 }
 
 /* Sidebar Header */
 .right-side-navbar .header {
-  margin-bottom: 20px;
+  margin-bottom: 0px;
   padding: 0 10px;
+  position: relative;
+  top: -40px;
+  z-index: -1;
 }
 
 /* Hide text logo when collapsed */
@@ -108,7 +111,7 @@ p {
 
 /* Nav Links */
 .right-side-navbar .navlinks {
-  margin-top: 40px;
+  margin-top: 0px;
   width: 100%;
 }
 
@@ -128,7 +131,7 @@ p {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
   white-space: nowrap;
   transition: padding 0.3s ease;
 }
@@ -144,10 +147,14 @@ p {
 .container-admin .right-side-navbar.collapsed .navlinks ul li {
   padding-left: 15px;
   justify-content: center;
-  margin: 0px 10px;
+  margin: 0px 10px !important;
+}
+.container-admin .right-side-navbar.collapsed .navlinks .tittle {
+  font-size: 8px !important;
+  width: 100px;
 }
 .container-admin .right-side-navbar.collapsed .navlinks ul li i {
-  font-size: 30px;
+  font-size: 20px;
   margin: 10px 0px;
 }
 

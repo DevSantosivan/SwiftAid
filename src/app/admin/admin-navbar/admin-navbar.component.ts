@@ -1,7 +1,7 @@
 import { Component, OnInit, NgZone, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Auth } from '@angular/fire/auth';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, RouterModule } from '@angular/router';
 import { account } from '../../model/users';
 import { UserService } from '../../core/user.service';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
@@ -13,7 +13,7 @@ import { NavigationService } from '../../core/navigation.service';
 
 @Component({
   selector: 'app-admin-navbar',
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink, RouterModule],
   templateUrl: './admin-navbar.component.html',
   styleUrls: ['./admin-navbar.component.scss'],
 })

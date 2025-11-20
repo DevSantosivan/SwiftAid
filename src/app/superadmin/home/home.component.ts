@@ -68,6 +68,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   // Subscriptions for real-time listeners
   private respondingSub?: Subscription;
   private pendingSub?: Subscription;
+  private pendingAccountsSub?: Subscription;
 
   constructor(
     private authentication: Auth,
@@ -75,7 +76,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     private userService: UserService,
     private emergencyRequestService: EmergencyRequestService
   ) {}
-
+  navigateTopublic() {
+    this.router.navigate(['/']);
+  }
   ngOnInit() {
     this.checkScreenWidth();
 
@@ -85,7 +88,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.loadUnreadEmergencyRequestCount(),
       this.loadUserCount(),
       this.loadEmergencyRequestCount(),
-      this.loadPendingAccountCount(),
+      this.subscribeToPendingAccountCount(),
     ]).catch(console.error);
 
     // Setup real-time subscriptions for responding & pending requests
@@ -194,16 +197,19 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Load pending resident accounts count (one-time)
-  async loadPendingAccountCount() {
-    try {
-      const accounts = await this.userService.getPendingResidentAccounts();
-      this.pendingAccountCount = accounts.length;
-      this.hasPendingAccounts = accounts.length > 0;
-    } catch (error) {
-      this.pendingAccountCount = 0;
-      this.hasPendingAccounts = false;
-    }
+  subscribeToPendingAccountCount() {
+    this.pendingAccountsSub = this.userService
+      .getPendingResidentAccountsRealtime()
+      .subscribe({
+        next: (accounts) => {
+          this.pendingAccountCount = accounts.length;
+          this.hasPendingAccounts = accounts.length > 0;
+        },
+        error: () => {
+          this.pendingAccountCount = 0;
+          this.hasPendingAccounts = false;
+        },
+      });
   }
 
   // Load total emergency request count (one-time)

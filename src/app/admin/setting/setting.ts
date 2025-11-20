@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { account } from '../../model/users';
 import { UserService } from '../../core/user.service';
 import { NotificationService } from '../../core/notification.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-setting',
@@ -35,14 +36,15 @@ export class Setting implements OnInit {
     private afAuth: Auth,
     private router: Router,
     private authService: UserService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private snackBar: MatSnackBar
   ) {}
 
   async ngOnInit(): Promise<void> {
     try {
       const user = await this.afAuth.currentUser;
       if (!user) {
-        console.warn('No user is logged in.');
+        this.snackBar.open('No user logged in.', 'Close', { duration: 3000 });
         return;
       }
 
@@ -53,15 +55,17 @@ export class Setting implements OnInit {
         this.fullName = userData.fullName || '';
         this.contactNumber = userData.contactNumber || '';
         this.email = userData.email || '';
-        this.address = userData.address || '';
+
         this.office_id = userData.office_id || '';
         this.charge = userData.charge || '';
       }
 
-      // Load notification preferences from localStorage
       this.loadNotificationSettings();
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error('Error loading user:', error);
+      this.snackBar.open('Failed to load user data.', 'Close', {
+        duration: 3000,
+      });
     }
   }
 
@@ -75,13 +79,15 @@ export class Setting implements OnInit {
       const file = input.files[0];
 
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file.');
+        this.snackBar.open('Please select an image file.', 'Close', {
+          duration: 3000,
+        });
         return;
       }
 
       const reader = new FileReader();
       reader.onload = () => {
-        this.profilePicture = reader.result as string; // base64 image string
+        this.profilePicture = reader.result as string;
       };
       reader.readAsDataURL(file);
     }
@@ -103,11 +109,19 @@ export class Setting implements OnInit {
 
     try {
       await this.authService.updateUser(this.currentUser.id, updatedData);
-      alert('Profile updated successfully!');
-      this.password = ''; // clear password field after update
+
+      this.snackBar.open('Profile updated successfully!', 'Close', {
+        duration: 3000,
+        panelClass: ['snack-success'],
+      });
+
+      this.password = '';
     } catch (error) {
-      console.error('Error updating profile:', error);
-      alert('Failed to update profile.');
+      console.error('Error updating:', error);
+      this.snackBar.open('Failed to update profile.', 'Close', {
+        duration: 3000,
+        panelClass: ['snack-error'],
+      });
     }
   }
 
@@ -115,12 +129,14 @@ export class Setting implements OnInit {
     if (this.pushNotif) {
       const permission =
         await this.notificationService.requestNotificationPermission();
+
       if (permission !== 'granted') {
-        alert('Push notifications permission was denied or not granted.');
+        this.snackBar.open('Push notifications permission denied.', 'Close', {
+          duration: 3000,
+        });
         this.pushNotif = false;
       }
     } else {
-      // Optionally handle disabling push notifications here
       console.log('Push notifications disabled');
     }
   }
@@ -130,17 +146,14 @@ export class Setting implements OnInit {
   }
 
   saveNotificationSettings() {
-    // Save settings to localStorage
     localStorage.setItem('pushNotif', JSON.stringify(this.pushNotif));
     localStorage.setItem('soundAlert', JSON.stringify(this.soundAlert));
 
     this.notificationService.setSoundAlert(this.soundAlert);
 
-    alert(
-      `Notification Settings Saved:\n
-      Push Notifications: ${this.pushNotif ? 'Enabled' : 'Disabled'}\n
-      Sound Alerts: ${this.soundAlert ? 'Enabled' : 'Disabled'}`
-    );
+    this.snackBar.open(`Notification settings saved.`, 'Close', {
+      duration: 3000,
+    });
   }
 
   loadNotificationSettings() {
@@ -150,7 +163,6 @@ export class Setting implements OnInit {
     this.pushNotif = push === 'true';
     this.soundAlert = sound === 'true';
 
-    // Initialize notification service sound alert state
     this.notificationService.setSoundAlert(this.soundAlert);
   }
 }

@@ -10,10 +10,13 @@
       alt="Profile Picture"
       class="user-img"
     />
-    <i
-      *ngIf="!currentUser?.profileImageUrl"
-      class="bx bx-user-circle user-icon-large"
-    ></i>
+    <div class="profile">
+      <img
+        *ngIf="!currentUser?.profileImageUrl"
+        src="https://i.pinimg.com/736x/32/e4/61/32e46132a367eb48bb0c9e5d5b659c88.jpg"
+        alt=""
+      />
+    </div>
   </div>
 </div>
 
@@ -35,14 +38,31 @@
       class="user-icon-image"
     />
     <ng-template #placeholder>
-      <i class="bx bx-user-circle user-icon-large"></i>
+      <div class="profile">
+        <img
+          *ngIf="!currentUser?.profileImageUrl"
+          src="https://i.pinimg.com/736x/32/e4/61/32e46132a367eb48bb0c9e5d5b659c88.jpg"
+          alt=""
+        />
+      </div>
     </ng-template>
 
     <span class="user-name">{{ currentUser?.fullName || "User Name" }}</span>
   </div>
 
   <ul>
-    <h3 class="email">{{ currentUser?.email || "User Email" }}</h3>
+    <div>
+      <h3 class="email">{{ currentUser?.email || "User Email" }}</h3>
+      <br />
+      <li
+        [routerLink]="'Settings'"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        <i class="bx bx-cog"></i> Setting
+      </li>
+    </div>
+
     <li (click)="logout()">Logout</li>
   </ul>
 </div>

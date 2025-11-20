@@ -29,6 +29,7 @@
           <i class="bx bxs-dashboard"></i>
           <span *ngIf="!isCollapsed">Dashboard</span>
         </li>
+        <li class="tittle">Operation</li>
         <li
           [routerLink]="'EmergencyRequest'"
           routerLinkActive="active"
@@ -53,7 +54,7 @@
           <i class="bx bx-run"></i>
           <span *ngIf="!isCollapsed">Ongoing Response</span>
         </li>
-
+        <li class="tittle">History Request</li>
         <li
           [routerLink]="'History'"
           routerLinkActive="active"
@@ -62,6 +63,7 @@
           <i class="bx bxs-report"></i>
           <span *ngIf="!isCollapsed">Report</span>
         </li>
+        <li class="tittle">User Action</li>
         <li
           [routerLink]="'Resident'"
           routerLinkActive="active"
@@ -87,14 +89,14 @@
             {{ unreadNotificationCount }}
           </span>
         </li>
-        <li
+        <!-- <li
           [routerLink]="'Settings'"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
         >
           <i class="bx bx-cog"></i>
           <span *ngIf="!isCollapsed">Settings</span>
-        </li>
+        </li> -->
       </ul>
     </div>
   </div>
@@ -167,13 +169,30 @@
     >
       <i class="bx bx-group"></i>
     </li>
+
     <li
+      [routerLink]="'Notification'"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="notification-link"
+    >
+      <i class="bx bxs-bell"></i>
+
+      <span
+        *ngIf="hasUnreadNotifications"
+        class="notification-dot"
+        [class.collapsed]="isCollapsed"
+      >
+        {{ unreadNotificationCount }}
+      </span>
+    </li>
+    <!-- <li
       [routerLink]="'Settings'"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"
       title="Settings"
     >
       <i class="bx bx-cog"></i>
-    </li>
+    </li> -->
   </ul>
 </div>

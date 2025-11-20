@@ -13,6 +13,7 @@ import {
   deleteDoc,
   addDoc,
   serverTimestamp,
+  onSnapshot,
 } from 'firebase/firestore';
 import { getDatabase, ref, onValue } from 'firebase/database';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
@@ -127,6 +128,42 @@ export class UserService {
     return collectionData(accountsRef, { idField: 'id' }) as Observable<
       account[]
     >;
+  }
+
+  getPendingResidentAccountsCount(): Observable<number> {
+    const q = query(
+      collection(this.db, 'users'),
+      where('role', '==', 'resident'),
+      where('account_status', '==', 'pending')
+    );
+
+    return new Observable((observer) => {
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        observer.next(snapshot.size); // <<< COUNT realtime
+      });
+
+      return () => unsubscribe();
+    });
+  }
+
+  getPendingResidentAccountsRealtime(): Observable<account[]> {
+    const q = query(
+      collection(this.db, 'users'),
+      where('role', '==', 'resident'),
+      where('account_status', '==', 'pending')
+    );
+
+    return new Observable((observer) => {
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const result = snapshot.docs.map((doc) => ({
+          ...(doc.data() as account),
+          uid: doc.id,
+        }));
+        observer.next(result);
+      });
+
+      return () => unsubscribe();
+    });
   }
 
   async getPendingResidentAccounts(): Promise<account[]> {

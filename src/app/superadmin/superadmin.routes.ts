@@ -15,6 +15,7 @@ import { LiveTracking } from './live-tracking/live-tracking';
 import { Statistic } from './statistic/statistic';
 import { AccountView } from './account-view/account-view';
 import { AccountEdit } from './account-edit/account-edit';
+import { Setting } from '../admin/setting/setting';
 
 export const SuperAdminRoutes: Routes = [
   {
@@ -25,6 +26,7 @@ export const SuperAdminRoutes: Routes = [
       { path: 'Dashboard', component: DashboardComponent },
 
       { path: 'Verification', component: AccountVerification },
+
       {
         path: 'Verification/:id',
         loadComponent: () =>
@@ -46,7 +48,7 @@ export const SuperAdminRoutes: Routes = [
           },
         ],
       },
-
+      { path: 'Settings', component: Setting },
       {
         path: 'IncidentHistory',
         children: [

@@ -52,6 +52,13 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private incidentSub?: Subscription;
 
+  customMarkerIcon = L.icon({
+    iconUrl: 'assets/pin-location-gps-icon-png.webp',
+    iconSize: [55, 55],
+    iconAnchor: [22, 45],
+    popupAnchor: [0, -45],
+  });
+
   defaultIcons = [
     // 🚗 VEHICLE / ROAD
     { name: 'Vehicle Accident', class: 'bx bxs-car-crash' },
@@ -241,7 +248,10 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
       attribution: 'Map data © OpenStreetMap contributors',
     }).addTo(this.map);
 
-    const marker = L.marker([lat, lng], { draggable: true }).addTo(this.map);
+    const marker = L.marker([lat, lng], {
+      draggable: true,
+      icon: this.customMarkerIcon,
+    }).addTo(this.map);
 
     marker.on('dragend', () => {
       const pos = marker.getLatLng();
@@ -369,7 +379,9 @@ export class InfoComponent implements OnInit, OnDestroy, AfterViewInit {
       attribution: 'Map data © OpenStreetMap contributors',
     }).addTo(map);
 
-    L.marker([barangay.latitude, barangay.longitude])
+    L.marker([barangay.latitude, barangay.longitude], {
+      icon: this.customMarkerIcon,
+    })
       .addTo(map)
       .bindPopup(`<b>${barangay.baranggay}</b>`);
 
