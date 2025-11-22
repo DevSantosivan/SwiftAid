@@ -4,19 +4,23 @@
 
   <div class="user-info" (click)="showSide()">
     <span class="user-email">{{ currentUser?.email || "User Name" }}</span>
+
+    <!-- Real profile image -->
     <img
-      *ngIf="currentUser?.profileImageUrl"
+      *ngIf="currentUser?.profileImageUrl; else defaultProfile"
       [src]="currentUser?.profileImageUrl"
-      alt="Profile Picture"
       class="user-img"
+      alt="Profile Picture"
     />
-    <div class="profile">
+
+    <!-- Default profile image -->
+    <ng-template #defaultProfile>
       <img
-        *ngIf="!currentUser?.profileImageUrl"
         src="https://i.pinimg.com/736x/32/e4/61/32e46132a367eb48bb0c9e5d5b659c88.jpg"
-        alt=""
+        class="user-img"
+        alt="Default"
       />
-    </div>
+    </ng-template>
   </div>
 </div>
 

@@ -138,27 +138,24 @@ export class HomeComponent implements OnInit {
     this.isCollapsed = !this.isCollapsed;
   }
 
-  // Method to load unread emergency request count from the service
-  async updateUnreadEmergencyRequestCount() {
-    try {
-      const currentUser = this.authentication.currentUser;
-      if (!currentUser) {
-        this.hasUnreadEmergencyRequests = false;
-        this.unreadEmergencyRequestCount = 0;
-        return;
-      }
-
-      const count = await this.emergencyRequestService.getUnreadEmergency(
-        currentUser.uid
-      );
-
-      this.unreadEmergencyRequestCount = count;
-      this.hasUnreadEmergencyRequests = count > 0;
-
-      console.log('Unread emergency requests:', count);
-    } catch (error) {
-      console.error('Failed to fetch unread emergency request count:', error);
+  updateUnreadEmergencyRequestCount() {
+    const currentUser = this.authentication.currentUser;
+    if (!currentUser) {
+      this.hasUnreadEmergencyRequests = false;
+      this.unreadEmergencyRequestCount = 0;
+      return;
     }
+
+    this.emergencyRequestService.getUnreadPendingRequests().subscribe({
+      next: (count: number) => {
+        this.unreadEmergencyRequestCount = count;
+        this.hasUnreadEmergencyRequests = count > 0;
+        console.log('Unread emergency requests:', count);
+      },
+      error: (error) => {
+        console.error('Failed to fetch unread emergency request count:', error);
+      },
+    });
   }
 
   // Existing method for loading unread notifications count

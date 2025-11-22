@@ -41,6 +41,8 @@ export class AccountComponent implements OnInit {
   // === Block modal ===
   blockReason = '';
   otherBlockReason = '';
+  selectedFile: any = null;
+  previewImage: string | ArrayBuffer | null = null;
 
   // === Reactive form ===
   editForm!: FormGroup; // initialized in ngOnInit or editAccount
@@ -195,7 +197,11 @@ export class AccountComponent implements OnInit {
     this.blockingInProgress = true;
     const updatedUser = { ...this.accountToEdit, ...this.editForm.value };
     try {
-      await this.accountService.updateUser(updatedUser.id, updatedUser);
+      await this.accountService.uploadProfileImage(
+        this.accountToEdit.id,
+        this.selectedFile
+      );
+
       this.accountToEdit = null;
       this.editForm.reset();
       this.showSnackBar('User updated successfully.');

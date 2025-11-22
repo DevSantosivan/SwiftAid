@@ -14,14 +14,25 @@ import {
   addDoc,
   serverTimestamp,
   onSnapshot,
+  orderBy,
 } from 'firebase/firestore';
+
 import { getDatabase, ref, onValue } from 'firebase/database';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+
 import { environment } from '../model/environment';
 import { account } from '../model/users';
 import { Observable } from 'rxjs';
 import { collectionData } from '@angular/fire/firestore';
 import { register } from '../model/registered';
+
+// ✅ Firebase Storage (CORRECT IMPORT)
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+} from 'firebase/storage';
 
 export interface AccountWithStatus extends account {
   status: { online: boolean; last: number | null };
@@ -31,20 +42,20 @@ export interface AccountWithStatus extends account {
   providedIn: 'root',
 })
 export class UserService {
-  [x: string]: any;
-  // 🔵 Primary Firebase app and auth (current logged-in user - admin)
   private primaryApp = initializeApp(environment.firebaseConfig);
   private db = getFirestore(this.primaryApp);
   private primaryAuth = getAuth(this.primaryApp);
 
-  // 🔵 Secondary app to avoid auto-login when creating new users
   private secondaryApp = initializeApp(environment.firebaseConfig, 'Secondary');
   private secondaryAuth = getAuth(this.secondaryApp);
+
+  // ✅ Initialize Firebase Storage
+  private storage = getStorage(this.primaryApp);
 
   constructor(private ngZone: NgZone) {}
 
   /**
-   * ✅ Create user without affecting the current admin session
+   * ✅ Create user without affecting admin login
    */
   async createAccount(
     email: string,
@@ -52,12 +63,12 @@ export class UserService {
     additionalData: Partial<register>
   ): Promise<void> {
     try {
-      // 🔐 Use secondary auth instance to avoid logging in as new user
       const userCredential = await createUserWithEmailAndPassword(
         this.secondaryAuth,
         email,
         password
       );
+
       const user = userCredential.user;
       const userData: register = {
         fullName: additionalData.fullName ?? '',
@@ -67,14 +78,15 @@ export class UserService {
         office_id: additionalData.office_id ?? '',
         contactNumber: additionalData.contactNumber ?? '',
         email: user.email ?? '',
-        password: '', // clear password
+        password: '',
         role: additionalData.role ?? 'admin',
       };
 
-      const userDocRef = doc(this.db, 'users', user.uid);
-      await setDoc(userDocRef, { uid: user.uid, ...userData });
+      await setDoc(doc(this.db, 'users', user.uid), {
+        uid: user.uid,
+        ...userData,
+      });
 
-      // 🚫 Prevent session takeover
       await this.secondaryAuth.signOut();
     } catch (error) {
       console.error('Error creating account:', error);
@@ -83,17 +95,12 @@ export class UserService {
   }
 
   async saveAccessKey(key: string): Promise<void> {
-    try {
-      const accessKeysCollection = collection(this.db, 'accessKeys');
-      await addDoc(accessKeysCollection, {
-        key,
-        used: false,
-        createdAt: serverTimestamp(),
-      });
-    } catch (error) {
-      console.error('Error saving access key:', error);
-      throw error;
-    }
+    const accessKeysCollection = collection(this.db, 'accessKeys');
+    await addDoc(accessKeysCollection, {
+      key,
+      used: false,
+      createdAt: serverTimestamp(),
+    });
   }
 
   async getUserCount(): Promise<number> {
@@ -110,12 +117,13 @@ export class UserService {
       id: doc.id,
     }));
   }
+
   async getUserProfile(userId: string): Promise<{ profilePicture?: string }> {
     try {
       const userDoc = await getDoc(doc(this.db, `users/${userId}`));
       if (userDoc.exists()) {
         const data = userDoc.data();
-        return { profilePicture: data['profile'] || '' }; // Assuming profile is the field name
+        return { profilePicture: data['profile'] || '' };
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -139,7 +147,7 @@ export class UserService {
 
     return new Observable((observer) => {
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        observer.next(snapshot.size); // <<< COUNT realtime
+        observer.next(snapshot.size);
       });
 
       return () => unsubscribe();
@@ -172,6 +180,7 @@ export class UserService {
       where('role', '==', 'resident'),
       where('account_status', '==', 'pending')
     );
+
     const snapshot = await getDocs(q);
     return snapshot.docs.map((doc) => ({
       ...(doc.data() as account),
@@ -180,8 +189,7 @@ export class UserService {
   }
 
   async addUser(data: account): Promise<void> {
-    const userDocRef = doc(this.db, 'users', data.uid);
-    await setDoc(userDocRef, data);
+    await setDoc(doc(this.db, 'users', data.uid), data);
   }
 
   async unblockUsers(uids: string[]): Promise<void> {
@@ -205,9 +213,7 @@ export class UserService {
         return;
       }
       const data = snapshot.val();
-      const online = data.state === 'online';
-      const lastOnline = data.lastOnline ?? null;
-      cb(online, lastOnline);
+      cb(data.state === 'online', data.lastOnline ?? null);
     });
   }
 
@@ -227,23 +233,30 @@ export class UserService {
     return docSnap.exists() ? docSnap.data()?.['role'] ?? null : null;
   }
 
+  /**
+   * ✅ FINAL FIXED FIREBASE STORAGE UPLOADER
+   */
+  async uploadProfileImage(uid: string, file: File): Promise<string> {
+    const imgRef = storageRef(this.storage, `profile_images/${uid}.jpg`);
+    await uploadBytes(imgRef, file);
+    return await getDownloadURL(imgRef);
+  }
+
   async getUserById(uid: string): Promise<account | null> {
     const userDoc = doc(this.db, 'users', uid);
     const snapshot = await getDoc(userDoc);
     return snapshot.exists()
-      ? { ...(snapshot.data() as account), uid: snapshot.id }
+      ? { ...(snapshot.data() as account), id: snapshot.id }
       : null;
   }
 
   async updateUser(uid: string, data: Partial<account>): Promise<void> {
-    const userDocRef = doc(this.db, 'users', uid);
-    await updateDoc(userDocRef, data);
+    await updateDoc(doc(this.db, 'users', uid), data);
   }
 
   async updateUserStatus(uid: string, account_status: string): Promise<void> {
-    const userDocRef = doc(this.db, 'users', uid);
     await this.ngZone.run(() =>
-      updateDoc(userDocRef, {
+      updateDoc(doc(this.db, 'users', uid), {
         account_status,
         updatedAt: new Date(),
       })
@@ -251,8 +264,7 @@ export class UserService {
   }
 
   async deleteUser(uid: string): Promise<void> {
-    const userDocRef = doc(this.db, 'users', uid);
-    await deleteDoc(userDocRef);
+    await deleteDoc(doc(this.db, 'users', uid));
   }
 
   async deleteUsers(uids: string[]): Promise<void> {
