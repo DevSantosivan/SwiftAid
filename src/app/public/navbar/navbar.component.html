@@ -29,8 +29,7 @@
   <div class="right-section">
     <!-- SHOW LOGIN + SIGNUP IF NOT LOGGED IN -->
     <div class="auth-buttons" *ngIf="!currentUser">
-      <button class="btn1" (click)="goToLogin()">Login</button>
-      <button class="btn2" (click)="goToSignUp()">Sign Up</button>
+      <button class="btn2" (click)="goToLogin()">Login</button>
     </div>
 
     <!-- SHOW DASHBOARD BUTTON ONLY ON DESKTOP AND ONLY IF LOGGED IN -->
@@ -92,7 +91,6 @@
 
   <ng-template #guestBtns>
     <a (click)="goToLogin()">Login</a>
-    <a (click)="goToSignUp()">Sign Up</a>
   </ng-template>
 </div>
 

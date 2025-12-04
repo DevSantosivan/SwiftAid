@@ -1,7 +1,7 @@
-import { Component, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, NgZone } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import * as L from 'leaflet';
-import 'leaflet-routing-machine'; // Make sure you have this import for routing
+import 'leaflet-routing-machine';
 import { Subscription } from 'rxjs';
 import { EmergencyRequestService } from '../../core/rescue_request.service';
 import { EmergencyRequest } from '../../model/emergency';
@@ -37,18 +37,22 @@ export class TrackingView implements AfterViewInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private requestService: EmergencyRequestService
+    private requestService: EmergencyRequestService,
+    private ngZone: NgZone
   ) {}
 
   ngAfterViewInit(): void {
     this.requestId = this.route.snapshot.paramMap.get('id')!;
     this.initializeMap();
 
+    // Subscribe to live updates
     this.subscription = this.requestService
       .getRespondingRequestsLive()
       .subscribe((requests) => {
-        this.request = requests.find((r) => r.id === this.requestId) || null;
-        this.updateMapMarkersAndRoute();
+        this.ngZone.run(() => {
+          this.request = requests.find((r) => r.id === this.requestId) || null;
+          this.updateMapMarkersAndRoute();
+        });
       });
   }
 
@@ -69,6 +73,7 @@ export class TrackingView implements AfterViewInit, OnDestroy {
 
     const { staffLat, staffLng, latitude, longitude } = this.request;
 
+    // Update staff marker
     if (staffLat && staffLng) {
       if (!this.staffMarker) {
         this.staffMarker = L.marker([staffLat, staffLng], {
@@ -79,10 +84,12 @@ export class TrackingView implements AfterViewInit, OnDestroy {
           }),
         }).addTo(this.map);
       } else {
+        // Move marker to new position
         this.staffMarker.setLatLng([staffLat, staffLng]);
       }
     }
 
+    // Update resident marker
     if (latitude && longitude) {
       if (!this.residentMarker) {
         this.residentMarker = L.marker([latitude, longitude], {
@@ -97,14 +104,14 @@ export class TrackingView implements AfterViewInit, OnDestroy {
       }
     }
 
-    // Remove existing route if any
+    // Remove existing route
     if (this.routingControl) {
       this.map.removeControl(this.routingControl);
       this.routingControl = undefined;
     }
 
+    // Draw route if both positions exist
     if (staffLat && staffLng && latitude && longitude) {
-      // Create new routing control
       this.routingControl = (L.Routing.control as any)({
         waypoints: [
           L.latLng(staffLat, staffLng),
@@ -114,36 +121,34 @@ export class TrackingView implements AfterViewInit, OnDestroy {
         showAlternatives: false,
         fitSelectedRoutes: true,
         addWaypoints: false,
-        createMarker: () => null, // Disable default markers, since you handle custom markers
+        createMarker: () => null, // Keep your custom markers
         lineOptions: {
           styles: [{ color: '#ff3838ff', weight: 5 }],
           extendToWaypoints: false,
         },
       }).addTo(this.map);
 
-      // After route is found, update distance and estimated time
-      if (this.routingControl) {
-        this.routingControl.on('routesfound', (e: any) => {
-          const route = e.routes[0];
-          this.distance = route.summary.totalDistance;
-          this.estimatedTime = this.calculateEstimatedTime(this.distance);
-          this.generateRouteSteps(staffLat, staffLng, latitude, longitude);
-        });
-      }
+      // Update distance and ETA after route found
+      this.routingControl?.on('routesfound', (e: any) => {
+        const route = e.routes[0];
+        this.distance = route.summary.totalDistance;
+        this.estimatedTime = this.calculateEstimatedTime(this.distance);
+        this.generateRouteSteps(staffLat, staffLng, latitude, longitude);
+      });
     }
   }
 
   private calculateEstimatedTime(distanceMeters: number): string {
     const distanceKm = distanceMeters / 1000;
     const timeHours = distanceKm / this.averageSpeedKmh;
-
     if (timeHours <= 0 || isNaN(timeHours)) return '0 mins';
-
     const timeMinutes = Math.round(timeHours * 60);
     return timeMinutes < 60
       ? `${timeMinutes} mins`
       : `${Math.floor(timeMinutes / 60)}h ${timeMinutes % 60}m`;
   }
+
+  private initialDistance: number | null = null;
 
   private generateRouteSteps(
     staffLat: number,
@@ -151,20 +156,28 @@ export class TrackingView implements AfterViewInit, OnDestroy {
     userLat: number,
     userLng: number
   ) {
-    const totalDistance = this.map.distance(
+    // Current distance (real-time)
+    const currentDistance = this.map.distance(
       L.latLng(staffLat, staffLng),
       L.latLng(userLat, userLng)
     );
 
-    this.estimatedTime = this.calculateEstimatedTime(totalDistance); // ✅ Set ETA here
+    // Store initial distance once
+    if (this.initialDistance === null) {
+      this.initialDistance = currentDistance;
+    }
 
-    // Determine progress index (e.g. 0 to 4)
-    // Since there's no GPS tracking history, simulate progress by dividing distance into 4 zones
-    let progress = 1 - this.distance / totalDistance;
-    progress = Math.max(0, Math.min(progress, 1)); // Clamp between 0 and 1
+    // Compute progress %
+    let progress = 1 - currentDistance / this.initialDistance;
+    progress = Math.max(0, Math.min(progress, 1)); // clamp 0–1
 
+    // Determine step (0–3)
     this.progressIndex = Math.floor(progress * 4);
 
+    // Update ETA
+    this.estimatedTime = this.calculateEstimatedTime(currentDistance);
+
+    // Steps data:
     this.routeSteps = [
       {
         label: 'Responder Station',

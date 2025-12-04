@@ -37,14 +37,7 @@
 
             <div class="barangay-details">
               <div class="barangay-profile">
-                <img
-                  [src]="
-                    barangay.baranggay_img
-                      ? barangay.baranggay_img
-                      : 'assets/images/default-profile.png'
-                  "
-                  alt="{{ barangay.baranggay }}"
-                />
+                <img src="../../../assets/Barangay-Hall.png" alt="" />
               </div>
 
               <h2>{{ barangay.baranggay }}</h2>
@@ -274,7 +267,7 @@
             [(ngModel)]="newBarangay.barangay_contact"
             name="barangay_contact"
           />
-
+          <!-- 
           <label>Barangay Image</label>
           <div class="upload-section">
             <input
@@ -285,7 +278,7 @@
             <div *ngIf="imagePreview" class="image-preview">
               <img [src]="imagePreview" alt="Preview" />
             </div>
-          </div>
+          </div> -->
         </div>
 
         <!-- RIGHT SIDE -->
