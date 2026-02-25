@@ -97,7 +97,14 @@
           <i class="bx bx-history"></i>
           <span *ngIf="!isCollapsed">Incident History</span>
         </li>
-
+        <li
+          [routerLink]="'Reports'"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: false }"
+        >
+          <i class="bx bxs-report"></i>
+          <span *ngIf="!isCollapsed">Report</span>
+        </li>
         <li
           [routerLink]="'Statistic-Emergency'"
           routerLinkActive="active"

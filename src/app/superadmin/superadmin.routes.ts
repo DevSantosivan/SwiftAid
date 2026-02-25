@@ -16,6 +16,7 @@ import { Statistic } from './statistic/statistic';
 import { AccountView } from './account-view/account-view';
 import { AccountEdit } from './account-edit/account-edit';
 import { Setting } from '../admin/setting/setting';
+import { Report } from './report/report';
 
 export const SuperAdminRoutes: Routes = [
   {
@@ -30,9 +31,9 @@ export const SuperAdminRoutes: Routes = [
       {
         path: 'Verification/:id',
         loadComponent: () =>
-          import(
-            './account-verification-details/account-verification-details'
-          ).then((m) => m.AccountVerificationDetails),
+          import('./account-verification-details/account-verification-details').then(
+            (m) => m.AccountVerificationDetails,
+          ),
       },
 
       {
@@ -43,7 +44,7 @@ export const SuperAdminRoutes: Routes = [
             path: ':id',
             loadComponent: () =>
               import('./view-request-details/view-request-details').then(
-                (m) => m.ViewRequestDetails
+                (m) => m.ViewRequestDetails,
               ),
           },
         ],
@@ -57,7 +58,7 @@ export const SuperAdminRoutes: Routes = [
             path: ':id',
             loadComponent: () =>
               import('./view-request-details/view-request-details').then(
-                (m) => m.ViewRequestDetails
+                (m) => m.ViewRequestDetails,
               ),
           },
         ],
@@ -71,11 +72,12 @@ export const SuperAdminRoutes: Routes = [
             path: ':id',
             loadComponent: () =>
               import('./tracking-view/tracking-view').then(
-                (m) => m.TrackingView
+                (m) => m.TrackingView,
               ),
           },
         ],
       },
+      { path: 'Reports', component: Report },
       { path: 'Statistic-Emergency', component: Statistic },
 
       { path: 'Team', component: TeamComponent },

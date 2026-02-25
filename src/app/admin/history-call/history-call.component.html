@@ -11,6 +11,11 @@
         (input)="applyFilters()"
       />
       <button><i class="bx bx-search"></i></button>
+      <div class="report-button">
+        <button (click)="generateReport()">
+          <i class="bx bx-file"></i> Generate Report
+        </button>
+      </div>
     </div>
 
     <!-- Bar Chart Only -->
@@ -50,7 +55,7 @@
               resolved:
                 req.status.toLowerCase() === 'completed' ||
                 req.status.toLowerCase() === 'resolved',
-              cancelled: req.status.toLowerCase() === 'cancelled'
+              cancelled: req.status.toLowerCase() === 'cancelled',
             }"
           >
             {{ req.status | titlecase }}
@@ -60,7 +65,7 @@
         <div class="request-body">
           <p>
             <i class="bx bx-time"></i>
-            {{ req.timestamp?.toDate() | date : "medium" }}
+            {{ req.timestamp?.toDate() | date: "medium" }}
           </p>
           <p><i class="bx bxs-location-plus"></i> {{ req.address || "-" }}</p>
           <p><strong>Event:</strong> {{ req.event || "-" }}</p>
@@ -87,5 +92,12 @@
         <p>No requests available.</p>
       </div>
     </ng-template>
+  </div>
+</div>
+
+<div class="loading-modal-backdrop" *ngIf="blockingInProgress">
+  <div class="loading-modal-content">
+    <div class="spinner"></div>
+    <div>Generating report, please wait...</div>
   </div>
 </div>

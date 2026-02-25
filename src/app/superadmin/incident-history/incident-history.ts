@@ -63,7 +63,7 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
   constructor(
     private emergencyRequestService: EmergencyRequestService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -100,14 +100,10 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
         height: 40px; 
         border-radius: 50%; 
         overflow: hidden; 
-        border: 2px solid #555;
-        box-shadow: 0 0 5px rgba(0,0,0,0.3);
+        border: 2px solid transparent;
+       
       ">
-        <img 
-          src="${req.image || 'assets/default-marker-icon.png'}" 
-          alt="incident" 
-          style="width: 100%; height: 100%; object-fit: cover;"
-        />
+        
       </div>
     `;
 
@@ -178,18 +174,15 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
        
        
           <div class="pulse" style="
-            width: 40px;
-            height: 40px;
+            width: 15px;
+            height: 15px;
             border-radius: 50%;
             overflow: hidden;
-            border: 2px solid rgba(11, 247, 43, 0.3);
-            box-shadow: 0 0 15px rgba(11, 247, 43, 0.3);
+            border: 2px solid black;
+            background-color: red;
+           
           ">
-            <img 
-              src="${req.image || 'assets/default-marker-icon.png'}" 
-              alt="incident" 
-              style="width: 100%; height: 100%; object-fit: cover;"
-            />
+           
           </div>
         `;
 
@@ -207,7 +200,7 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
           `<b>${req.name}</b><br/>
            Status: ${req.status}<br/>
            Event: ${req.event}<br/>
-           Address: ${req.address || 'N/A'}`
+           Address: ${req.address || 'N/A'}`,
         );
 
         this.markersLayer!.addLayer(marker);
@@ -230,11 +223,11 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
         await this.emergencyRequestService.getRequestResolved();
 
       this.resolvedRequests = fetchedRequests.filter((r) =>
-        ['resolved', 'completed'].includes(r.status?.toLowerCase() ?? '')
+        ['resolved', 'completed'].includes(r.status?.toLowerCase() ?? ''),
       );
 
       this.cancelledRequests = fetchedRequests.filter(
-        (r) => r.status?.toLowerCase() === 'cancelled'
+        (r) => r.status?.toLowerCase() === 'cancelled',
       );
 
       this.allRequests = [...this.resolvedRequests, ...this.cancelledRequests];
@@ -286,7 +279,7 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
 
     // Update selected requests to only those still visible
     this.selectedRequests = this.selectedRequests.filter((s) =>
-      currentFiltered.some((r) => r.id === s.id)
+      currentFiltered.some((r) => r.id === s.id),
     );
 
     this.updateMapMarkers();
@@ -294,13 +287,13 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
 
   private filterBySearch(
     requests: EmergencyRequest[],
-    term: string
+    term: string,
   ): EmergencyRequest[] {
     if (!term) return requests;
     return requests.filter((req) =>
       [req.name, req.description, req.status].some((field) =>
-        field?.toLowerCase().includes(term)
-      )
+        field?.toLowerCase().includes(term),
+      ),
     );
   }
 
@@ -336,7 +329,7 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
       this.selectedRequests.push(req);
     } else if (!input.checked) {
       this.selectedRequests = this.selectedRequests.filter(
-        (s) => s.id !== req.id
+        (s) => s.id !== req.id,
       );
     }
   }
@@ -357,7 +350,7 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
       ];
     } else {
       this.selectedRequests = this.selectedRequests.filter(
-        (r) => !current.some((cr) => cr.id === r.id)
+        (r) => !current.some((cr) => cr.id === r.id),
       );
     }
   }
@@ -444,8 +437,8 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
       new Set(
         rows
           .map((r) => r.event)
-          .filter((ev) => ev !== 'Vehicular' && !accidentTypes.includes(ev))
-      )
+          .filter((ev) => ev !== 'Vehicular' && !accidentTypes.includes(ev)),
+      ),
     );
 
     // Group by month
@@ -459,14 +452,14 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
 
       // Vehicular events only
       const vehicularEvents = monthEvents.filter(
-        (r) => r.event === 'Vehicular'
+        (r) => r.event === 'Vehicular',
       );
 
       // Count vehicular subtypes by eventType
       const typeCounts: Record<string, number> = {};
       accidentTypes.forEach((type) => {
         typeCounts[type] = vehicularEvents.filter(
-          (r) => r.eventType === type
+          (r) => r.eventType === type,
         ).length;
       });
 
@@ -506,13 +499,13 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
     accidentTypes.forEach((type) => {
       totals.typeCounts[type] = grouped.reduce(
         (a, b) => a + b.typeCounts[type],
-        0
+        0,
       );
     });
     allEvents.forEach((ev) => {
       totals.otherCounts[ev] = grouped.reduce(
         (a, b) => a + b.otherCounts[ev],
-        0
+        0,
       );
     });
 
@@ -567,7 +560,7 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
               }),
             ],
             rowSpan: 2,
-          })
+          }),
       ),
       new TableCell({
         children: [
@@ -612,7 +605,7 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
                 alignment: AlignmentType.CENTER,
               }),
             ],
-          })
+          }),
       ),
     });
 
@@ -646,7 +639,7 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
                       alignment: AlignmentType.CENTER,
                     }),
                   ],
-                })
+                }),
             ),
             ...allEvents.map(
               (ev) =>
@@ -657,7 +650,7 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
                       alignment: AlignmentType.CENTER,
                     }),
                   ],
-                })
+                }),
             ),
             new TableCell({
               children: [
@@ -684,7 +677,7 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
               ],
             }),
           ],
-        })
+        }),
     );
 
     // ========== TOTAL ROW ==========
@@ -733,7 +726,7 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
                   alignment: AlignmentType.CENTER,
                 }),
               ],
-            })
+            }),
         ),
         ...allEvents.map(
           (ev) =>
@@ -750,7 +743,7 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
                   alignment: AlignmentType.CENTER,
                 }),
               ],
-            })
+            }),
         ),
         new TableCell({
           children: [
@@ -877,7 +870,7 @@ export class IncidentHistory implements OnInit, OnDestroy, AfterViewInit {
 
     saveAs(
       new Blob([wbout], { type: 'application/octet-stream' }),
-      'emergency-requests.xlsx'
+      'emergency-requests.xlsx',
     );
   }
 

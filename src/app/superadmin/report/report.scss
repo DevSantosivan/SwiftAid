@@ -1,0 +1,198 @@
+/* Container */
+.content-body {
+  margin-top: 5%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 2%;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #000; /* black title */
+  }
+
+  p {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 10px;
+  }
+}
+
+/* Search & Buttons */
+.search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+
+  input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    min-width: 180px;
+  }
+
+  .refresh-btn,
+  .generate-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    color: #fff;
+    transition: 0.2s all;
+  }
+
+  .refresh-btn {
+    background-color: #e03e3e; /* red */
+  }
+  .refresh-btn:hover {
+    background-color: #c32f2f;
+  }
+
+  .generate-btn {
+    background-color: #e03e3e; /* red */
+  }
+  .generate-btn:hover {
+    background-color: #c32f2f;
+  }
+}
+
+/* Month Filter Buttons */
+.month-filter {
+  margin-bottom: 15px;
+
+  .month-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 5px;
+
+    button {
+      padding: 6px 14px;
+      border: 1px solid #e03e3e;
+      border-radius: 20px;
+      background: #fff;
+      color: #e03e3e;
+      cursor: pointer;
+      font-weight: 500;
+      transition: 0.2s all;
+
+      &:hover {
+        background: #e03e3e;
+        color: #fff;
+      }
+      &.active {
+        background: #e03e3e;
+        color: #fff;
+      }
+    }
+  }
+}
+
+.report-card {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: 0.2s all;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .report-summary {
+    font-size: 14px;
+    color: #333;
+    line-height: 1.6;
+
+    strong {
+      color: #000;
+    }
+
+    .resolved {
+      color: #27ae60;
+      font-weight: 600;
+    }
+    .cancelled {
+      color: #e03e3e;
+      font-weight: 600;
+    }
+
+    .report-description {
+      display: block;
+      margin-top: 6px;
+      font-style: italic;
+      font-size: 13px;
+      color: #555;
+    }
+  }
+
+  .report-actions {
+    margin-top: 10px;
+
+    .view-btn {
+      background: #e03e3e;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.2s all;
+
+      &:hover {
+        background: #c12d2d;
+      }
+
+      i {
+        margin-right: 5px;
+      }
+    }
+  }
+}
+
+/* Modal */
+.report-view-modal .modal-content {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  .modal-header h3 {
+    color: #000;
+  }
+
+  .request-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 10px;
+
+    .status-badge.resolved {
+      background: #66bb6a;
+      color: #fff;
+    }
+    .status-badge.cancelled {
+      background: #e03e3e;
+      color: #fff;
+    }
+
+    .request-body p strong,
+    .request-body i {
+      color: #333;
+    }
+
+    .request-body p i {
+      color: #e03e3e;
+    }
+  }
+}

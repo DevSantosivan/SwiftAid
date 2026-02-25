@@ -15,6 +15,12 @@ import { AuthService } from '../../core/auth.service';
 
 import { Chart, registerables } from 'chart.js';
 import { RouterLink } from '@angular/router';
+import { ReportService } from '../../core/report.service';
+import { EmergencyReport } from '../../model/report';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { UserService } from '../../core/user.service';
+import { account } from '../../model/users';
+
 Chart.register(...registerables);
 
 @Component({
@@ -47,9 +53,19 @@ export class HistoryCallComponent implements OnInit, OnDestroy, AfterViewInit {
 
   requestEventBarChart?: Chart;
 
+  toastMessage: string = '';
+  toastType: 'success' | 'error' | 'info' = 'success';
+  showToast: boolean = false;
+  isGenerating: boolean = false;
+
+  blockingInProgress: boolean = false;
+
   constructor(
     private emergencyRequestService: EmergencyRequestService,
-    private authService: AuthService
+    private authService: AuthService,
+    private reportService: ReportService,
+    private userService: UserService,
+    private snackBar: MatSnackBar,
   ) {}
 
   async ngOnInit() {
@@ -73,14 +89,14 @@ export class HistoryCallComponent implements OnInit, OnDestroy, AfterViewInit {
       const fetchedRequests =
         await this.emergencyRequestService.getRequestResolved();
       const userRequests = fetchedRequests.filter(
-        (r) => r.staffId === currentUserId
+        (r) => r.staffId === currentUserId,
       );
 
       this.resolvedRequests = userRequests.filter(
-        (r) => r.status?.toLowerCase() === 'resolved'
+        (r) => r.status?.toLowerCase() === 'resolved',
       );
       this.cancelledRequests = userRequests.filter(
-        (r) => r.status?.toLowerCase() === 'cancelled'
+        (r) => r.status?.toLowerCase() === 'cancelled',
       );
       this.allRequests = [...this.resolvedRequests, ...this.cancelledRequests];
 
@@ -90,21 +106,110 @@ export class HistoryCallComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
+  // -------------------------------
+  // GENERATE REPORT (FULL ACCOUNT)
+  // -------------------------------
+  async generateReport() {
+    try {
+      const currentUser = await this.authService.getCurrentUser();
+      if (!currentUser) {
+        this.showSnackBar('User not logged in.');
+        return;
+      }
+
+      // ✅ Fetch full account object from Firestore
+      const userAccount: account | null = await this.userService.getUserById(
+        currentUser.uid,
+      );
+      if (!userAccount) {
+        this.showSnackBar('Failed to fetch user account details.');
+        return;
+      }
+
+      // Fetch all resolved requests
+      const requests = await this.emergencyRequestService.getRequestResolved();
+
+      // Filter requests for this staff
+      const userRequests = requests.filter(
+        (r) => r.staffId === currentUser.uid,
+      );
+      if (userRequests.length === 0) {
+        this.showSnackBar('No resolved requests available to generate report.');
+        return;
+      }
+
+      this.blockingInProgress = true;
+
+      // -------------------------------
+      // Compute breakdowns
+      // -------------------------------
+      const eventBreakdown: { [key: string]: number } = {};
+      const eventTypeBreakdown: { [key: string]: number } = {};
+      const sexBreakdown: { [key: string]: number } = {};
+
+      userRequests.forEach((req) => {
+        if (req.event)
+          eventBreakdown[req.event] = (eventBreakdown[req.event] || 0) + 1;
+        if (req.eventType)
+          eventTypeBreakdown[req.eventType] =
+            (eventTypeBreakdown[req.eventType] || 0) + 1;
+        if (req.sex) sexBreakdown[req.sex] = (sexBreakdown[req.sex] || 0) + 1;
+      });
+
+      // -------------------------------
+      // Create the report
+      // -------------------------------
+      const report: EmergencyReport = {
+        generatedBy: userAccount, // ✅ Full Firestore account including fullName
+        generatedAt: new Date(),
+        totalRequests: userRequests.length,
+        resolvedCount: userRequests.filter(
+          (r) => r.status?.toLowerCase() === 'resolved',
+        ).length,
+        cancelledCount: userRequests.filter(
+          (r) => r.status?.toLowerCase() === 'cancelled',
+        ).length,
+        eventBreakdown,
+        eventTypeBreakdown,
+        sexBreakdown,
+        includedRequestIds: userRequests.map((r) => r.id),
+        status: 'pending',
+      };
+
+      // Submit report
+      await this.reportService.submitReport(report);
+
+      this.showSnackBar('Report submitted successfully!');
+    } catch (error) {
+      console.error('Error generating report:', error);
+      this.showSnackBar('Error generating report.');
+    } finally {
+      this.blockingInProgress = false;
+    }
+  }
+
+  // -------------------------------
+  // TOAST HELPER
+  // -------------------------------
+  showSnackBar(message: string) {
+    this.snackBar.open(message, 'Close', { duration: 3000 });
+  }
+
   applyFilters() {
     const term = this.searchTerm.trim().toLowerCase();
 
     this.filteredResolvedRequests = this.filterBySearch(
       this.resolvedRequests,
-      term
+      term,
     );
     this.filteredCancelledRequests = this.filterBySearch(
       this.cancelledRequests,
-      term
+      term,
     );
     this.filteredAllRequests = this.filterBySearch(this.allRequests, term);
 
     this.selectedRequests = this.selectedRequests.filter((selected) =>
-      this.getCurrentFilteredRequests().some((r) => r.id === selected.id)
+      this.getCurrentFilteredRequests().some((r) => r.id === selected.id),
     );
 
     this.updateMonthlyEventBarChart(this.getCurrentFilteredRequests());
@@ -112,14 +217,14 @@ export class HistoryCallComponent implements OnInit, OnDestroy, AfterViewInit {
 
   filterBySearch(
     requests: EmergencyRequest[],
-    term: string
+    term: string,
   ): EmergencyRequest[] {
     if (!term) return requests;
     return requests.filter(
       (req) =>
         (req.name?.toLowerCase().includes(term) ?? false) ||
         (req.description?.toLowerCase().includes(term) ?? false) ||
-        (req.status?.toLowerCase().includes(term) ?? false)
+        (req.status?.toLowerCase().includes(term) ?? false),
     );
   }
 
@@ -149,7 +254,7 @@ export class HistoryCallComponent implements OnInit, OnDestroy, AfterViewInit {
       if (!this.isChecked(req)) this.selectedRequests.push(req);
     } else {
       this.selectedRequests = this.selectedRequests.filter(
-        (sel) => sel.id !== req.id
+        (sel) => sel.id !== req.id,
       );
     }
   }
@@ -170,12 +275,12 @@ export class HistoryCallComponent implements OnInit, OnDestroy, AfterViewInit {
       this.selectedRequests = [
         ...this.selectedRequests,
         ...currentRequests.filter(
-          (r) => !this.selectedRequests.some((sel) => sel.id === r.id)
+          (r) => !this.selectedRequests.some((sel) => sel.id === r.id),
         ),
       ];
     } else {
       this.selectedRequests = this.selectedRequests.filter(
-        (sel) => !currentRequests.some((r) => r.id === sel.id)
+        (sel) => !currentRequests.some((r) => r.id === sel.id),
       );
     }
   }
@@ -240,7 +345,8 @@ export class HistoryCallComponent implements OnInit, OnDestroy, AfterViewInit {
     const events = Array.from(eventSet);
     const countsPerEvent: { [event: string]: number[] } = {};
     events.forEach(
-      (event) => (countsPerEvent[event] = new Array(monthLabels.length).fill(0))
+      (event) =>
+        (countsPerEvent[event] = new Array(monthLabels.length).fill(0)),
     );
 
     requests.forEach((req) => {
@@ -295,7 +401,7 @@ export class HistoryCallComponent implements OnInit, OnDestroy, AfterViewInit {
             },
           },
         },
-      }
+      },
     );
   }
 }

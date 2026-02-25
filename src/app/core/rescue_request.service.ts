@@ -31,7 +31,7 @@ export class EmergencyRequestService {
   async updateLocationByStaffId(
     staffId: string,
     lat: number,
-    lng: number
+    lng: number,
   ): Promise<void> {
     try {
       const ref = collection(this.firestore, this.collectionName);
@@ -39,7 +39,7 @@ export class EmergencyRequestService {
       const q = query(
         ref,
         where('staffId', '==', staffId),
-        where('status', '==', 'Responding')
+        where('status', '==', 'Responding'),
       );
 
       const snap = await getDocs(q);
@@ -66,7 +66,7 @@ export class EmergencyRequestService {
       const q = query(
         ref,
         where('status', '==', 'Responding'),
-        orderBy('staffUpdatedAt', 'desc')
+        orderBy('staffUpdatedAt', 'desc'),
       );
 
       const unsubscribe = onSnapshot(
@@ -82,7 +82,7 @@ export class EmergencyRequestService {
         },
         (error) => {
           this.ngZone.run(() => subscriber.error(error));
-        }
+        },
       );
 
       return { unsubscribe };
@@ -90,14 +90,14 @@ export class EmergencyRequestService {
   }
 
   subscribeToLocationUpdatesByStaffId(
-    staffId: string
+    staffId: string,
   ): Observable<EmergencyRequest[]> {
     return new Observable((subscriber) => {
       const ref = collection(this.firestore, this.collectionName);
       const q = query(
         ref,
         where('staffId', '==', staffId),
-        where('status', '==', 'Responding')
+        where('status', '==', 'Responding'),
       );
 
       const unsubscribe = onSnapshot(
@@ -113,7 +113,7 @@ export class EmergencyRequestService {
         },
         (error) => {
           this.ngZone.run(() => subscriber.error(error));
-        }
+        },
       );
 
       return { unsubscribe };
@@ -142,7 +142,7 @@ export class EmergencyRequestService {
     const q = query(
       ref,
       where('status', 'in', ['Resolved']),
-      where('staffId', '==', currentUser.uid)
+      where('staffId', '==', currentUser.uid),
     );
 
     const snap = await getDocs(q);
@@ -188,26 +188,42 @@ export class EmergencyRequestService {
   async getRequestResolved(): Promise<EmergencyRequest[]> {
     try {
       const ref = collection(this.firestore, this.collectionName);
-      const q = query(ref, where('status', '==', 'Resolved')); // Adjust 'status' and 'Resolved' based on your schema
+      const q = query(ref, where('status', '==', 'Resolved'));
+
       const snap = await getDocs(q);
 
-      return snap.docs.map((doc) => ({
-        id: doc.id,
+      // Map Firestore doc to EmergencyRequest including document ID
+      const requests = snap.docs.map((doc) => ({
+        id: doc.id, // ✅ Firestore document ID
         ...doc.data(),
       })) as EmergencyRequest[];
+
+      // Sort by staffUpdatedAt descending (latest first)
+      requests.sort((a, b) => {
+        const dateA = a.staffUpdatedAt?.toDate
+          ? a.staffUpdatedAt.toDate()
+          : new Date(a.staffUpdatedAt);
+        const dateB = b.staffUpdatedAt?.toDate
+          ? b.staffUpdatedAt.toDate()
+          : new Date(b.staffUpdatedAt);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      return requests;
     } catch (error) {
+      console.error('Error fetching resolved requests:', error);
       throw error;
     }
   }
   async getResolvedRequestsByStaffId(
-    staffId: string
+    staffId: string,
   ): Promise<EmergencyRequest[]> {
     try {
       const ref = collection(this.firestore, this.collectionName);
       const q = query(
         ref,
         where('status', '==', 'Resolved'),
-        where('staffId', '==', staffId)
+        where('staffId', '==', staffId),
       );
       const snap = await getDocs(q);
 
@@ -244,7 +260,7 @@ export class EmergencyRequestService {
         },
         (error) => {
           this.ngZone.run(() => subscriber.error(error));
-        }
+        },
       );
 
       return { unsubscribe };
@@ -261,7 +277,7 @@ export class EmergencyRequestService {
       lat?: number;
       lng?: number;
     },
-    accept: boolean = false
+    accept: boolean = false,
   ): Promise<void> {
     try {
       const docRef = doc(this.firestore, this.collectionName, requestId);
@@ -317,7 +333,7 @@ export class EmergencyRequestService {
       console.log(
         `✅ Emergency request ${requestId} updated successfully ${
           accept ? '(accepted)' : '(location updated)'
-        }`
+        }`,
       );
     } catch (error) {
       console.error('❌ Failed to update emergency request:', error);
@@ -334,7 +350,7 @@ export class EmergencyRequestService {
         updateDoc(requestRef, {
           status: 'Resolved',
           resolvedAt: new Date(),
-        })
+        }),
       );
       console.log(`Request ${requestId} marked as Resolved.`);
 
@@ -347,17 +363,17 @@ export class EmergencyRequestService {
         updateDoc(notifDoc.ref, {
           status: 'Resolved',
           resolvedAt: new Date(),
-        })
+        }),
       );
 
       await Promise.all(updatePromises);
       console.log(
-        `Notifications related to request ${requestId} marked as Resolved.`
+        `Notifications related to request ${requestId} marked as Resolved.`,
       );
     } catch (error) {
       console.error(
         'Error marking request and notifications as Resolved:',
-        error
+        error,
       );
       throw error;
     }
@@ -436,7 +452,7 @@ export class EmergencyRequestService {
           const requestDocRef = doc(
             this.firestore,
             'EmergencyRequest',
-            requestId
+            requestId,
           );
           const requestSnap = await getDoc(requestDocRef);
           if (requestSnap.exists()) {
@@ -448,7 +464,7 @@ export class EmergencyRequestService {
         } catch (error) {
           console.warn(
             `Error fetching EmergencyRequest for requestId: ${requestId}`,
-            error
+            error,
           );
         }
 
@@ -458,7 +474,7 @@ export class EmergencyRequestService {
           request: requestData,
           isReadByCurrentUser: notifData.readBy?.includes(userId) ?? false,
         };
-      })
+      }),
     );
 
     // Filter out notifications where deletedBy array contains this userId
@@ -473,7 +489,7 @@ export class EmergencyRequestService {
   // Delete a notification ONLY for the current user
   async deleteNotificationForUser(
     userId: string,
-    notificationId: string
+    notificationId: string,
   ): Promise<void> {
     try {
       const notifDocRef = doc(this.firestore, 'Notifications', notificationId);
@@ -502,7 +518,7 @@ export class EmergencyRequestService {
       });
 
       console.log(
-        `Notification ${notificationId} marked deleted for user ${userId}.`
+        `Notification ${notificationId} marked deleted for user ${userId}.`,
       );
     } catch (error) {
       console.error('Failed to delete notification:', error);
@@ -530,7 +546,7 @@ export class EmergencyRequestService {
       const updatePromises = snap.docs.map((docSnap) =>
         updateDoc(docSnap.ref, {
           readBy: arrayUnion(userId),
-        })
+        }),
       );
 
       await Promise.all(updatePromises);
@@ -542,7 +558,7 @@ export class EmergencyRequestService {
   // Mark a single notification as read by user
   async markNotificationAsRead(
     notificationId: string,
-    userId: string
+    userId: string,
   ): Promise<void> {
     try {
       const notifDocRef = doc(this.firestore, 'Notifications', notificationId);
@@ -550,7 +566,7 @@ export class EmergencyRequestService {
         readBy: arrayUnion(userId),
       });
       console.log(
-        `Notification ${notificationId} marked as read by user ${userId}.`
+        `Notification ${notificationId} marked as read by user ${userId}.`,
       );
     } catch (error) {
       throw error;

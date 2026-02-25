@@ -62,6 +62,15 @@ p {
   color: #555;
 }
 
+.report-button {
+  button {
+    display: flex;
+    align-items: center;
+  }
+  button:hover {
+    background: #f0f0f0;
+  }
+}
 /* ===============================
    BULK SELECT & SEARCH
 =============================== */
