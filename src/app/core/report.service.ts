@@ -29,6 +29,14 @@ export class ReportService {
     });
   }
 
+  async getAllRequests(): Promise<EmergencyReport[]> {
+    const ref = collection(this.firestore, 'EmergencyRequests'); // collection ng requests
+    const snap = await getDocs(ref);
+
+    return snap.docs.map(
+      (doc) => ({ id: doc.id, ...doc.data() }) as EmergencyReport,
+    );
+  }
   async getReports(): Promise<EmergencyReport[]> {
     const ref = collection(this.firestore, 'EmergencyReports');
     const snap = await getDocs(ref);

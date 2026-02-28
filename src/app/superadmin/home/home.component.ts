@@ -15,6 +15,9 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { AdminNavbarComponent } from '../../admin/admin-navbar/admin-navbar.component';
+import { EmergencyReport } from '../../model/report';
+import { ReportService } from '../../core/report.service';
+import { EmergencyRequest } from '../../model/emergency';
 
 Chart.register(...registerables);
 
@@ -33,6 +36,7 @@ Chart.register(...registerables);
   styleUrls: ['./home.component.scss'],
 })
 export class HomeComponent implements OnInit, OnDestroy {
+  [x: string]: any;
   // Charts references
   chart: any;
   pieChart: any;
@@ -61,7 +65,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   // User and data counts
   userCount = 0;
   emergencyRequestCount = 0;
-
+  newRequestCount = 0; // number of new requests
   // Mobile view detection
   isMobileView = false;
 
@@ -74,7 +78,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     private authentication: Auth,
     private router: Router,
     private userService: UserService,
-    private emergencyRequestService: EmergencyRequestService
+    private emergencyRequestService: EmergencyRequestService,
+    private reportService: ReportService,
   ) {}
   navigateTopublic() {
     this.router.navigate(['/']);
@@ -94,6 +99,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     // Setup real-time subscriptions for responding & pending requests
     this.subscribeToRespondingEmergencyRequests();
     this.subscribeToPendingEmergencyRequests();
+    this.fetchNewRequestsCount();
   }
 
   ngOnDestroy(): void {
@@ -122,13 +128,37 @@ export class HomeComponent implements OnInit, OnDestroy {
 
       const count =
         await this.emergencyRequestService.getUnreadNotificationCountForUser(
-          currentUser.uid
+          currentUser.uid,
         );
       this.unreadNotificationCount = count;
       this.hasUnreadNotifications = count > 0;
     } catch (error) {
       this.hasUnreadNotifications = false;
       this.unreadNotificationCount = 0;
+    }
+  }
+
+  async fetchNewRequestsCount() {
+    try {
+      // 🔹 Kunin lahat ng requests mula sa ReportService (EmergencyRequests collection)
+      const requests = await this.reportService.getReports(); // EmergencyRequests
+
+      const now = new Date().getTime();
+      const oneDayMs = 24 * 60 * 60 * 1000; // 24 oras
+
+      // Filter requests na mas bago sa 24 oras
+      this.newRequestCount = requests.filter((r: any) => {
+        if (!r.generatedAt) return false;
+
+        const timestamp = r.generatedAt?.toDate
+          ? r.generatedAt.toDate().getTime()
+          : new Date(r.generatedAt).getTime();
+
+        return now - timestamp <= oneDayMs;
+      }).length;
+    } catch (err) {
+      console.error('Failed to fetch new requests', err);
+      this.newRequestCount = 0;
     }
   }
 
@@ -143,7 +173,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       }
 
       const count = await this.emergencyRequestService.getUnreadEmergency(
-        currentUser.uid
+        currentUser.uid,
       );
       this.unreadEmergencyRequestCount = count;
       this.hasUnreadEmergencyRequests = count > 0;

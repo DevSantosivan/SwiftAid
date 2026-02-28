@@ -66,8 +66,28 @@
 
 /* Month Filter Buttons */
 .month-filter {
+  width: 100%;
   margin-bottom: 15px;
+  .filter-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .year-section {
+    flex: 1;
+    min-width: 100px;
+    margin-left: 40px;
+    select {
+      margin-top: 5px;
 
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      width: 100%;
+    }
+  }
   .month-buttons {
     display: flex;
     flex-wrap: wrap;
@@ -102,7 +122,7 @@
   border: 1px solid #ddd;
   padding: 16px;
   margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
   transition: 0.2s all;
 
   &:hover {

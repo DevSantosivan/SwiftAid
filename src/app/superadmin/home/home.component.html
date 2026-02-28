@@ -104,6 +104,13 @@
         >
           <i class="bx bxs-report"></i>
           <span *ngIf="!isCollapsed">Report</span>
+          <span
+            *ngIf="newRequestCount > 0"
+            class="notification-dot"
+            [class.collapsed]="isCollapsed"
+          >
+            {{ newRequestCount }}
+          </span>
         </li>
         <li
           [routerLink]="'Statistic-Emergency'"

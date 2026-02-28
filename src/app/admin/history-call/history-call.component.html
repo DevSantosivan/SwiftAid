@@ -11,6 +11,43 @@
         (input)="applyFilters()"
       />
       <button><i class="bx bx-search"></i></button>
+      <div class="filter-bar">
+        <!-- Month Filter -->
+        <div class="filter-item">
+          <label for="month-select">Month:</label>
+          <div class="custom-select">
+            <select
+              id="month-select"
+              [(ngModel)]="selectedMonth"
+              (change)="applyFilters()"
+            >
+              <option *ngFor="let m of months; let i = index" [value]="i">
+                {{ m }}
+              </option>
+            </select>
+            <span class="arrow">&#9662;</span>
+            <!-- Down arrow -->
+          </div>
+        </div>
+
+        <!-- Year Filter -->
+        <div class="filter-item">
+          <label for="year-select">Year:</label>
+          <div class="custom-select">
+            <select
+              id="year-select"
+              [(ngModel)]="selectedYear"
+              (change)="applyFilters()"
+            >
+              <option *ngFor="let y of years" [value]="y">
+                {{ y }}
+              </option>
+            </select>
+            <span class="arrow">&#9662;</span>
+            <!-- Down arrow -->
+          </div>
+        </div>
+      </div>
       <div class="report-button">
         <button (click)="generateReport()">
           <i class="bx bx-file"></i> Generate Report

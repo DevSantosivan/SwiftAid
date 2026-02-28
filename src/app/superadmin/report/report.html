@@ -12,21 +12,35 @@
 
   <!-- Month Filter -->
   <div class="month-filter">
-    <label>Filter by Month:</label>
-    <div class="month-buttons">
-      <button
-        *ngFor="let m of months"
-        [class.active]="selectedMonth === m.value"
-        (click)="selectMonth(m.value)"
-      >
-        {{ m.name }}
-      </button>
-      <button
-        [class.active]="selectedMonth === undefined"
-        (click)="selectMonth(undefined)"
-      >
-        All
-      </button>
+    <div class="filter-row">
+      <!-- LEFT: Month -->
+      <div class="month-section">
+        <label>Filter by Month:</label>
+        <div class="month-buttons">
+          <button
+            *ngFor="let m of months"
+            [class.active]="selectedMonth === m.value"
+            (click)="selectMonth(m.value)"
+          >
+            {{ m.name }}
+          </button>
+          <button
+            [class.active]="selectedMonth === undefined"
+            (click)="selectMonth(undefined)"
+          >
+            All
+          </button>
+        </div>
+      </div>
+
+      <!-- RIGHT: Year -->
+      <div class="year-section">
+        <label>Filter by Year:</label>
+        <select [(ngModel)]="selectedYear" (change)="applyFilters()">
+          <option [ngValue]="undefined">All</option>
+          <option *ngFor="let y of years" [ngValue]="y">{{ y }}</option>
+        </select>
+      </div>
     </div>
   </div>
 
@@ -34,7 +48,7 @@
   <div class="search-bar">
     <input
       type="text"
-      placeholder="Search by staff name..."
+      placeholder="Search"
       [(ngModel)]="searchTerm"
       (input)="applyFilters()"
     />
